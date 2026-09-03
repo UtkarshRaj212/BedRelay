@@ -6,7 +6,17 @@ import { eq, and } from "drizzle-orm";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { hospitalId, ambulanceUnit, bedCategoryCode, requestedBeds, etaMinutes, patientCondition } = body;
+    const {
+      hospitalId,
+      ambulanceUnit,
+      ambulanceLat,
+      ambulanceLng,
+      patientRef,
+      bedCategoryCode,
+      requestedBeds,
+      etaMinutes,
+      patientCondition,
+    } = body;
 
     if (!hospitalId || !ambulanceUnit || !bedCategoryCode) {
       return NextResponse.json(
@@ -27,12 +37,12 @@ export async function POST(req: NextRequest) {
 
     if (!targetHospital) {
       return NextResponse.json(
-        { error: "Target hospital facility not found" },
+        { error: "Selected hospital facility not found" },
         { status: 404 }
       );
     }
 
-    // Verify bed availability
+    // Verify bed availability in real database
     const [targetCategory] = await db
       .select()
       .from(bedCategories)
@@ -44,10 +54,12 @@ export async function POST(req: NextRequest) {
       )
       .limit(1);
 
-    if (targetCategory && targetCategory.availableBeds < numRequested) {
+    if (!targetCategory || targetCategory.availableBeds < numRequested) {
       return NextResponse.json(
         {
-          error: `Insufficient available beds in ${bedCategoryCode}. Requested: ${numRequested}, Available: ${targetCategory.availableBeds}`,
+          error: `Insufficient available beds in ${bedCategoryCode}. Requested: ${numRequested}, Currently Available: ${
+            targetCategory ? targetCategory.availableBeds : 0
+          }`,
         },
         { status: 400 }
       );
@@ -62,6 +74,9 @@ export async function POST(req: NextRequest) {
         id: newDispatchId,
         hospitalId,
         ambulanceUnit: ambulanceUnit.trim(),
+        ambulanceLat: ambulanceLat ? Number(ambulanceLat) : null,
+        ambulanceLng: ambulanceLng ? Number(ambulanceLng) : null,
+        patientRef: patientRef ? patientRef.trim() : `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
         bedCategoryCode: bedCategoryCode.toUpperCase(),
         requestedBeds: numRequested,
         etaMinutes: eta,
