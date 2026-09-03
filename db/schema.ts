@@ -62,7 +62,10 @@ export const hospitals = pgTable("hospitals", {
   name: t.text("name").notNull(),
   address: t.text("address"),
   city: t.text("city"),
+  state: t.text("state"),
   phone: t.text("phone"),
+  latitude: t.doublePrecision("latitude"),
+  longitude: t.doublePrecision("longitude"),
   createdAt: t.timestamp("created_at", { precision: 6, withTimezone: true }).notNull(),
   updatedAt: t.timestamp("updated_at", { precision: 6, withTimezone: true }).notNull(),
 }, (table) => [

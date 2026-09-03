@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { INDIAN_CITIES } from "@/lib/geo";
 
 interface BedCategory {
   id: string;
@@ -18,45 +19,118 @@ interface HospitalResult {
   name: string;
   address: string;
   city: string;
+  state: string;
   phone: string;
+  distanceKm: number | null;
   totalAvailable: number;
   totalBeds: number;
+  targetCategoryBeds: number;
+  isSuitable: boolean;
   beds: BedCategory[];
 }
 
-export default function FindBedsPage() {
-  const [hospitals, setHospitals] = useState<HospitalResult[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
-  const [loading, setLoading] = useState(true);
+export default function FindHospitalPage() {
+  const [selectedCity, setSelectedCity] = useState<string>("Mumbai");
+  const [selectedCategory, setSelectedCategory] = useState<string>("ICU");
+  const [minBeds, setMinBeds] = useState<number>(1);
 
-  const fetchBeds = async (category: string) => {
+  const [hospitals, setHospitals] = useState<HospitalResult[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Dispatch Request Modal State
+  const [dispatchModalHospital, setDispatchModalHospital] = useState<HospitalResult | null>(null);
+  const [ambulanceUnit, setAmbulanceUnit] = useState<string>("108 EMS Unit-101");
+  const [etaMinutes, setEtaMinutes] = useState<number>(12);
+  const [patientCondition, setPatientCondition] = useState<string>("Acute Respiratory Distress");
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [dispatchMsg, setDispatchMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const fetchSuitableHospitals = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/hospitals/search?category=${category}`);
+      const url = `/api/hospitals/search?city=${encodeURIComponent(
+        selectedCity
+      )}&category=${selectedCategory}&minBeds=${minBeds}`;
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setHospitals(data.hospitals || []);
       }
     } catch (err) {
-      console.error("Failed to fetch beds:", err);
+      console.error("Failed to fetch suitable hospitals:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBeds(selectedCategory);
-  }, [selectedCategory]);
+    fetchSuitableHospitals();
+  }, [selectedCity, selectedCategory, minBeds]);
+
+  const suitableHospitals = hospitals.filter((h) => h.isSuitable);
+  const unsuitableHospitals = hospitals.filter((h) => !h.isSuitable);
+
+  const handleOpenDispatch = (hosp: HospitalResult) => {
+    setDispatchModalHospital(hosp);
+    setDispatchMsg(null);
+  };
+
+  const handleSendDispatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dispatchModalHospital) return;
+
+    try {
+      setSubmitting(true);
+      setDispatchMsg(null);
+
+      const res = await fetch("/api/dispatch-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hospitalId: dispatchModalHospital.id,
+          ambulanceUnit,
+          bedCategoryCode: selectedCategory,
+          requestedBeds: minBeds,
+          etaMinutes,
+          patientCondition,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to transmit dispatch alert");
+      }
+
+      setDispatchMsg({
+        type: "success",
+        text: `Pre-arrival dispatch alert transmitted to ${dispatchModalHospital.name}`,
+      });
+
+      setTimeout(() => {
+        setDispatchModalHospital(null);
+      }, 1500);
+
+      await fetchSuitableHospitals();
+    } catch (err: any) {
+      setDispatchMsg({
+        type: "error",
+        text: err.message || "Failed to transmit dispatch request.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
-      {/* System Status Banner */}
+      {/* Top Bar */}
       <div className="bg-slate-900 text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 flex items-center justify-between font-mono">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span>SYSTEM STATUS: AMBULANCE DISPATCH TELEMETRY CONSOLE</span>
+          <span>DISPATCH ROUTING & SUITABILITY SEARCH CONSOLE</span>
         </div>
-        <div className="text-slate-400 font-mono text-[11px]">MODE: PRE-HOSPITAL ROUTING</div>
+        <div className="text-slate-400 font-mono text-[11px]">DISPATCHER MODE (READ-ONLY)</div>
       </div>
 
       {/* Header */}
@@ -71,144 +145,294 @@ export default function FindBedsPage() {
                 BED<span className="text-blue-700">RELAY</span>
               </span>
               <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-0.5">
-                Dispatcher Search Console
+                Ambulance Dispatcher Console
               </span>
             </div>
           </Link>
 
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:text-slate-900 border border-slate-300 rounded-sm"
-          >
-            Hospital Staff Portal
-          </Link>
+          <nav className="flex items-center gap-4 font-mono text-xs">
+            <Link
+              href="/dispatcher"
+              className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
+            >
+              DISPATCHER DASHBOARD
+            </Link>
+            <Link
+              href="/find-beds"
+              className="px-3 py-1.5 bg-slate-900 text-white font-semibold rounded-sm"
+            >
+              FIND HOSPITAL
+            </Link>
+          </nav>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search & Category Filter Controls */}
+        {/* Location & Capacity Requirement Filter Form */}
         <div className="bg-white p-6 border border-slate-200 rounded-sm mb-8">
-          <div className="border-l-2 border-blue-700 pl-3 mb-4">
-            <span className="text-xs font-mono text-blue-700 uppercase tracking-widest block">TELEMETRY FILTER</span>
-            <h1 className="text-xl font-bold text-slate-900 mt-0.5">Find Nearby Hospital Available Capacity</h1>
+          <div className="border-l-2 border-blue-700 pl-3 mb-6">
+            <span className="text-xs font-mono text-blue-700 uppercase tracking-widest block">SUITABILITY FILTER</span>
+            <h1 className="text-2xl font-bold text-slate-900 mt-0.5">Find Suitable Inbound Hospitals</h1>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <span className="text-xs font-mono text-slate-500 uppercase">Filter Bed Category:</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-2">
+                01. Dispatch Location (India)
+              </label>
+              <select
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-300 text-slate-900 font-mono text-sm font-semibold focus:outline-none focus:border-slate-900 rounded-sm"
+              >
+                {INDIAN_CITIES.map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.name}, {c.state}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <button
-              onClick={() => setSelectedCategory("ALL")}
-              className={`px-3 py-1.5 text-xs font-mono font-semibold rounded-sm transition-colors ${
-                selectedCategory === "ALL"
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200"
-              }`}
-            >
-              ALL CATEGORIES
-            </button>
+            <div>
+              <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-2">
+                02. Required Bed Category
+              </label>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full px-3 py-2 bg-white border border-slate-300 text-slate-900 font-mono text-sm font-semibold focus:outline-none focus:border-slate-900 rounded-sm"
+              >
+                <option value="ICU">Intensive Care Unit (ICU)</option>
+                <option value="GENERAL">General Ward</option>
+                <option value="VENTILATOR">Ventilator & Critical Care</option>
+              </select>
+            </div>
 
-            <button
-              onClick={() => setSelectedCategory("ICU")}
-              className={`px-3 py-1.5 text-xs font-mono font-semibold rounded-sm transition-colors ${
-                selectedCategory === "ICU"
-                  ? "bg-blue-700 text-white"
-                  : "bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200"
-              }`}
-            >
-              ICU BEDS
-            </button>
-
-            <button
-              onClick={() => setSelectedCategory("GENERAL")}
-              className={`px-3 py-1.5 text-xs font-mono font-semibold rounded-sm transition-colors ${
-                selectedCategory === "GENERAL"
-                  ? "bg-blue-700 text-white"
-                  : "bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200"
-              }`}
-            >
-              GENERAL WARD
-            </button>
-
-            <button
-              onClick={() => setSelectedCategory("VENTILATOR")}
-              className={`px-3 py-1.5 text-xs font-mono font-semibold rounded-sm transition-colors ${
-                selectedCategory === "VENTILATOR"
-                  ? "bg-blue-700 text-white"
-                  : "bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200"
-              }`}
-            >
-              VENTILATOR & CRITICAL
-            </button>
+            <div>
+              <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-2">
+                03. Required Beds Count
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={minBeds}
+                onChange={(e) => setMinBeds(Math.max(1, Number(e.target.value)))}
+                className="w-full px-3 py-2 bg-white border border-slate-300 text-slate-900 font-mono text-sm font-semibold focus:outline-none focus:border-slate-900 rounded-sm"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Results */}
+        {/* Results Section */}
         {loading ? (
           <div className="p-12 text-center text-sm font-mono text-slate-500 bg-white border border-slate-200 rounded-sm">
-            SCANNING REGIONAL HOSPITAL CAPACITY TELEMETRY...
-          </div>
-        ) : hospitals.length === 0 ? (
-          <div className="p-12 text-center text-sm font-mono text-slate-500 bg-white border border-slate-200 rounded-sm">
-            NO HOSPITALS FOUND MATCHING SPECIFIED CRITERIA
+            EVALUATING HOSPITAL SUITABILITY & PROXIMITY...
           </div>
         ) : (
-          <div className="space-y-6">
-            {hospitals.map((hosp) => (
-              <div key={hosp.id} className="bg-white border border-slate-200 rounded-sm p-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-mono font-semibold rounded-sm">
-                        ACCEPTING INBOUND
-                      </span>
-                      <span className="text-xs text-slate-500 font-mono">{hosp.city}</span>
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-900 mt-1">{hosp.name}</h2>
-                    <p className="text-xs text-slate-600 font-mono mt-0.5">
-                      {hosp.address} • Tel: {hosp.phone}
-                    </p>
-                  </div>
+          <div className="space-y-8">
+            {/* Suitable Hospitals List */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-slate-900">
+                  Suitable Hospitals ({suitableHospitals.length} Facilities with ≥ {minBeds} {selectedCategory} Bed{minBeds > 1 ? "s" : ""})
+                </h2>
+                <span className="text-xs font-mono text-slate-500">SORTED BY PROXIMITY (KM)</span>
+              </div>
 
-                  <div className="text-right">
-                    <div className="text-xs font-mono text-slate-500 uppercase">Available Capacity</div>
-                    <div className="text-2xl font-bold text-emerald-700 font-mono mt-0.5">
-                      {hosp.totalAvailable} <span className="text-sm font-normal text-slate-500">/ {hosp.totalBeds} Beds</span>
-                    </div>
-                  </div>
+              {suitableHospitals.length === 0 ? (
+                <div className="p-8 text-center bg-white border border-slate-200 rounded-sm">
+                  <div className="text-xs font-mono text-amber-700 font-bold mb-1">NO SUITABLE FACILITIES FOUND</div>
+                  <p className="text-sm text-slate-600">
+                    No hospitals near {selectedCity} currently have at least {minBeds} available {selectedCategory} bed(s).
+                  </p>
                 </div>
+              ) : (
+                <div className="space-y-4">
+                  {suitableHospitals.map((hosp) => {
+                    const catBed = hosp.beds.find((b) => b.categoryCode.toUpperCase() === selectedCategory.toUpperCase());
+                    const availCount = catBed ? catBed.availableBeds : 0;
 
-                {/* Bed Categories breakdown table */}
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm border-collapse">
-                    <thead className="bg-slate-100 text-slate-700 font-mono text-xs uppercase border-b border-slate-200">
-                      <tr>
-                        <th className="py-2.5 px-4 font-semibold">Category Code</th>
-                        <th className="py-2.5 px-4 font-semibold">Bed Category</th>
-                        <th className="py-2.5 px-4 font-semibold text-right">Available Beds</th>
-                        <th className="py-2.5 px-4 font-semibold text-right">Total Beds</th>
-                        <th className="py-2.5 px-4 font-semibold text-right">Last Telemetry Sync</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 bg-white">
-                      {hosp.beds.map((b) => (
-                        <tr key={b.id}>
-                          <td className="py-3 px-4 font-mono font-bold text-slate-900">{b.categoryCode}</td>
-                          <td className="py-3 px-4 text-slate-800 font-medium">{b.name}</td>
-                          <td className="py-3 px-4 font-mono text-right font-bold text-emerald-700">{b.availableBeds}</td>
-                          <td className="py-3 px-4 font-mono text-right text-slate-600">{b.totalBeds}</td>
-                          <td className="py-3 px-4 font-mono text-xs text-right text-slate-500">
-                            {new Date(b.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                    return (
+                      <div key={hosp.id} className="bg-white border border-slate-200 rounded-sm p-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4 mb-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-mono font-bold rounded-sm">
+                                ✓ SUITABLE FACILITY
+                              </span>
+                              <span className="text-xs text-slate-500 font-mono">
+                                {hosp.city}, {hosp.state || "India"}
+                              </span>
+                              {hosp.distanceKm !== null && (
+                                <span className="px-2 py-0.5 bg-blue-50 text-blue-800 font-mono text-xs font-bold border border-blue-200 rounded-sm">
+                                  {hosp.distanceKm} km away
+                                </span>
+                              )}
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 mt-1">{hosp.name}</h3>
+                            <p className="text-xs text-slate-600 font-mono mt-0.5">
+                              {hosp.address} • Phone: <span className="font-bold text-slate-900">{hosp.phone}</span>
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-6">
+                            <div className="text-right">
+                              <div className="text-xs font-mono text-slate-500 uppercase">{selectedCategory} Available</div>
+                              <div className="text-2xl font-bold text-emerald-700 font-mono mt-0.5">
+                                {availCount} <span className="text-xs font-normal text-slate-500">/ {catBed ? catBed.totalBeds : 0} Beds</span>
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => handleOpenDispatch(hosp)}
+                              className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 rounded-sm transition-colors"
+                            >
+                              Send Dispatch Request
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Bed Categories breakdown */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          {hosp.beds.map((b) => (
+                            <div key={b.id} className="p-3 bg-slate-50 border border-slate-200 rounded-sm text-xs font-mono">
+                              <div className="text-slate-500 uppercase font-semibold">{b.name}</div>
+                              <div className="text-sm font-bold text-slate-900 mt-1">
+                                <span className="text-emerald-700">{b.availableBeds}</span> / {b.totalBeds} Available
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Hospitals with Insufficient Availability (Excluded from suitable) */}
+            {unsuitableHospitals.length > 0 && (
+              <div className="pt-4 border-t border-slate-200">
+                <h3 className="text-sm font-mono text-slate-500 uppercase font-bold mb-3">
+                  Facilities with Insufficient Capacity ({unsuitableHospitals.length} Hospitals Excluded)
+                </h3>
+                <div className="space-y-3">
+                  {unsuitableHospitals.map((hosp) => (
+                    <div key={hosp.id} className="bg-slate-100 p-4 border border-slate-200 rounded-sm opacity-75 flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-mono font-bold rounded-sm">
+                            INSUFFICIENT CAPACITY
+                          </span>
+                          <span className="text-xs font-mono text-slate-500">{hosp.name} ({hosp.city})</span>
+                        </div>
+                      </div>
+                      <div className="text-xs font-mono text-slate-600">
+                        {selectedCategory} Available: <span className="font-bold text-red-700">{hosp.targetCategoryBeds}</span> (Required: {minBeds})
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
           </div>
         )}
       </main>
+
+      {/* Send Dispatch Modal */}
+      {dispatchModalHospital && (
+        <div className="fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white max-w-lg w-full border border-slate-300 shadow-lg rounded-sm p-6">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+              <div>
+                <span className="text-xs font-mono text-blue-700 uppercase font-semibold block">SEND DISPATCH REQUEST</span>
+                <h3 className="text-lg font-bold text-slate-900">{dispatchModalHospital.name}</h3>
+              </div>
+              <button onClick={() => setDispatchModalHospital(null)} className="text-slate-400 hover:text-slate-700 font-bold">
+                ✕
+              </button>
+            </div>
+
+            {dispatchMsg && (
+              <div
+                className={`p-3 mb-4 text-xs font-mono rounded-sm ${
+                  dispatchMsg.type === "success"
+                    ? "bg-emerald-50 border border-emerald-300 text-emerald-800"
+                    : "bg-red-50 border border-red-300 text-red-800"
+                }`}
+              >
+                {dispatchMsg.text}
+              </div>
+            )}
+
+            <form onSubmit={handleSendDispatch} className="space-y-4">
+              <div>
+                <label className="block text-xs font-mono text-slate-700 uppercase mb-1">Ambulance Unit Identifier</label>
+                <input
+                  type="text"
+                  value={ambulanceUnit}
+                  onChange={(e) => setAmbulanceUnit(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 text-slate-900 font-mono text-sm focus:outline-none rounded-sm"
+                  placeholder="e.g. 108 EMS Unit-101"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 font-mono text-xs">
+                <div className="p-2 bg-slate-50 border border-slate-200 rounded-sm">
+                  <div className="text-slate-500 uppercase">Category</div>
+                  <div className="font-bold text-slate-900 mt-0.5">{selectedCategory}</div>
+                </div>
+                <div className="p-2 bg-slate-50 border border-slate-200 rounded-sm">
+                  <div className="text-slate-500 uppercase">Requested Beds</div>
+                  <div className="font-bold text-slate-900 mt-0.5">{minBeds}</div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-slate-700 uppercase mb-1">Estimated Travel ETA (Minutes)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={etaMinutes}
+                  onChange={(e) => setEtaMinutes(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-slate-300 text-slate-900 font-mono text-sm focus:outline-none rounded-sm"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-slate-700 uppercase mb-1">Patient Clinical Condition & Notes</label>
+                <textarea
+                  value={patientCondition}
+                  onChange={(e) => setPatientCondition(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-slate-300 text-slate-900 text-sm focus:outline-none rounded-sm"
+                  required
+                ></textarea>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setDispatchModalHospital(null)}
+                  className="px-4 py-2 text-xs font-semibold uppercase text-slate-600 hover:text-slate-900 border border-slate-300 rounded-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 rounded-sm transition-colors disabled:opacity-50"
+                >
+                  {submitting ? "Transmitting..." : "Send Request to Hospital"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
