@@ -55,3 +55,46 @@ export const verification = pgTable("verification", {
 }, (table) => [
   t.index("verification_identifier_idx").on(table.identifier),
 ]);
+
+export const hospitals = pgTable("hospitals", {
+  id: t.text("id").primaryKey(),
+  userId: t.text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  name: t.text("name").notNull(),
+  address: t.text("address"),
+  city: t.text("city"),
+  phone: t.text("phone"),
+  createdAt: t.timestamp("created_at", { precision: 6, withTimezone: true }).notNull(),
+  updatedAt: t.timestamp("updated_at", { precision: 6, withTimezone: true }).notNull(),
+}, (table) => [
+  t.index("hospitals_userId_idx").on(table.userId),
+]);
+
+export const bedCategories = pgTable("bed_categories", {
+  id: t.text("id").primaryKey(),
+  hospitalId: t.text("hospital_id").notNull().references(() => hospitals.id, { onDelete: "cascade" }),
+  categoryCode: t.varchar("category_code", { length: 50 }).notNull(),
+  name: t.text("name").notNull(),
+  totalBeds: t.integer("total_beds").notNull().default(0),
+  availableBeds: t.integer("available_beds").notNull().default(0),
+  occupiedBeds: t.integer("occupied_beds").notNull().default(0),
+  lastUpdated: t.timestamp("last_updated", { precision: 6, withTimezone: true }).notNull(),
+  createdAt: t.timestamp("created_at", { precision: 6, withTimezone: true }).notNull(),
+  updatedAt: t.timestamp("updated_at", { precision: 6, withTimezone: true }).notNull(),
+}, (table) => [
+  t.index("bed_categories_hospitalId_idx").on(table.hospitalId),
+]);
+
+export const dispatchRequests = pgTable("dispatch_requests", {
+  id: t.text("id").primaryKey(),
+  hospitalId: t.text("hospital_id").notNull().references(() => hospitals.id, { onDelete: "cascade" }),
+  ambulanceUnit: t.text("ambulance_unit").notNull(),
+  bedCategoryCode: t.varchar("bed_category_code", { length: 50 }).notNull(),
+  requestedBeds: t.integer("requested_beds").notNull().default(1),
+  etaMinutes: t.integer("eta_minutes").notNull(),
+  patientCondition: t.text("patient_condition").notNull(),
+  status: t.varchar("status", { length: 50 }).notNull().default("PENDING"),
+  createdAt: t.timestamp("created_at", { precision: 6, withTimezone: true }).notNull(),
+  updatedAt: t.timestamp("updated_at", { precision: 6, withTimezone: true }).notNull(),
+}, (table) => [
+  t.index("dispatch_requests_hospitalId_idx").on(table.hospitalId),
+]);
