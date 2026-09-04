@@ -311,28 +311,38 @@ export default function FindHospitalPage() {
               )}
             </div>
 
-            {/* Hospitals with Insufficient Availability (Excluded from suitable) */}
+            {/* Local hospitals that don't meet the bed requirement */}
             {unsuitableHospitals.length > 0 && (
               <div className="pt-4 border-t border-slate-200">
                 <h3 className="text-sm font-mono text-slate-500 uppercase font-bold mb-3">
-                  Facilities with Insufficient Capacity ({unsuitableHospitals.length} Hospitals Excluded)
+                  Nearby Hospitals with Insufficient {selectedCategory} Beds ({unsuitableHospitals.length})
                 </h3>
                 <div className="space-y-3">
-                  {unsuitableHospitals.map((hosp) => (
-                    <div key={hosp.id} className="bg-slate-100 p-4 border border-slate-200 rounded-sm opacity-75 flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-mono font-bold rounded-sm">
-                            INSUFFICIENT CAPACITY
-                          </span>
-                          <span className="text-xs font-mono text-slate-500">{hosp.name} ({hosp.city})</span>
+                  {unsuitableHospitals.map((hosp) => {
+                    const catBed = hosp.beds.find((b) => b.categoryCode.toUpperCase() === selectedCategory.toUpperCase());
+                    const availCount = catBed ? catBed.availableBeds : 0;
+                    const totalCount = catBed ? catBed.totalBeds : 0;
+
+                    return (
+                      <div key={hosp.id} className="bg-white p-4 border border-slate-200 rounded-sm flex items-center justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-amber-50 text-amber-800 text-[10px] font-mono font-bold border border-amber-200 rounded-sm">
+                              {availCount} / {totalCount} {selectedCategory}
+                            </span>
+                            <span className="text-sm font-semibold text-slate-800">{hosp.name}</span>
+                            <span className="text-xs font-mono text-slate-500">{hosp.city}</span>
+                            {hosp.distanceKm !== null && (
+                              <span className="text-xs font-mono text-slate-400">{hosp.distanceKm} km</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-xs font-mono text-slate-500">
+                          Need {minBeds}, only {availCount} available
                         </div>
                       </div>
-                      <div className="text-xs font-mono text-slate-600">
-                        {selectedCategory} Available: <span className="font-bold text-red-700">{hosp.targetCategoryBeds}</span> (Required: {minBeds})
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -348,6 +358,7 @@ export default function FindHospitalPage() {
               <div>
                 <span className="text-xs font-mono text-blue-700 uppercase font-semibold block">SEND DISPATCH REQUEST</span>
                 <h3 className="text-lg font-bold text-slate-900">{dispatchModalHospital.name}</h3>
+                <span className="text-xs font-mono text-slate-500">{dispatchModalHospital.city}, {dispatchModalHospital.state || "India"} • {dispatchModalHospital.address}</span>
               </div>
               <button onClick={() => setDispatchModalHospital(null)} className="text-slate-400 hover:text-slate-700 font-bold">
                 ✕

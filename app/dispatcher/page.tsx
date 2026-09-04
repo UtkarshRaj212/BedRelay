@@ -29,6 +29,10 @@ interface HospitalItem {
 
 interface DispatchItem {
   id: string;
+  hospitalId: string;
+  hospitalName: string;
+  hospitalCity: string;
+  hospitalState: string;
   ambulanceUnit: string;
   bedCategoryCode: string;
   requestedBeds: number;
@@ -223,6 +227,7 @@ export default function DispatcherDashboardPage() {
               <thead className="bg-slate-100 text-slate-700 font-mono text-xs uppercase border-b border-slate-200">
                 <tr>
                   <th className="py-3.5 px-6 font-semibold">Dispatch ID</th>
+                  <th className="py-3.5 px-6 font-semibold">Receiving Hospital</th>
                   <th className="py-3.5 px-6 font-semibold">Ambulance Unit</th>
                   <th className="py-3.5 px-6 font-semibold">Bed Category Required</th>
                   <th className="py-3.5 px-6 font-semibold text-center">Beds Requested</th>
@@ -235,7 +240,7 @@ export default function DispatcherDashboardPage() {
               <tbody className="divide-y divide-slate-200 bg-white">
                 {activeDispatches.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-6 px-6 text-center text-xs font-mono text-slate-500">
+                    <td colSpan={9} className="py-6 px-6 text-center text-xs font-mono text-slate-500">
                       NO ACTIVE DISPATCH ALERTS CURRENTLY BROADCASTING
                     </td>
                   </tr>
@@ -243,6 +248,10 @@ export default function DispatcherDashboardPage() {
                   activeDispatches.map((disp) => (
                     <tr key={disp.id} className="hover:bg-slate-50">
                       <td className="py-4 px-6 font-mono text-xs text-slate-600">{disp.id}</td>
+                      <td className="py-4 px-6">
+                        <div className="font-semibold text-slate-900 text-sm">{disp.hospitalName}</div>
+                        <div className="text-xs font-mono text-slate-500 mt-0.5">{disp.hospitalCity}{disp.hospitalState ? `, ${disp.hospitalState}` : ""}</div>
+                      </td>
                       <td className="py-4 px-6 font-mono font-bold text-slate-900">{disp.ambulanceUnit}</td>
                       <td className="py-4 px-6 font-mono text-xs font-semibold">
                         <span className="px-2 py-0.5 bg-blue-50 text-blue-800 border border-blue-200 rounded-sm">
@@ -255,9 +264,9 @@ export default function DispatcherDashboardPage() {
                       <td className="py-4 px-6 text-center">
                         <span
                           className={`px-2.5 py-1 text-xs font-mono font-bold border rounded-sm ${
-                            disp.status === "ACCEPTED"
+                            disp.status === "ACCEPTED" || disp.status === "COMPLETED"
                               ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                              : disp.status === "REJECTED"
+                              : disp.status === "REJECTED" || disp.status === "CANCELLED"
                               ? "bg-red-100 text-red-800 border-red-300"
                               : "bg-amber-100 text-amber-800 border-amber-300"
                           }`}
@@ -386,6 +395,7 @@ export default function DispatcherDashboardPage() {
               <div>
                 <span className="text-xs font-mono text-blue-700 uppercase font-semibold block">AMBULANCE PRE-ARRIVAL ALERT</span>
                 <h3 className="text-lg font-bold text-slate-900">{dispatchModalHospital.name}</h3>
+                <span className="text-xs font-mono text-slate-500">{dispatchModalHospital.city}, {dispatchModalHospital.state || "India"} • {dispatchModalHospital.address}</span>
               </div>
               <button onClick={() => setDispatchModalHospital(null)} className="text-slate-400 hover:text-slate-700 font-bold">
                 ✕

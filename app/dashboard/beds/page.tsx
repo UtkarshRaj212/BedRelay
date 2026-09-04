@@ -19,6 +19,7 @@ interface Hospital {
   name: string;
   address: string;
   city: string;
+  state: string;
   phone: string;
 }
 
@@ -209,11 +210,14 @@ export default function BedManagementPage() {
               <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-mono font-semibold rounded-sm">
                 SCOPED AUTHENTICATED HOSPITAL
               </span>
-              <span className="text-xs text-slate-500 font-mono">ID: {hospital?.id}</span>
+              <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs font-mono font-semibold border border-slate-300 rounded-sm">
+                {hospital?.city}, {hospital?.state || "India"}
+              </span>
+              <span className="text-xs text-slate-500 font-mono">{hospital?.name} • {hospital?.id}</span>
             </div>
             <h1 className="text-2xl font-bold text-slate-900 mt-1">{hospital?.name || "Loading Hospital..."}</h1>
             <p className="text-xs text-slate-600 font-mono mt-0.5">
-              Updates made here broadcast immediately to regional ambulance dispatchers.
+              {hospital?.address} • Tel: {hospital?.phone} • Updates broadcast immediately to regional dispatchers.
             </p>
           </div>
 

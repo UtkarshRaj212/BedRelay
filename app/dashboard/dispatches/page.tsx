@@ -20,6 +20,7 @@ interface Hospital {
   name: string;
   address: string;
   city: string;
+  state: string;
   phone: string;
 }
 
@@ -188,11 +189,14 @@ export default function HospitalDispatchesPage() {
               <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-mono font-semibold rounded-sm">
                 SCOPED AUTHENTICATED HOSPITAL
               </span>
-              <span className="text-xs text-slate-500 font-mono">ID: {hospital?.id}</span>
+              <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs font-mono font-semibold border border-slate-300 rounded-sm">
+                {hospital?.city}, {hospital?.state || "India"}
+              </span>
+              <span className="text-xs text-slate-500 font-mono">{hospital?.name} • {hospital?.id}</span>
             </div>
             <h1 className="text-2xl font-bold text-slate-900 mt-1">{hospital?.name || "Loading Hospital..."}</h1>
             <p className="text-xs text-slate-600 font-mono mt-0.5">
-              Review and manage inbound ambulance dispatch pre-arrival alerts.
+              {hospital?.address} • Tel: {hospital?.phone} • Review and manage inbound dispatch pre-arrival alerts.
             </p>
           </div>
 
@@ -221,7 +225,7 @@ export default function HospitalDispatchesPage() {
         <div className="bg-white border border-slate-200 rounded-sm p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2 font-mono text-xs">
             <span className="text-slate-500 uppercase mr-2">Filter Status:</span>
-            {["ALL", "PENDING", "ACCEPTED", "REJECTED"].map((st) => (
+            {["ALL", "PENDING", "ACCEPTED", "REJECTED", "COMPLETED", "CANCELLED"].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
@@ -296,9 +300,9 @@ export default function HospitalDispatchesPage() {
                         <td className="py-4 px-6 text-center font-mono text-xs font-bold">
                           <span
                             className={`px-2.5 py-1 rounded-sm border ${
-                              disp.status === "ACCEPTED"
+                              disp.status === "ACCEPTED" || disp.status === "COMPLETED"
                                 ? "bg-emerald-100 text-emerald-800 border-emerald-300"
-                                : disp.status === "REJECTED"
+                                : disp.status === "REJECTED" || disp.status === "CANCELLED"
                                 ? "bg-red-100 text-red-800 border-red-300"
                                 : "bg-amber-100 text-amber-800 border-amber-300"
                             }`}

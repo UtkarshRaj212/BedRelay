@@ -29,6 +29,7 @@ interface Hospital {
   name: string;
   address: string;
   city: string;
+  state: string;
   phone: string;
 }
 
@@ -263,13 +264,16 @@ export default function DashboardPage() {
                 <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-mono font-semibold rounded-sm">
                   VERIFIED FACILITY
                 </span>
-                <span className="text-xs text-slate-500 font-mono">ID: {hospital?.id || "HOSP-01"}</span>
+                <span className="px-2 py-0.5 bg-slate-100 text-slate-700 text-xs font-mono font-semibold border border-slate-300 rounded-sm">
+                  {hospital?.city || "New Delhi"}, {hospital?.state || "Delhi"}
+                </span>
+                <span className="text-xs text-slate-500 font-mono">{hospital?.name || "Hospital"} • {hospital?.id}</span>
               </div>
               <h1 className="text-2xl font-bold text-slate-900 mt-1">
                 {hospital?.name || "Regional Emergency Hospital"}
               </h1>
               <p className="text-sm text-slate-600 mt-0.5">
-                {hospital?.address || "Emergency Department"} • {hospital?.city || "Metropolitan Zone"} • Tel: {hospital?.phone || "+1 (555) 019-2831"}
+                {hospital?.address || "Sector 14, Dwarka"} • Tel: {hospital?.phone || "+91 11 2671 0000"}
               </p>
             </div>
 
@@ -388,9 +392,10 @@ export default function DashboardPage() {
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-slate-100 text-slate-700 font-mono text-xs uppercase border-b border-slate-200">
                 <tr>
+                  <th className="py-3.5 px-6 font-semibold">Request ID</th>
                   <th className="py-3.5 px-6 font-semibold">Ambulance Unit</th>
-                  <th className="py-3.5 px-6 font-semibold">Bed Category Required</th>
-                  <th className="py-3.5 px-6 font-semibold">Patient Clinical Condition</th>
+                  <th className="py-3.5 px-6 font-semibold">Bed Category</th>
+                  <th className="py-3.5 px-6 font-semibold">Patient Condition</th>
                   <th className="py-3.5 px-6 font-semibold text-center">ETA</th>
                   <th className="py-3.5 px-6 font-semibold text-center">Status</th>
                   <th className="py-3.5 px-6 font-semibold text-right">Received At</th>
@@ -399,13 +404,14 @@ export default function DashboardPage() {
               <tbody className="divide-y divide-slate-200 bg-white">
                 {dispatches.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-6 px-6 text-center text-xs font-mono text-slate-500">
+                    <td colSpan={7} className="py-6 px-6 text-center text-xs font-mono text-slate-500">
                       NO INBOUND DISPATCH REQUESTS CURRENTLY LOGGED
                     </td>
                   </tr>
                 ) : (
                   dispatches.map((disp) => (
                     <tr key={disp.id} className="hover:bg-slate-50">
+                      <td className="py-4 px-6 font-mono text-xs text-slate-600">{disp.id}</td>
                       <td className="py-4 px-6 font-mono font-bold text-slate-900">{disp.ambulanceUnit}</td>
                       <td className="py-4 px-6 font-mono text-xs font-semibold text-blue-800">
                         <span className="px-2 py-0.5 bg-blue-50 border border-blue-200 rounded-sm">
@@ -415,7 +421,15 @@ export default function DashboardPage() {
                       <td className="py-4 px-6 text-slate-700 font-medium">{disp.patientCondition}</td>
                       <td className="py-4 px-6 font-mono text-center font-bold text-slate-900">{disp.etaMinutes} mins</td>
                       <td className="py-4 px-6 text-center">
-                        <span className="px-2.5 py-1 text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-sm">
+                        <span
+                          className={`px-2.5 py-1 text-xs font-mono font-bold border rounded-sm ${
+                            disp.status === "ACCEPTED" || disp.status === "COMPLETED"
+                              ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                              : disp.status === "REJECTED" || disp.status === "CANCELLED"
+                              ? "bg-red-100 text-red-800 border-red-300"
+                              : "bg-amber-100 text-amber-800 border-amber-300"
+                          }`}
+                        >
                           {disp.status}
                         </span>
                       </td>
