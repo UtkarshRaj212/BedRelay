@@ -60,6 +60,7 @@ export async function GET(req: NextRequest) {
         name: hospital.name,
         city: hospital.city,
         state: hospital.state,
+        status: hospital.status,
       },
       currentRole: membership?.role,
       members,

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { formatDate } from "@/lib/format-date";
 
 interface BedCategory {
   id: string;
@@ -22,6 +23,7 @@ interface Hospital {
   city: string;
   state: string;
   phone: string;
+  status?: string;
 }
 
 export default function BedManagementPage() {
@@ -282,6 +284,14 @@ export default function BedManagementPage() {
         </div>
       </header>
 
+      {hospital?.status === "DEACTIVATED" && (
+        <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-200 dark:border-red-900/50 px-4 py-3 text-center text-xs font-mono text-red-700 dark:text-red-300 font-bold flex items-center justify-center gap-2">
+          <span>⚠️ FACILITY DEACTIVATED BY NATIONAL SUPERADMIN</span>
+          <span>•</span>
+          <span>This hospital is temporarily hidden from dispatcher routing. Bed updates are disabled.</span>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hospital Header Banner */}
         <div className="bg-white dark:bg-[#0f0f0f] p-6 border border-slate-200 dark:border-[#222222] rounded-sm mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -354,12 +364,19 @@ export default function BedManagementPage() {
                         <td className="py-4 px-6 font-mono text-right text-slate-600 dark:text-[#a1a1a1]">{bed.occupiedBeds}</td>
                         <td className="py-4 px-6 font-mono text-right font-semibold text-slate-900 dark:text-[#ededed]">{occPct}%</td>
                         <td className="py-4 px-6 font-mono text-xs text-slate-500 dark:text-[#737373]">
-                          {new Date(bed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          <div>{formatDate(bed.lastUpdated)}</div>
+                          <div className="text-[10px] text-slate-400">{new Date(bed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
                         </td>
                         <td className="py-4 px-6 text-center">
                           <button
                             onClick={() => handleOpenModal(bed)}
-                            className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer"
+                            disabled={hospital?.status === "DEACTIVATED"}
+                            className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors ${
+                              hospital?.status === "DEACTIVATED"
+                                ? "bg-slate-200 dark:bg-[#222222] text-slate-400 dark:text-[#666] cursor-not-allowed"
+                                : "text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 cursor-pointer"
+                            }`}
+                            title={hospital?.status === "DEACTIVATED" ? "Updates disabled while facility is deactivated by SuperAdmin" : "Edit bed availability"}
                           >
                             Edit Availability
                           </button>

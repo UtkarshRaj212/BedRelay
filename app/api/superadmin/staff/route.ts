@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { assertSuperAdmin, recordAuditLog } from "@/lib/auth-server";
 import { db } from "@/db";
 import { hospitalMemberships, hospitals, user } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   try {
@@ -34,6 +34,138 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("SuperAdmin staff GET failed:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error", message: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const { errorResponse, user: superAdmin } = await assertSuperAdmin(req);
+    if (errorResponse) return errorResponse;
+
+    const body = await req.json();
+    const { hospitalId, email, name, role } = body;
+
+    if (!hospitalId || !email || typeof email !== "string" || !email.trim()) {
+      return NextResponse.json(
+        { error: "hospitalId and email are required" },
+        { status: 400 }
+      );
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const assignedRole = role === "HOSPITAL_ADMIN" ? "HOSPITAL_ADMIN" : "HOSPITAL_STAFF";
+
+    const [targetHospital] = await db
+      .select()
+      .from(hospitals)
+      .where(eq(hospitals.id, hospitalId))
+      .limit(1);
+
+    if (!targetHospital) {
+      return NextResponse.json({ error: "Target hospital not found" }, { status: 404 });
+    }
+
+    // Find or create user
+    const now = new Date();
+    let [targetUser] = await db
+      .select()
+      .from(user)
+      .where(eq(user.email, cleanEmail))
+      .limit(1);
+
+    if (!targetUser) {
+      const newUserId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const userName = name && typeof name === "string" && name.trim() ? name.trim() : cleanEmail.split("@")[0];
+
+      const [createdUser] = await db
+        .insert(user)
+        .values({
+          id: newUserId,
+          name: userName,
+          email: cleanEmail,
+          emailVerified: true,
+          role: "USER",
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+
+      targetUser = createdUser;
+    }
+
+    // Check if membership already exists for this hospital
+    const [existingMembership] = await db
+      .select()
+      .from(hospitalMemberships)
+      .where(
+        and(
+          eq(hospitalMemberships.hospitalId, hospitalId),
+          eq(hospitalMemberships.userId, targetUser.id)
+        )
+      )
+      .limit(1);
+
+    let finalMembership;
+
+    if (existingMembership) {
+      // Update role & activate
+      const [updated] = await db
+        .update(hospitalMemberships)
+        .set({
+          role: assignedRole,
+          status: "ACTIVE",
+          updatedAt: now,
+        })
+        .where(eq(hospitalMemberships.id, existingMembership.id))
+        .returning();
+      finalMembership = updated;
+    } else {
+      const membId = `memb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      const [created] = await db
+        .insert(hospitalMemberships)
+        .values({
+          id: membId,
+          hospitalId,
+          userId: targetUser.id,
+          role: assignedRole,
+          status: "ACTIVE",
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+      finalMembership = created;
+    }
+
+    // Record audit log
+    await recordAuditLog({
+      userId: superAdmin!.id,
+      action: "SUPERADMIN_ADD_STAFF",
+      resourceType: "HOSPITAL_MEMBERSHIP",
+      resourceId: finalMembership.id,
+      details: {
+        hospitalId,
+        hospitalName: targetHospital.name,
+        targetEmail: cleanEmail,
+        assignedRole,
+      },
+      req,
+    });
+
+    return NextResponse.json({
+      success: true,
+      membership: finalMembership,
+      user: {
+        id: targetUser.id,
+        name: targetUser.name,
+        email: targetUser.email,
+      },
+    });
+  } catch (error: any) {
+    console.error("SuperAdmin staff POST failed:", error);
     return NextResponse.json(
       { error: "Internal Server Error", message: error.message },
       { status: 500 }

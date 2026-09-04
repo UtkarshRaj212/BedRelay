@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { formatDate } from "@/lib/format-date";
 
 const INDIAN_CITIES = [
   { city: "New Delhi", state: "Delhi", lat: 28.5921, lng: 77.0460 },
@@ -634,8 +635,8 @@ function HospitalSetupContent() {
                       <span className="text-slate-500 dark:text-[#888] block text-[11px]">Assigned Role:</span>
                       <span className={`inline-block px-2 py-0.5 rounded-xs font-bold text-[11px] mt-0.5 ${
                         previewData.invitation.role === "HOSPITAL_ADMIN"
-                          ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                          : "bg-slate-200 text-slate-800 dark:bg-[#252525] dark:text-slate-200"
+                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/80 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50"
+                          : "bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50"
                       }`}>
                         {previewData.invitation.role}
                       </span>
@@ -643,11 +644,7 @@ function HospitalSetupContent() {
                     <div>
                       <span className="text-slate-500 dark:text-[#888] block text-[11px]">Expires At:</span>
                       <span className="text-slate-800 dark:text-[#ccc]">
-                        {new Date(previewData.invitation.expiresAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        {formatDate(previewData.invitation.expiresAt)}
                       </span>
                     </div>
                   </div>

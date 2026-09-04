@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { INDIAN_CITIES } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { formatDate } from "@/lib/format-date";
 
 interface BedCategory {
   id: string;
@@ -288,7 +289,8 @@ export default function DispatcherDashboardPage() {
                         </span>
                       </td>
                       <td className="py-4 px-6 font-mono text-xs text-right text-slate-500 dark:text-[#737373]">
-                        {new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <div>{formatDate(disp.createdAt)}</div>
+                        <div className="text-[10px] text-slate-400">{new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                       </td>
                     </tr>
                   ))
@@ -364,7 +366,12 @@ export default function DispatcherDashboardPage() {
                           </div>
                         </div>
                         <div className="text-[10px] font-mono text-slate-400 dark:text-[#666] text-right">
-                          {icuBed ? new Date(icuBed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}
+                          {icuBed ? (
+                            <>
+                              <div>{formatDate(icuBed.lastUpdated)}</div>
+                              <div>{new Date(icuBed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            </>
+                          ) : "—"}
                         </div>
                       </div>
 
@@ -376,7 +383,12 @@ export default function DispatcherDashboardPage() {
                           </div>
                         </div>
                         <div className="text-[10px] font-mono text-slate-400 dark:text-[#666] text-right">
-                          {genBed ? new Date(genBed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}
+                          {genBed ? (
+                            <>
+                              <div>{formatDate(genBed.lastUpdated)}</div>
+                              <div>{new Date(genBed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            </>
+                          ) : "—"}
                         </div>
                       </div>
 
@@ -388,7 +400,12 @@ export default function DispatcherDashboardPage() {
                           </div>
                         </div>
                         <div className="text-[10px] font-mono text-slate-400 dark:text-[#666] text-right">
-                          {ventBed ? new Date(ventBed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "—"}
+                          {ventBed ? (
+                            <>
+                              <div>{formatDate(ventBed.lastUpdated)}</div>
+                              <div>{new Date(ventBed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                            </>
+                          ) : "—"}
                         </div>
                       </div>
                     </div>

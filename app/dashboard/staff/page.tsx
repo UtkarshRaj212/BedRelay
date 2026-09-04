@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { formatDate, formatDateTime } from "@/lib/format-date";
 
 interface StaffMember {
   membershipId: string;
@@ -465,8 +466,8 @@ export default function StaffManagementPage() {
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-xs font-mono text-[11px] font-bold ${
                           member.role === "HOSPITAL_ADMIN"
-                            ? "bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50"
-                            : "bg-slate-100 dark:bg-[#1a1a1a] text-slate-800 dark:text-[#ccc] border border-slate-200 dark:border-[#333]"
+                            ? "bg-yellow-100 dark:bg-yellow-950/80 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50"
+                            : "bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50"
                         }`}
                       >
                         {member.role}
@@ -479,11 +480,7 @@ export default function StaffManagementPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-6 text-right font-mono text-slate-500 dark:text-[#777]">
-                      {new Date(member.joinedAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
+                      {formatDate(member.joinedAt)}
                     </td>
                   </tr>
                 ))}
@@ -546,21 +543,15 @@ export default function StaffManagementPage() {
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-xs font-mono text-[11px] font-bold ${
                             inv.role === "HOSPITAL_ADMIN"
-                              ? "bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300"
-                              : "bg-slate-100 dark:bg-[#1a1a1a] text-slate-800 dark:text-[#ccc]"
+                              ? "bg-yellow-100 dark:bg-yellow-950/80 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50"
+                              : "bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50"
                           }`}
                         >
                           {inv.role}
                         </span>
                       </td>
                       <td className="py-3.5 px-6 font-mono text-slate-500 dark:text-[#777]">
-                        {new Date(inv.expiresAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatDateTime(inv.expiresAt)}
                       </td>
                       <td className="py-3.5 px-6 text-right">
                         <button

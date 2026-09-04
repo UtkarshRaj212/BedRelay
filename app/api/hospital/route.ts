@@ -57,6 +57,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Onboarding required before updating beds" }, { status: 403 });
     }
 
+    if (hospital.status === "DEACTIVATED") {
+      return NextResponse.json(
+        { error: "Action Forbidden: This hospital facility has been deactivated by National SuperAdmin." },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const { categoryId, availableBeds, totalBeds } = body;
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
+import { formatDateTime } from "@/lib/format-date";
 
 interface DispatchDetails {
   id: string;
@@ -189,7 +190,7 @@ export default function DispatchRequestDetailsPage({
               <span className="text-xs font-mono text-slate-500 uppercase">REQUEST ID: {dispatch.id}</span>
               <span className="text-slate-300">|</span>
               <span className="text-xs font-mono text-slate-500">
-                TRANSMITTED: {new Date(dispatch.createdAt).toLocaleString()}
+                TRANSMITTED: {formatDateTime(dispatch.createdAt, true)}
               </span>
             </div>
             <h1 className="text-2xl font-bold text-slate-900 mt-1">
@@ -330,12 +331,12 @@ export default function DispatchRequestDetailsPage({
             <div className="space-y-2 text-xs font-mono">
               <div className="flex justify-between">
                 <span className="text-slate-500 uppercase">Created Timestamp:</span>
-                <span className="text-slate-900">{new Date(dispatch.createdAt).toLocaleString()}</span>
+                <span className="text-slate-900">{formatDateTime(dispatch.createdAt, true)}</span>
               </div>
 
               <div className="flex justify-between">
                 <span className="text-slate-500 uppercase">Last Status Update:</span>
-                <span className="text-slate-900">{new Date(dispatch.updatedAt).toLocaleString()}</span>
+                <span className="text-slate-900">{formatDateTime(dispatch.updatedAt, true)}</span>
               </div>
 
               <div className="pt-4 border-t border-slate-200 flex items-center justify-between">

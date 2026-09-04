@@ -42,6 +42,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (targetHospital.status !== "ACTIVE") {
+      return NextResponse.json(
+        { error: "Selected hospital facility is currently inactive or deactivated by EMS administration." },
+        { status: 400 }
+      );
+    }
+
     // Verify bed availability in real database
     const [targetCategory] = await db
       .select()

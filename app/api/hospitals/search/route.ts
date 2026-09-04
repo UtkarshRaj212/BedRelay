@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { hospitals, bedCategories, dispatchRequests } from "@/db/schema";
 import { calculateDistanceKm, INDIAN_CITIES } from "@/lib/geo";
 import { seedIndianHospitals } from "@/lib/seed-service";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 // Maximum radius (km) for a hospital to be considered "local" to the selected city
 const LOCAL_DISPATCH_RADIUS_KM = 50;
@@ -19,7 +19,11 @@ export async function GET(req: NextRequest) {
     const userLng = searchParams.get("lng") ? parseFloat(searchParams.get("lng")!) : null;
     const cityParam = searchParams.get("city");
 
-    const allHospitals = await db.select().from(hospitals);
+    // Only ACTIVE hospitals are surfaced for EMS dispatch availability
+    const allHospitals = await db
+      .select()
+      .from(hospitals)
+      .where(eq(hospitals.status, "ACTIVE"));
     const allBeds = await db.select().from(bedCategories);
 
     const activeDispatches = await db

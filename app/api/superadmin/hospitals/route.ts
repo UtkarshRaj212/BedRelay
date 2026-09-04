@@ -250,3 +250,60 @@ export async function PATCH(req: NextRequest) {
     );
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { errorResponse, user: superAdmin } = await assertSuperAdmin(req);
+    if (errorResponse) return errorResponse;
+
+    const body = await req.json().catch(() => ({}));
+    const { searchParams } = new URL(req.url);
+    const hospitalId = body.hospitalId || searchParams.get("hospitalId");
+
+    if (!hospitalId) {
+      return NextResponse.json({ error: "hospitalId is required" }, { status: 400 });
+    }
+
+    const [existingHospital] = await db
+      .select()
+      .from(hospitals)
+      .where(eq(hospitals.id, hospitalId))
+      .limit(1);
+
+    if (!existingHospital) {
+      return NextResponse.json({ error: "Hospital not found" }, { status: 404 });
+    }
+
+    // Delete hospital (foreign keys cascade-delete bed_categories, dispatch_requests, hospital_memberships, hospital_invitations)
+    await db.delete(hospitals).where(eq(hospitals.id, hospitalId));
+
+    // Record audit log
+    await recordAuditLog({
+      userId: superAdmin!.id,
+      action: "DELETE_HOSPITAL",
+      resourceType: "HOSPITAL",
+      resourceId: hospitalId,
+      details: {
+        deletedHospital: {
+          id: existingHospital.id,
+          name: existingHospital.name,
+          city: existingHospital.city,
+          state: existingHospital.state,
+        },
+      },
+      req,
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Hospital '${existingHospital.name}' and all associated telemetry removed successfully.`,
+    });
+  } catch (error: any) {
+    console.error("SuperAdmin hospitals DELETE failed:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error", message: error.message },
+      { status: 500 }
+    );
+  }
+}
+

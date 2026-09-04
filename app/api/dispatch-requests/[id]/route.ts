@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { dispatchRequests, hospitals, bedCategories } from "@/db/schema";
+import { dispatchRequests, hospitals, bedCategories, hospitalMemberships, user } from "@/db/schema";
 import { calculateDistanceKm } from "@/lib/geo";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
+import { auth } from "@/lib/auth";
 
 export async function GET(
   req: NextRequest,
@@ -71,6 +72,16 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
+
+    // Verify session
+    const session = await auth.api.getSession({ headers: req.headers });
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Active staff or SuperAdmin session required to modify dispatch state." },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { status } = body;
 
@@ -100,6 +111,36 @@ export async function PATCH(
         { error: "Dispatch request not found" },
         { status: 404 }
       );
+    }
+
+    // Check authorization: SUPER_ADMIN or staff member of existingDispatch.hospitalId
+    const [dbUser] = await db
+      .select()
+      .from(user)
+      .where(eq(user.id, session.user.id))
+      .limit(1);
+
+    const isSuperAdmin = dbUser?.role === "SUPER_ADMIN";
+
+    if (!isSuperAdmin) {
+      const [membership] = await db
+        .select()
+        .from(hospitalMemberships)
+        .where(
+          and(
+            eq(hospitalMemberships.userId, session.user.id),
+            eq(hospitalMemberships.hospitalId, existingDispatch.hospitalId),
+            eq(hospitalMemberships.status, "ACTIVE")
+          )
+        )
+        .limit(1);
+
+      if (!membership) {
+        return NextResponse.json(
+          { error: "Forbidden: You are not authorized to manage dispatches for this hospital." },
+          { status: 403 }
+        );
+      }
     }
 
     const now = new Date();

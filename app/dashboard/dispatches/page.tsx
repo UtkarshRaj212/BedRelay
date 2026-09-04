@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { formatDate } from "@/lib/format-date";
 
 interface DispatchRequest {
   id: string;
@@ -362,7 +363,8 @@ export default function HospitalDispatchesPage() {
                         <td className="py-4 px-6 text-slate-800 dark:text-[#a1a1a1] font-medium max-w-xs">{disp.patientCondition}</td>
                         <td className="py-4 px-6 font-mono text-center font-bold text-slate-900 dark:text-[#ededed]">{disp.etaMinutes}m</td>
                         <td className="py-4 px-6 font-mono text-xs text-slate-500 dark:text-[#737373]">
-                          {new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          <div>{formatDate(disp.createdAt)}</div>
+                          <div className="text-[10px] text-slate-400">{new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                         </td>
                         <td className="py-4 px-6 text-center font-mono text-xs font-bold">
                           <span
