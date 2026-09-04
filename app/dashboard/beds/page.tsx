@@ -339,14 +339,40 @@ export default function BedManagementPage() {
                 <input
                   type="number"
                   min="0"
-                  max={editTotal}
                   value={editAvailable}
-                  onChange={(e) => setEditAvailable(Number(e.target.value))}
+                  onFocus={(e) => {
+                    const val = Number(e.target.value);
+                    if (!isNaN(val) && val >= 0) prevEditAvailableRef.current = val;
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setEditAvailable("");
+                      return;
+                    }
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) {
+                      setEditAvailable(val);
+                      if (parsed >= 0) prevEditAvailableRef.current = parsed;
+                    }
+                  }}
+                  onBlur={() => {
+                    if (editAvailable === "" || isNaN(Number(editAvailable)) || Number(editAvailable) < 0) {
+                      setEditAvailable(prevEditAvailableRef.current ?? 0);
+                    } else {
+                      const parsed = Number(editAvailable);
+                      setEditAvailable(parsed);
+                      prevEditAvailableRef.current = parsed;
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                  }}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#0a0a0a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none focus:border-slate-900 dark:focus:border-white rounded-sm"
                   required
                 />
                 <span className="text-[11px] text-slate-500 dark:text-[#737373] font-mono block mt-1">
-                  Must be between 0 and total capacity ({editTotal})
+                  Must be between 0 and total capacity ({typeof editTotal === "number" ? editTotal : (parseInt(editTotal, 10) || 0)})
                 </span>
               </div>
 
@@ -358,14 +384,41 @@ export default function BedManagementPage() {
                   type="number"
                   min="0"
                   value={editTotal}
-                  onChange={(e) => setEditTotal(Number(e.target.value))}
+                  onFocus={(e) => {
+                    const val = Number(e.target.value);
+                    if (!isNaN(val) && val >= 0) prevEditTotalRef.current = val;
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setEditTotal("");
+                      return;
+                    }
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) {
+                      setEditTotal(val);
+                      if (parsed >= 0) prevEditTotalRef.current = parsed;
+                    }
+                  }}
+                  onBlur={() => {
+                    if (editTotal === "" || isNaN(Number(editTotal)) || Number(editTotal) < 0) {
+                      setEditTotal(prevEditTotalRef.current ?? 0);
+                    } else {
+                      const parsed = Number(editTotal);
+                      setEditTotal(parsed);
+                      prevEditTotalRef.current = parsed;
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") e.currentTarget.blur();
+                  }}
                   className="w-full px-3 py-2 border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#0a0a0a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none focus:border-slate-900 dark:focus:border-white rounded-sm"
                   required
                 />
               </div>
 
               <div className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] text-xs font-mono text-slate-700 dark:text-[#a1a1a1]">
-                Calculated Occupied Beds: <span className="font-bold text-slate-900 dark:text-[#ededed]">{Math.max(0, editTotal - editAvailable)}</span>
+                Calculated Occupied Beds: <span className="font-bold text-slate-900 dark:text-[#ededed]">{Math.max(0, (typeof editTotal === "number" ? editTotal : (parseInt(editTotal, 10) || 0)) - (typeof editAvailable === "number" ? editAvailable : (parseInt(editAvailable, 10) || 0)))}</span>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-[#222222]">
