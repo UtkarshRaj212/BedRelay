@@ -57,8 +57,13 @@ export default function DashboardPage() {
       const res = await fetch("/api/hospital");
       if (res.ok) {
         const data = await res.json();
+        if (data.needsOnboarding) {
+          window.location.href = "/hospital-setup";
+          return;
+        }
         setHospitalData(data);
       }
+
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
     } finally {
@@ -294,7 +299,14 @@ export default function DashboardPage() {
               >
                 DISPATCH REQUESTS
               </Link>
+              <Link
+                href="/dashboard/staff"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+              >
+                STAFF MANAGEMENT
+              </Link>
             </nav>
+
 
             <button
               onClick={fetchTelemetry}

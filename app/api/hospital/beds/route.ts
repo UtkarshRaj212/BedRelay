@@ -7,7 +7,8 @@ import { eq, and } from "drizzle-orm";
 export async function GET(req: NextRequest) {
   try {
     const { errorResponse, hospital } = await getAuthenticatedHospital(req);
-    if (errorResponse || !hospital) return errorResponse!;
+    if (errorResponse) return errorResponse;
+    if (!hospital) return NextResponse.json({ error: "Hospital onboarding required" }, { status: 403 });
 
     // Fetch beds scoped ONLY to the authenticated hospital
     const beds = await db
@@ -28,7 +29,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { errorResponse, hospital } = await getAuthenticatedHospital(req);
-    if (errorResponse || !hospital) return errorResponse!;
+    if (errorResponse) return errorResponse;
+    if (!hospital) return NextResponse.json({ error: "Hospital onboarding required" }, { status: 403 });
+
 
     const body = await req.json();
     const { categoryId, availableBeds, totalBeds } = body;

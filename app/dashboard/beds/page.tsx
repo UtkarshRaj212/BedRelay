@@ -270,7 +270,14 @@ export default function BedManagementPage() {
               >
                 DISPATCH REQUESTS
               </Link>
+              <Link
+                href="/dashboard/staff"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+              >
+                STAFF MANAGEMENT
+              </Link>
             </nav>
+
           </div>
         </div>
       </header>

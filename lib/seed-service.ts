@@ -1,34 +1,41 @@
 import { db } from "@/db";
-import { hospitals, bedCategories, dispatchRequests, user } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { hospitals, bedCategories, dispatchRequests, user, hospitalMemberships, hospitalInvitations } from "@/db/schema";
+import { eq, inArray } from "drizzle-orm";
 
 export async function seedIndianHospitals(forceReset = false) {
   try {
     const existingHospitals = await db.select().from(hospitals);
     const existingBeds = await db.select().from(bedCategories);
+    const existingMemberships = await db.select().from(hospitalMemberships);
 
-    // Quick check: if we already have the expanded dataset, skip
+    // Quick check: if we already have the expanded dataset AND memberships, skip
     const hasExpanded = existingHospitals.some((h) => h.id === "hosp_fortis_kolkata");
     const hasSufficientBeds = existingBeds.length >= 60;
+    const hasStaff = existingMemberships.length >= 10;
 
-    if (!forceReset && hasExpanded && hasSufficientBeds) {
-      return { success: true, message: "Database already contains complete hospital telemetry data.", seeded: false };
+    if (!forceReset && hasExpanded && hasSufficientBeds && hasStaff) {
+      return { success: true, message: "Database already contains complete hospital telemetry & staff data.", seeded: false };
     }
+
 
     if (forceReset) {
-      await db.delete(dispatchRequests);
-      await db.delete(bedCategories);
-      // Only delete seed hospitals, not user-created ones
+      // Only delete seed hospitals, beds, and dispatches - NEVER touch user-created hospitals
       const seedHospitals = existingHospitals.filter((h) => h.userId === "user_seed_admin_101");
-      for (const h of seedHospitals) {
-        await db.delete(hospitals).where(eq(hospitals.id, h.id));
+      const seedHospitalIds = seedHospitals.map((h) => h.id);
+      if (seedHospitalIds.length > 0) {
+        await db.delete(dispatchRequests).where(inArray(dispatchRequests.hospitalId, seedHospitalIds));
+        await db.delete(bedCategories).where(inArray(bedCategories.hospitalId, seedHospitalIds));
+        for (const h of seedHospitals) {
+          await db.delete(hospitals).where(eq(hospitals.id, h.id));
+        }
       }
     }
+
 
     const now = new Date();
     const seedUserId = "user_seed_admin_101";
 
-    // Ensure seed admin user exists
+    // Ensure seed admin user exists with SUPER_ADMIN role
     const [existingUser] = await db.select().from(user).where(eq(user.id, seedUserId)).limit(1);
     if (!existingUser) {
       await db.insert(user).values({
@@ -36,9 +43,29 @@ export async function seedIndianHospitals(forceReset = false) {
         name: "Indian Emergency Health Network",
         email: "admin@bedrelay.health.gov.in",
         emailVerified: true,
+        role: "SUPER_ADMIN",
         createdAt: now,
         updatedAt: now,
       }).onConflictDoNothing();
+    } else if (existingUser.role !== "SUPER_ADMIN") {
+      await db.update(user).set({ role: "SUPER_ADMIN", updatedAt: now }).where(eq(user.id, seedUserId));
+    }
+
+    // Ensure dedicated National Health Authority SuperAdmin user exists
+    const superAdminUserId = "user_national_superadmin";
+    const [existingSuperAdmin] = await db.select().from(user).where(eq(user.id, superAdminUserId)).limit(1);
+    if (!existingSuperAdmin) {
+      await db.insert(user).values({
+        id: superAdminUserId,
+        name: "National Health Authority SuperAdmin",
+        email: "superadmin@bedrelay.gov.in",
+        emailVerified: true,
+        role: "SUPER_ADMIN",
+        createdAt: now,
+        updatedAt: now,
+      }).onConflictDoNothing();
+    } else if (existingSuperAdmin.role !== "SUPER_ADMIN") {
+      await db.update(user).set({ role: "SUPER_ADMIN", updatedAt: now }).where(eq(user.id, superAdminUserId));
     }
 
     // =============================================
@@ -730,13 +757,313 @@ export async function seedIndianHospitals(forceReset = false) {
       }
     }
 
+    // =============================================
+    // DEMO STAFF USERS & HOSPITAL MEMBERSHIPS
+    // =============================================
+    const demoStaffUsers = [
+      // AIIMS Delhi / User Hospital Staff
+      { id: "usr_aiims_gupta", name: "Dr. Arvind Gupta, HOD Emergency", email: "dr.gupta@aiims.delhi.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_aiims_tandon", name: "Dr. Sanjeev Tandon, Sr. Consultant Trauma", email: "dr.tandon@aiims.delhi.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_aiims_meera", name: "Meera Nair, BSN (Charge Nurse)", email: "meera.nair@aiims.delhi.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_aiims_khatri", name: "Ramesh Khatri, Paramedic Specialist", email: "ramesh.khatri@aiims.delhi.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_aiims_pooja", name: "Pooja Sharma, ICU Nursing Lead", email: "pooja.sharma@aiims.delhi.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Apollo Chennai Staff
+      { id: "usr_apollo_sharma", name: "Dr. Rajesh Sharma, MD", email: "dr.sharma@apollo.chennai.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_apollo_priya", name: "Priya Venkataraman, RN", email: "priya.v@apollo.chennai.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_apollo_sundaram", name: "Dr. K. Sundaram, Cardiologist", email: "k.sundaram@apollo.chennai.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // KEM Mumbai Staff
+      { id: "usr_kem_kulkarni", name: "Dr. Sunita Kulkarni, MS", email: "dr.kulkarni@kem.mumbai.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_kem_rahul", name: "Rahul Deshmukh, EMT-P", email: "rahul.deshmukh@kem.mumbai.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_kem_vaishali", name: "Dr. Vaishali Joshi, Critical Care", email: "dr.joshi@kem.mumbai.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Max Saket Delhi
+      { id: "usr_max_kapoor", name: "Dr. Alok Kapoor, Director EMS", email: "alok.kapoor@maxhealthcare.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_max_ananya", name: "Ananya Roy, Nurse Supervisor", email: "ananya.roy@maxhealthcare.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Safdarjung Delhi
+      { id: "usr_safdar_singh", name: "Dr. H.S. Balhara, HOD Burn ICU", email: "dr.balhara@safdarjung.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_safdar_neha", name: "Neha Verma, Senior Nursing Officer", email: "neha.verma@safdarjung.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Fortis Bengaluru
+      { id: "usr_fortis_rao", name: "Dr. Mohan Rao, Trauma Director", email: "mohan.rao@fortishealthcare.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_fortis_deepa", name: "Deepa Menon, RN Triage", email: "deepa.menon@fortishealthcare.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Manipal Bengaluru
+      { id: "usr_manipal_hegde", name: "Dr. Sudhir Hegde, Chief Medical Officer", email: "sudhir.hegde@manipalhospitals.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_manipal_kavitha", name: "Kavitha Nair, Emergency Dispatcher", email: "kavitha.nair@manipalhospitals.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // NIMHANS Bengaluru
+      { id: "usr_nimhans_prasad", name: "Dr. B.N. Gangadhar, Neuro Emergency", email: "bn.gangadhar@nimhans.ac.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_nimhans_arjun", name: "Arjun Gowda, Critical Care Paramedic", email: "arjun.gowda@nimhans.ac.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // KIMS Hyderabad
+      { id: "usr_kims_reddy", name: "Dr. B. Bhaskar Rao, Chief of Surgery", email: "bhaskar.rao@kims.co.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_kims_swathi", name: "Swathi Reddy, Clinical Coordinator", email: "swathi.reddy@kims.co.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Yashoda Hyderabad
+      { id: "usr_yashoda_rao", name: "Dr. G. Ravender Rao, MD", email: "ravender.rao@yashodahospitals.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_yashoda_kiran", name: "Kiran Kumar, EMS Specialist", email: "kiran.kumar@yashodahospitals.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Osmania Hyderabad
+      { id: "usr_osmania_shafiq", name: "Dr. Mohammed Shafiq, Superintendent", email: "dr.shafiq@osmania.telangana.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_osmania_fatima", name: "Fatima Begum, Senior Nurse", email: "fatima.begum@osmania.telangana.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Fortis Kolkata
+      { id: "usr_fortis_kol_das", name: "Dr. Subrata Das, Intensive Care Head", email: "subrata.das@fortishealthcare.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_fortis_kol_tanusree", name: "Tanusree Bose, Triage Lead", email: "tanusree.bose@fortishealthcare.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // AMRI Kolkata
+      { id: "usr_amri_sen", name: "Dr. Rupak Sen, Medical Superintendent", email: "rupak.sen@amrihospitals.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_amri_deb", name: "Debashis Banerjee, Emergency Paramedic", email: "deb.banerjee@amrihospitals.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // SSKM Kolkata
+      { id: "usr_sskm_mukherjee", name: "Dr. Manimoy Bandyopadhyay, Director", email: "director@sskm.wb.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_sskm_ruma", name: "Ruma Chatterjee, Nursing Superintendent", email: "ruma.chatterjee@sskm.wb.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Ruby Hall Pune
+      { id: "usr_ruby_grant", name: "Dr. P.K. Grant, Managing Trustee", email: "pk.grant@rubyhall.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_ruby_sonali", name: "Sonali Patil, ICU Shift Lead", email: "sonali.patil@rubyhall.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Jehangir Pune
+      { id: "usr_jehangir_patel", name: "Dr. Jehangir Patel, Medical Director", email: "director@jehangirhospital.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_jehangir_vikas", name: "Vikas Shinde, Emergency Coordinator", email: "vikas.shinde@jehangirhospital.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Zydus Ahmedabad
+      { id: "usr_zydus_patel", name: "Dr. Pankaj Patel, Chairman", email: "pankaj.patel@zydushospitals.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_zydus_hetal", name: "Hetal Shah, Lead Critical Care Nurse", email: "hetal.shah@zydushospitals.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Civil Hospital Ahmedabad
+      { id: "usr_civil_prabhakar", name: "Dr. M.M. Prabhakar, Medical Superintendent", email: "superintendent@civilhosp.gujarat.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_civil_bhavna", name: "Bhavna Barot, Senior Nursing Staff", email: "bhavna.barot@civilhosp.gujarat.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // MIOT Chennai
+      { id: "usr_miot_mohandas", name: "Dr. PVA Mohandas, Founder & Managing Director", email: "dr.mohandas@miotinternational.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_miot_saravanan", name: "Saravanan R., Head of Emergency Nursing", email: "saravanan.r@miotinternational.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Stanley Chennai
+      { id: "usr_stanley_balaji", name: "Dr. P. Balaji, Dean", email: "dean@stanley.tn.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_stanley_revathi", name: "Revathi S., Emergency Dispatch Nurse", email: "revathi.s@stanley.tn.gov.in", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Lilavati Mumbai
+      { id: "usr_lilavati_mehta", name: "Dr. Narendra Mehta, Medical VP", email: "dr.mehta@lilavatihospital.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_lilavati_pooja", name: "Pooja Sawant, Critical Care Nurse", email: "pooja.sawant@lilavatihospital.com", emailVerified: true, createdAt: now, updatedAt: now },
+
+      // Apollo Mumbai
+      { id: "usr_apollo_mum_sharma", name: "Dr. Sanjeev Jadhav, HOD CVTS & Critical Care", email: "sanjeev.j@apollomumbai.com", emailVerified: true, createdAt: now, updatedAt: now },
+      { id: "usr_apollo_mum_riya", name: "Riya Fernandes, Triage Officer", email: "riya.f@apollomumbai.com", emailVerified: true, createdAt: now, updatedAt: now },
+    ];
+
+    for (const u of demoStaffUsers) {
+      const [existing] = await db.select().from(user).where(eq(user.id, u.id)).limit(1);
+      if (!existing) {
+        await db.insert(user).values(u);
+      }
+    }
+
+    // Default admin memberships for all seed hospitals linked to seedUserId
+    for (const hosp of indianHospitalsList) {
+      const [existing] = await db
+        .select()
+        .from(hospitalMemberships)
+        .where(eq(hospitalMemberships.hospitalId, hosp.id))
+        .limit(1);
+      if (!existing) {
+        await db.insert(hospitalMemberships).values({
+          id: `memb_seed_${hosp.id}`,
+          hospitalId: hosp.id,
+          userId: seedUserId,
+          role: "HOSPITAL_ADMIN",
+          status: "ACTIVE",
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    }
+
+    // Specific demo staff memberships for all hospitals
+    const specificStaffMemberships = [
+      // Apollo Chennai
+      { id: "memb_usr_apollo_sharma_hosp_apollo_chennai", hospitalId: "hosp_apollo_chennai", userId: "usr_apollo_sharma", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_apollo_priya_hosp_apollo_chennai", hospitalId: "hosp_apollo_chennai", userId: "usr_apollo_priya", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_apollo_sundaram_hosp_apollo_chennai", hospitalId: "hosp_apollo_chennai", userId: "usr_apollo_sundaram", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // KEM Mumbai
+      { id: "memb_usr_kem_kulkarni_hosp_kem_mumbai", hospitalId: "hosp_kem_mumbai", userId: "usr_kem_kulkarni", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_kem_rahul_hosp_kem_mumbai", hospitalId: "hosp_kem_mumbai", userId: "usr_kem_rahul", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_kem_vaishali_hosp_kem_mumbai", hospitalId: "hosp_kem_mumbai", userId: "usr_kem_vaishali", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Max Delhi
+      { id: "memb_usr_max_kapoor_hosp_max_delhi", hospitalId: "hosp_max_delhi", userId: "usr_max_kapoor", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_max_ananya_hosp_max_delhi", hospitalId: "hosp_max_delhi", userId: "usr_max_ananya", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Safdarjung Delhi
+      { id: "memb_usr_safdar_singh_hosp_safdarjung_delhi", hospitalId: "hosp_safdarjung_delhi", userId: "usr_safdar_singh", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_safdar_neha_hosp_safdarjung_delhi", hospitalId: "hosp_safdarjung_delhi", userId: "usr_safdar_neha", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Fortis Bengaluru
+      { id: "memb_usr_fortis_rao_hosp_fortis_bengaluru", hospitalId: "hosp_fortis_bengaluru", userId: "usr_fortis_rao", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_fortis_deepa_hosp_fortis_bengaluru", hospitalId: "hosp_fortis_bengaluru", userId: "usr_fortis_deepa", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Manipal Bengaluru
+      { id: "memb_usr_manipal_hegde_hosp_manipal_bengaluru", hospitalId: "hosp_manipal_bengaluru", userId: "usr_manipal_hegde", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_manipal_kavitha_hosp_manipal_bengaluru", hospitalId: "hosp_manipal_bengaluru", userId: "usr_manipal_kavitha", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // NIMHANS Bengaluru
+      { id: "memb_usr_nimhans_prasad_hosp_nimhans_bengaluru", hospitalId: "hosp_nimhans_bengaluru", userId: "usr_nimhans_prasad", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_nimhans_arjun_hosp_nimhans_bengaluru", hospitalId: "hosp_nimhans_bengaluru", userId: "usr_nimhans_arjun", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // KIMS Hyderabad
+      { id: "memb_usr_kims_reddy_hosp_kims_hyderabad", hospitalId: "hosp_kims_hyderabad", userId: "usr_kims_reddy", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_kims_swathi_hosp_kims_hyderabad", hospitalId: "hosp_kims_hyderabad", userId: "usr_kims_swathi", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Yashoda Hyderabad
+      { id: "memb_usr_yashoda_rao_hosp_yashoda_hyderabad", hospitalId: "hosp_yashoda_hyderabad", userId: "usr_yashoda_rao", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_yashoda_kiran_hosp_yashoda_hyderabad", hospitalId: "hosp_yashoda_hyderabad", userId: "usr_yashoda_kiran", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Osmania Hyderabad
+      { id: "memb_usr_osmania_shafiq_hosp_osmania_hyderabad", hospitalId: "hosp_osmania_hyderabad", userId: "usr_osmania_shafiq", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_osmania_fatima_hosp_osmania_hyderabad", hospitalId: "hosp_osmania_hyderabad", userId: "usr_osmania_fatima", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Fortis Kolkata
+      { id: "memb_usr_fortis_kol_das_hosp_fortis_kolkata", hospitalId: "hosp_fortis_kolkata", userId: "usr_fortis_kol_das", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_fortis_kol_tanusree_hosp_fortis_kolkata", hospitalId: "hosp_fortis_kolkata", userId: "usr_fortis_kol_tanusree", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // AMRI Kolkata
+      { id: "memb_usr_amri_sen_hosp_amri_kolkata", hospitalId: "hosp_amri_kolkata", userId: "usr_amri_sen", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_amri_deb_hosp_amri_kolkata", hospitalId: "hosp_amri_kolkata", userId: "usr_amri_deb", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // SSKM Kolkata
+      { id: "memb_usr_sskm_mukherjee_hosp_sskm_kolkata", hospitalId: "hosp_sskm_kolkata", userId: "usr_sskm_mukherjee", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_sskm_ruma_hosp_sskm_kolkata", hospitalId: "hosp_sskm_kolkata", userId: "usr_sskm_ruma", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Ruby Hall Pune
+      { id: "memb_usr_ruby_grant_hosp_ruby_pune", hospitalId: "hosp_ruby_pune", userId: "usr_ruby_grant", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_ruby_sonali_hosp_ruby_pune", hospitalId: "hosp_ruby_pune", userId: "usr_ruby_sonali", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Jehangir Pune
+      { id: "memb_usr_jehangir_patel_hosp_jehangir_pune", hospitalId: "hosp_jehangir_pune", userId: "usr_jehangir_patel", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_jehangir_vikas_hosp_jehangir_pune", hospitalId: "hosp_jehangir_pune", userId: "usr_jehangir_vikas", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Zydus Ahmedabad
+      { id: "memb_usr_zydus_patel_hosp_zydus_ahmedabad", hospitalId: "hosp_zydus_ahmedabad", userId: "usr_zydus_patel", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_zydus_hetal_hosp_zydus_ahmedabad", hospitalId: "hosp_zydus_ahmedabad", userId: "usr_zydus_hetal", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Civil Hospital Ahmedabad
+      { id: "memb_usr_civil_prabhakar_hosp_civil_ahmedabad", hospitalId: "hosp_civil_ahmedabad", userId: "usr_civil_prabhakar", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_civil_bhavna_hosp_civil_ahmedabad", hospitalId: "hosp_civil_ahmedabad", userId: "usr_civil_bhavna", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // MIOT Chennai
+      { id: "memb_usr_miot_mohandas_hosp_miot_chennai", hospitalId: "hosp_miot_chennai", userId: "usr_miot_mohandas", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_miot_saravanan_hosp_miot_chennai", hospitalId: "hosp_miot_chennai", userId: "usr_miot_saravanan", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Stanley Chennai
+      { id: "memb_usr_stanley_balaji_hosp_stanley_chennai", hospitalId: "hosp_stanley_chennai", userId: "usr_stanley_balaji", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_stanley_revathi_hosp_stanley_chennai", hospitalId: "hosp_stanley_chennai", userId: "usr_stanley_revathi", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Lilavati Mumbai
+      { id: "memb_usr_lilavati_mehta_hosp_lilavati_mumbai", hospitalId: "hosp_lilavati_mumbai", userId: "usr_lilavati_mehta", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_lilavati_pooja_hosp_lilavati_mumbai", hospitalId: "hosp_lilavati_mumbai", userId: "usr_lilavati_pooja", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+
+      // Apollo Mumbai
+      { id: "memb_usr_apollo_mum_sharma_hosp_apollo_mumbai", hospitalId: "hosp_apollo_mumbai", userId: "usr_apollo_mum_sharma", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+      { id: "memb_usr_apollo_mum_riya_hosp_apollo_mumbai", hospitalId: "hosp_apollo_mumbai", userId: "usr_apollo_mum_riya", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+    ];
+
+    // Find any user-created hospitals and also attach AIIMS staff to them if they are AIIMS
+    const userHospitals = existingHospitals.filter((h) => h.userId !== "user_seed_admin_101");
+    for (const uh of userHospitals) {
+      // Add AIIMS staff to user's AIIMS hospital
+      const aiimsStaff = [
+        { id: `memb_usr_aiims_gupta_${uh.id}`, hospitalId: uh.id, userId: "usr_aiims_gupta", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+        { id: `memb_usr_aiims_tandon_${uh.id}`, hospitalId: uh.id, userId: "usr_aiims_tandon", role: "HOSPITAL_ADMIN", status: "ACTIVE", createdAt: now, updatedAt: now },
+        { id: `memb_usr_aiims_meera_${uh.id}`, hospitalId: uh.id, userId: "usr_aiims_meera", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+        { id: `memb_usr_aiims_khatri_${uh.id}`, hospitalId: uh.id, userId: "usr_aiims_khatri", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+        { id: `memb_usr_aiims_pooja_${uh.id}`, hospitalId: uh.id, userId: "usr_aiims_pooja", role: "HOSPITAL_STAFF", status: "ACTIVE", createdAt: now, updatedAt: now },
+      ];
+      specificStaffMemberships.push(...aiimsStaff);
+    }
+
+    for (const memb of specificStaffMemberships) {
+      const [existing] = await db.select().from(hospitalMemberships).where(eq(hospitalMemberships.id, memb.id)).limit(1);
+      if (!existing) {
+        await db.insert(hospitalMemberships).values(memb);
+      }
+    }
+
+
+    // =============================================
+    // DEMO HOSPITAL INVITATIONS (Ready for testing!)
+    // =============================================
+    const seedInvitations = [
+      {
+        id: "inv_apollo_demo_1",
+        hospitalId: "hosp_apollo_chennai",
+        code: "BR-APOLLO7",
+        email: null,
+        role: "HOSPITAL_STAFF",
+        invitedByUserId: "user_dr_sharma",
+        status: "PENDING",
+        expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "inv_apollo_demo_2",
+        hospitalId: "hosp_apollo_chennai",
+        code: "BR-APOLLO9",
+        email: null,
+        role: "HOSPITAL_ADMIN",
+        invitedByUserId: "user_dr_sharma",
+        status: "PENDING",
+        expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "inv_aiims_demo_1",
+        hospitalId: "hosp_aiims_delhi",
+        code: "BR-AIIMS42",
+        email: null,
+        role: "HOSPITAL_STAFF",
+        invitedByUserId: "user_dr_gupta",
+        status: "PENDING",
+        expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: "inv_kem_demo_1",
+        hospitalId: "hosp_kem_mumbai",
+        code: "BR-KEM888",
+        email: null,
+        role: "HOSPITAL_STAFF",
+        invitedByUserId: "user_dr_kulkarni",
+        status: "PENDING",
+        expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+        createdAt: now,
+        updatedAt: now,
+      },
+    ];
+
+    for (const inv of seedInvitations) {
+      const [existing] = await db.select().from(hospitalInvitations).where(eq(hospitalInvitations.id, inv.id)).limit(1);
+      if (!existing) {
+        await db.insert(hospitalInvitations).values(inv);
+      }
+    }
+
     return {
       success: true,
-      message: "Successfully verified and seeded complete Indian hospital dataset for all cities and scenarios.",
+      message: "Successfully verified and seeded complete Indian hospital dataset, staff rosters, and demo invitation codes.",
       seeded: true,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in seedIndianHospitals:", error);
-    return { success: false, message: error.message, seeded: false };
+    const msg = error instanceof Error ? error.message : "Unknown error occurred";
+    return { success: false, message: msg, seeded: false };
   }
 }
+
+

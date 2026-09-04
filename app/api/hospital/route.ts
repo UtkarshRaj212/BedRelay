@@ -6,8 +6,18 @@ import { eq, desc, and } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   try {
-    const { errorResponse, hospital } = await getAuthenticatedHospital(req);
-    if (errorResponse || !hospital) return errorResponse!;
+    const { errorResponse, hospital, membership, needsOnboarding } = await getAuthenticatedHospital(req);
+    if (errorResponse) return errorResponse;
+
+    if (needsOnboarding || !hospital) {
+      return NextResponse.json({
+        needsOnboarding: true,
+        hospital: null,
+        membership: null,
+        beds: [],
+        dispatches: [],
+      });
+    }
 
     // Fetch bed categories scoped to authenticated hospital
     const beds = await db
@@ -25,8 +35,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       hospital,
+      membership,
       beds,
       dispatches,
+      needsOnboarding: false,
     });
   } catch (error: any) {
     console.error("Failed to fetch hospital telemetry:", error);
@@ -39,8 +51,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { errorResponse, hospital } = await getAuthenticatedHospital(req);
-    if (errorResponse || !hospital) return errorResponse!;
+    const { errorResponse, hospital, needsOnboarding } = await getAuthenticatedHospital(req);
+    if (errorResponse) return errorResponse;
+    if (needsOnboarding || !hospital) {
+      return NextResponse.json({ error: "Onboarding required before updating beds" }, { status: 403 });
+    }
 
     const body = await req.json();
     const { categoryId, availableBeds, totalBeds } = body;

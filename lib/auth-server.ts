@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
-import { hospitals, bedCategories, dispatchRequests } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { hospitals, hospitalMemberships, user, auditLogs } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
-export async function getAuthenticatedHospital(req: NextRequest) {
+
+export interface AuthenticatedHospitalContext {
+  errorResponse: NextResponse | null;
+  hospital: typeof hospitals.$inferSelect | null;
+  membership: typeof hospitalMemberships.$inferSelect | null;
+  session: Awaited<ReturnType<typeof auth.api.getSession>> | null;
+  needsOnboarding: boolean;
+}
+
+
+export async function getAuthenticatedHospital(req: NextRequest): Promise<AuthenticatedHospitalContext> {
   const session = await auth.api.getSession({
     headers: req.headers,
   });
@@ -13,100 +23,217 @@ export async function getAuthenticatedHospital(req: NextRequest) {
     return {
       errorResponse: NextResponse.json({ error: "Unauthorized: Session required" }, { status: 401 }),
       hospital: null,
+      membership: null,
       session: null,
+      needsOnboarding: false,
     };
   }
 
   const userId = session.user.id;
 
-  let [hospital] = await db
+  // 1. Look up existing active hospital membership
+  const [activeMembership] = await db
     .select()
-    .from(hospitals)
-    .where(eq(hospitals.userId, userId))
+    .from(hospitalMemberships)
+    .where(and(eq(hospitalMemberships.userId, userId), eq(hospitalMemberships.status, "ACTIVE")))
     .limit(1);
 
-  if (!hospital) {
-    const newHospitalId = `hosp_${Date.now()}`;
-    const now = new Date();
+  let membership = activeMembership || null;
+  let hospital: typeof hospitals.$inferSelect | null = null;
 
-    const [createdHospital] = await db
-      .insert(hospitals)
-      .values({
-        id: newHospitalId,
-        userId: userId,
-        name: "City General Hospital & Emergency Centre",
-        address: "Sector 14, Dwarka",
-        city: "New Delhi",
-        state: "Delhi",
-        phone: "+91 11 2671 0000",
-        latitude: 28.5921,
-        longitude: 77.0460,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .returning();
-
-    hospital = createdHospital;
-
-    // Seed default bed categories for new hospital
-    const initialCategories = [
-      {
-        id: `cat_icu_${Date.now()}`,
-        hospitalId: hospital.id,
-        categoryCode: "ICU",
-        name: "Intensive Care Unit (ICU)",
-        totalBeds: 24,
-        availableBeds: 6,
-        occupiedBeds: 18,
-        lastUpdated: now,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: `cat_gen_${Date.now() + 1}`,
-        hospitalId: hospital.id,
-        categoryCode: "GENERAL",
-        name: "General Ward",
-        totalBeds: 120,
-        availableBeds: 34,
-        occupiedBeds: 86,
-        lastUpdated: now,
-        createdAt: now,
-        updatedAt: now,
-      },
-      {
-        id: `cat_vent_${Date.now() + 2}`,
-        hospitalId: hospital.id,
-        categoryCode: "VENTILATOR",
-        name: "Ventilator & Critical Care",
-        totalBeds: 16,
-        availableBeds: 4,
-        occupiedBeds: 12,
-        lastUpdated: now,
-        createdAt: now,
-        updatedAt: now,
-      },
-    ];
-
-    await db.insert(bedCategories).values(initialCategories);
-
-    // Seed initial sample dispatch request
-    await db.insert(dispatchRequests).values({
-      id: `disp_${Date.now()}`,
-      hospitalId: hospital.id,
-      ambulanceUnit: "108 EMS Unit-301",
-      ambulanceLat: 28.6139,
-      ambulanceLng: 77.2090,
-      patientRef: `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
-      bedCategoryCode: "ICU",
-      requestedBeds: 1,
-      etaMinutes: 12,
-      patientCondition: "Acute Respiratory Distress — Pre-Arrival Alert",
-      status: "PENDING",
-      createdAt: now,
-      updatedAt: now,
-    });
+  if (membership) {
+    const [hosp] = await db
+      .select()
+      .from(hospitals)
+      .where(eq(hospitals.id, membership.hospitalId))
+      .limit(1);
+    hospital = hosp || null;
   }
 
-  return { errorResponse: null, hospital, session };
+  // 2. Backward compatibility fallback: check if user is the creator of a hospital
+  if (!hospital) {
+    const [ownedHospital] = await db
+      .select()
+      .from(hospitals)
+      .where(eq(hospitals.userId, userId))
+      .limit(1);
+
+    if (ownedHospital) {
+      hospital = ownedHospital;
+      const now = new Date();
+      // Ensure owner has HOSPITAL_ADMIN membership
+      const [newMembership] = await db
+        .insert(hospitalMemberships)
+        .values({
+          id: `memb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          hospitalId: ownedHospital.id,
+          userId: userId,
+          role: "HOSPITAL_ADMIN",
+          status: "ACTIVE",
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoNothing()
+        .returning();
+
+      if (newMembership) {
+        membership = newMembership;
+      } else {
+        const [existingMemb] = await db
+          .select()
+          .from(hospitalMemberships)
+          .where(
+            and(
+              eq(hospitalMemberships.hospitalId, ownedHospital.id),
+              eq(hospitalMemberships.userId, userId)
+            )
+          )
+          .limit(1);
+        membership = existingMemb || null;
+      }
+    }
+  }
+
+  // 3. If user has no associated hospital, flag for onboarding
+  if (!hospital || !membership) {
+    return {
+      errorResponse: null,
+      hospital: null,
+      membership: null,
+      session,
+      needsOnboarding: true,
+    };
+  }
+
+  return {
+    errorResponse: null,
+    hospital,
+    membership,
+    session,
+    needsOnboarding: false,
+  };
 }
+
+export function assertHospitalAdmin(membership: { role: string } | null | undefined): NextResponse | null {
+  if (!membership || membership.role !== "HOSPITAL_ADMIN") {
+    return NextResponse.json(
+      { error: "Forbidden: Only Hospital Administrators can perform this action." },
+      { status: 403 }
+    );
+  }
+  return null;
+}
+
+export interface AuthenticatedUserContext {
+  errorResponse: NextResponse | null;
+  session: Awaited<ReturnType<typeof auth.api.getSession>> | null;
+  user: typeof user.$inferSelect | null;
+}
+
+/**
+ * Validates session and fetches the verified user record directly from database.
+ * This guarantees the user's role cannot be spoofed by outdated or tampered client tokens.
+ */
+export async function getAuthenticatedUser(req: NextRequest): Promise<AuthenticatedUserContext> {
+  const session = await auth.api.getSession({
+    headers: req.headers,
+  });
+
+  if (!session || !session.user) {
+    return {
+      errorResponse: NextResponse.json({ error: "Unauthorized: Active session required" }, { status: 401 }),
+      session: null,
+      user: null,
+    };
+  }
+
+  const [dbUser] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, session.user.id))
+    .limit(1);
+
+  if (!dbUser) {
+    return {
+      errorResponse: NextResponse.json({ error: "Unauthorized: User record not found" }, { status: 401 }),
+      session: null,
+      user: null,
+    };
+  }
+
+  return {
+    errorResponse: null,
+    session,
+    user: dbUser,
+  };
+}
+
+/**
+ * Strict server-side verification: Only users with role === 'SUPER_ADMIN' in the database are permitted.
+ */
+export async function assertSuperAdmin(req: NextRequest): Promise<AuthenticatedUserContext> {
+  const authContext = await getAuthenticatedUser(req);
+  if (authContext.errorResponse) {
+    return authContext;
+  }
+
+  if (authContext.user?.role !== "SUPER_ADMIN") {
+    return {
+      errorResponse: NextResponse.json(
+        { error: "Forbidden: SuperAdmin clearance required." },
+        { status: 403 }
+      ),
+      session: authContext.session,
+      user: authContext.user,
+    };
+  }
+
+  return authContext;
+}
+
+export interface AuditLogParams {
+  userId?: string | null;
+  action: string;
+  resourceType: string;
+  resourceId?: string | null;
+  details?: Record<string, any> | string | null;
+  req?: NextRequest | null;
+}
+
+/**
+ * Records an immutable audit log entry in the database.
+ */
+export async function recordAuditLog({
+  userId = null,
+  action,
+  resourceType,
+  resourceId = null,
+  details = null,
+  req = null,
+}: AuditLogParams) {
+  try {
+    let ipAddress: string | null = null;
+    if (req) {
+      ipAddress =
+        req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        req.headers.get("x-real-ip") ||
+        null;
+    }
+
+    const detailsStr = typeof details === "object" ? JSON.stringify(details) : details;
+
+    await db.insert(auditLogs).values({
+      id: `audit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      userId,
+      action,
+      resourceType,
+      resourceId,
+      details: detailsStr,
+      ipAddress,
+      createdAt: new Date(),
+    });
+  } catch (error) {
+    console.error("Failed to write audit log entry:", error);
+  }
+}
+

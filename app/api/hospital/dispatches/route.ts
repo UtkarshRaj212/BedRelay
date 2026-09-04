@@ -7,7 +7,8 @@ import { eq, and, desc } from "drizzle-orm";
 export async function GET(req: NextRequest) {
   try {
     const { errorResponse, hospital } = await getAuthenticatedHospital(req);
-    if (errorResponse || !hospital) return errorResponse!;
+    if (errorResponse) return errorResponse;
+    if (!hospital) return NextResponse.json({ error: "Hospital onboarding required" }, { status: 403 });
 
     // Fetch dispatch requests scoped ONLY to the authenticated hospital
     const dispatches = await db
@@ -29,7 +30,9 @@ export async function GET(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   try {
     const { errorResponse, hospital } = await getAuthenticatedHospital(req);
-    if (errorResponse || !hospital) return errorResponse!;
+    if (errorResponse) return errorResponse;
+    if (!hospital) return NextResponse.json({ error: "Hospital onboarding required" }, { status: 403 });
+
 
     const body = await req.json();
     const { requestId, status } = body;

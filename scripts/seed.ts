@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { seedIndianHospitals } from "../lib/seed-service";
 
 async function main() {
