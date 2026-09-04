@@ -124,42 +124,81 @@ export default function DashboardPage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-mono text-sm text-slate-600">
-        INITIALIZING AUTHENTICATION SESSION...
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col transition-colors duration-150">
+        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-blue-500 inline-block animate-pulse"></span>
+            <span>BEDRELAY TELEMETRY SYSTEM</span>
+          </div>
+          <ThemeToggle />
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center font-mono text-sm p-4">
+          <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md animate-pulse mb-4">
+            BR
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-[#888888]">
+            <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
+            <span>INITIALIZING AUTHENTICATION SESSION...</span>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
-        <header className="bg-white border-b border-slate-200">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
+        {/* Top Status Header */}
+        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-amber-500 inline-block"></span>
+            <span>AUTHENTICATION GATEWAY // RESTRICTED ACCESS</span>
+          </div>
+          <ThemeToggle />
+        </div>
+
+        {/* Header */}
+        <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-slate-900 text-white font-bold flex items-center justify-center text-sm font-mono rounded-sm">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
                 BR
               </div>
-              <span className="font-bold text-lg text-slate-900 font-mono tracking-tight">
-                BED<span className="text-blue-700">RELAY</span>
-              </span>
+              <div className="flex flex-col">
+                <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight">
+                  BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-[#737373] font-mono tracking-widest uppercase mt-0.5">
+                  Hospital Staff Portal
+                </span>
+              </div>
             </Link>
+
+            <div className="flex items-center gap-3">
+              <Link
+                href="/dispatcher"
+                className="text-xs font-mono text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white transition-colors"
+              >
+                DISPATCHER CONSOLE →
+              </Link>
+            </div>
           </div>
         </header>
 
         <main className="max-w-xl mx-auto my-16 px-4">
-          <div className="bg-white p-8 border border-slate-200 rounded-sm">
-            <div className="inline-block px-2 py-0.5 bg-slate-100 border border-slate-300 text-slate-700 font-mono text-xs font-semibold mb-4 rounded-sm">
+          <div className="bg-white dark:bg-[#0a0a0a] p-8 border border-slate-200 dark:border-[#222222] rounded-sm shadow-sm">
+            <div className="inline-block px-2 py-0.5 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] font-mono text-xs font-semibold mb-4 rounded-sm">
               RESTRICTED ACCESS
             </div>
-            <h1 className="text-2xl font-bold text-slate-900">Hospital Staff Portal</h1>
-            <p className="mt-2 text-sm text-slate-600">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-[#ededed]">Hospital Staff Portal</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-[#888888]">
               Please authenticate with your official hospital staff credentials to access the bed availability control console.
             </p>
 
-            <div className="mt-6 pt-6 border-t border-slate-200">
+            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-[#222222]">
               <button
                 onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/dashboard" })}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-sm transition-colors"
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-[#ededed] dark:hover:bg-white text-white dark:text-black font-semibold text-sm rounded-sm transition-colors cursor-pointer"
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path
