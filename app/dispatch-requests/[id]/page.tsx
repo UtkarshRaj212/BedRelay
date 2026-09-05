@@ -165,7 +165,7 @@ export default function DispatchRequestDetailsPage({
             </div>
           </Link>
 
-          <nav className="flex items-center gap-4 font-mono text-xs">
+          <nav className="flex items-center gap-3 font-mono text-xs">
             <Link
               href="/dispatcher"
               className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
@@ -177,6 +177,12 @@ export default function DispatchRequestDetailsPage({
               className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
             >
               FIND HOSPITAL
+            </Link>
+            <Link
+              href="/dispatcher/history"
+              className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
+            >
+              REQUEST HISTORY
             </Link>
           </nav>
         </div>

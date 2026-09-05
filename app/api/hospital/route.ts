@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedHospital } from "@/lib/auth-server";
 import { db } from "@/db";
-import { bedCategories, dispatchRequests } from "@/db/schema";
+import { bedCategories, dispatchRequests, hospitals } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
   try {
@@ -33,13 +36,20 @@ export async function GET(req: NextRequest) {
       .orderBy(desc(dispatchRequests.createdAt))
       .limit(5);
 
-    return NextResponse.json({
-      hospital,
-      membership,
-      beds,
-      dispatches,
-      needsOnboarding: false,
-    });
+    return NextResponse.json(
+      {
+        hospital,
+        membership,
+        beds,
+        dispatches,
+        needsOnboarding: false,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Failed to fetch hospital telemetry:", error);
     return NextResponse.json(
@@ -105,48 +115,66 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verify ownership of the categoryId
-    const [existingCategory] = await db
-      .select()
-      .from(bedCategories)
-      .where(eq(bedCategories.id, categoryId))
-      .limit(1);
-
-    if (!existingCategory) {
-      return NextResponse.json({ error: "Category not found" }, { status: 404 });
-    }
-
-    if (existingCategory.hospitalId !== hospital.id) {
-      return NextResponse.json(
-        { error: "Forbidden: Access denied. Resource does not belong to your hospital." },
-        { status: 403 }
-      );
-    }
-
     const now = new Date();
-    const occupiedBeds = Math.max(0, totalNum - availNum);
 
-    const [updatedCategory] = await db
-      .update(bedCategories)
-      .set({
-        availableBeds: availNum,
-        totalBeds: totalNum,
-        occupiedBeds,
-        lastUpdated: now,
-        updatedAt: now,
-      })
-      .where(and(eq(bedCategories.id, categoryId), eq(bedCategories.hospitalId, hospital.id)))
-      .returning();
+    // Concurrency-safe atomic transaction
+    const updatedCategory = await db.transaction(async (tx) => {
+      const [existingCategory] = await tx
+        .select()
+        .from(bedCategories)
+        .where(eq(bedCategories.id, categoryId))
+        .for("update")
+        .limit(1);
 
-    return NextResponse.json({
-      success: true,
-      category: updatedCategory,
+      if (!existingCategory) {
+        throw new Error("Bed category not found");
+      }
+
+      if (existingCategory.hospitalId !== hospital.id) {
+        throw new Error("Forbidden: Access denied. Resource does not belong to your hospital.");
+      }
+
+      const occupiedBeds = Math.max(0, totalNum - availNum);
+
+      const [updated] = await tx
+        .update(bedCategories)
+        .set({
+          availableBeds: availNum,
+          totalBeds: totalNum,
+          occupiedBeds,
+          lastUpdated: now,
+          updatedAt: now,
+        })
+        .where(and(eq(bedCategories.id, categoryId), eq(bedCategories.hospitalId, hospital.id)))
+        .returning();
+
+      // Touch hospital record updatedAt
+      await tx
+        .update(hospitals)
+        .set({ updatedAt: now })
+        .where(eq(hospitals.id, hospital.id));
+
+      return updated;
     });
+
+    return NextResponse.json(
+      {
+        success: true,
+        category: updatedCategory,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Failed to update bed capacity:", error);
+    const isForbidden = error.message?.includes("Forbidden");
+    const isNotFound = error.message?.includes("not found");
     return NextResponse.json(
-      { error: "Internal Server Error", message: error.message },
-      { status: 500 }
+      { error: error.message || "Internal Server Error" },
+      { status: isForbidden ? 403 : isNotFound ? 404 : 500 }
     );
   }
 }

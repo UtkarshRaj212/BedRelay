@@ -94,6 +94,7 @@ export const bedCategories = pgTable("bed_categories", {
 export const dispatchRequests = pgTable("dispatch_requests", {
   id: t.text("id").primaryKey(),
   hospitalId: t.text("hospital_id").notNull().references(() => hospitals.id, { onDelete: "cascade" }),
+  dispatcherSessionId: t.text("dispatcher_session_id"),
   ambulanceUnit: t.text("ambulance_unit").notNull(),
   ambulanceLat: t.doublePrecision("ambulance_lat"),
   ambulanceLng: t.doublePrecision("ambulance_lng"),
@@ -107,6 +108,7 @@ export const dispatchRequests = pgTable("dispatch_requests", {
   updatedAt: t.timestamp("updated_at", { precision: 6, withTimezone: true }).notNull(),
 }, (table) => [
   t.index("dispatch_requests_hospitalId_idx").on(table.hospitalId),
+  t.index("dispatch_requests_dispatcherSessionId_idx").on(table.dispatcherSessionId),
 ]);
 
 export const hospitalMemberships = pgTable("hospital_memberships", {

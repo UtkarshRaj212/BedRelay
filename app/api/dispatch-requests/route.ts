@@ -1,7 +1,104 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { dispatchRequests, bedCategories, hospitals } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
+import { calculateDistanceKm } from "@/lib/geo";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const sessionId = searchParams.get("sessionId") || req.cookies.get("bedrelay_dispatcher_session_id")?.value;
+    const ambulanceFilter = searchParams.get("ambulanceUnit");
+    const statusFilter = searchParams.get("status");
+    const categoryFilter = searchParams.get("category");
+    const showAll = searchParams.get("all") === "true";
+
+    // Base query conditions
+    const conditions = [];
+
+    // Filter by session ID unless explicitly requesting all or no session exists
+    if (sessionId && !showAll) {
+      conditions.push(eq(dispatchRequests.dispatcherSessionId, sessionId));
+    }
+
+    if (ambulanceFilter && ambulanceFilter.trim()) {
+      conditions.push(eq(dispatchRequests.ambulanceUnit, ambulanceFilter.trim()));
+    }
+
+    if (statusFilter && statusFilter !== "ALL") {
+      conditions.push(eq(dispatchRequests.status, statusFilter.toUpperCase()));
+    }
+
+    if (categoryFilter && categoryFilter !== "ALL") {
+      conditions.push(eq(dispatchRequests.bedCategoryCode, categoryFilter.toUpperCase()));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const rawDispatches = await db
+      .select()
+      .from(dispatchRequests)
+      .where(whereClause)
+      .orderBy(desc(dispatchRequests.createdAt))
+      .limit(100);
+
+    // Fetch all hospitals to enrich dispatch records
+    const allHospitals = await db.select().from(hospitals);
+    const hospitalMap = new Map(allHospitals.map((h) => [h.id, h]));
+
+    const enrichedDispatches = rawDispatches.map((disp) => {
+      const hosp = hospitalMap.get(disp.hospitalId);
+
+      let distanceKm: number | null = null;
+      if (
+        disp.ambulanceLat !== null &&
+        disp.ambulanceLng !== null &&
+        hosp?.latitude &&
+        hosp?.longitude
+      ) {
+        distanceKm = calculateDistanceKm(
+          disp.ambulanceLat,
+          disp.ambulanceLng,
+          hosp.latitude,
+          hosp.longitude
+        );
+      }
+
+      return {
+        ...disp,
+        hospitalName: hosp?.name || "Unknown Hospital",
+        hospitalAddress: hosp?.address || "",
+        hospitalCity: hosp?.city || "",
+        hospitalState: hosp?.state || "",
+        hospitalPhone: hosp?.phone || "",
+        distanceKm,
+      };
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        dispatches: enrichedDispatches,
+        count: enrichedDispatches.length,
+        sessionId: sessionId || null,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+        },
+      }
+    );
+  } catch (error: any) {
+    console.error("Failed to fetch dispatch requests:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error", message: error.message },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +113,7 @@ export async function POST(req: NextRequest) {
       requestedBeds,
       etaMinutes,
       patientCondition,
+      dispatcherSessionId: incomingSessionId,
     } = body;
 
     if (!hospitalId || !ambulanceUnit || !bedCategoryCode) {
@@ -25,10 +123,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Resolve persistent dispatcher session ID
+    let finalSessionId =
+      incomingSessionId ||
+      req.cookies.get("bedrelay_dispatcher_session_id")?.value;
+
+    if (!finalSessionId) {
+      const randomHex = Math.random().toString(36).substring(2, 10);
+      finalSessionId = `disp_sess_${Date.now()}_${randomHex}`;
+    }
+
     const numRequested = Math.max(1, Number(requestedBeds) || 1);
     const eta = Math.max(1, Number(etaMinutes) || 15);
 
-    // Verify hospital exists
+    // Verify hospital exists and is active
     const [targetHospital] = await db
       .select()
       .from(hospitals)
@@ -80,6 +188,7 @@ export async function POST(req: NextRequest) {
       .values({
         id: newDispatchId,
         hospitalId,
+        dispatcherSessionId: finalSessionId,
         ambulanceUnit: ambulanceUnit.trim(),
         ambulanceLat: ambulanceLat ? Number(ambulanceLat) : null,
         ambulanceLng: ambulanceLng ? Number(ambulanceLng) : null,
@@ -94,10 +203,27 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
-    return NextResponse.json({
-      success: true,
-      dispatch: createdDispatch,
+    const response = NextResponse.json(
+      {
+        success: true,
+        dispatch: createdDispatch,
+        sessionId: finalSessionId,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+        },
+      }
+    );
+
+    // Set persistent session cookie
+    response.cookies.set("bedrelay_dispatcher_session_id", finalSessionId, {
+      path: "/",
+      maxAge: 31536000,
+      sameSite: "lax",
     });
+
+    return response;
   } catch (error: any) {
     console.error("Failed to create dispatch request:", error);
     return NextResponse.json(

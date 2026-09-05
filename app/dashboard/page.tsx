@@ -53,9 +53,9 @@ export default function DashboardPage() {
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
-  const fetchTelemetry = async () => {
+  const fetchTelemetry = async (silent = false) => {
     try {
-      setLoadingData(true);
+      if (!silent) setLoadingData(true);
       const res = await fetch("/api/hospital");
       if (res.ok) {
         const data = await res.json();
@@ -69,15 +69,21 @@ export default function DashboardPage() {
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
     } finally {
-      setLoadingData(false);
+      if (!silent) setLoadingData(false);
     }
   };
 
   useEffect(() => {
     if (session) {
       fetchTelemetry();
+      const interval = setInterval(() => {
+        if (!editingCategory) {
+          fetchTelemetry(true);
+        }
+      }, 5000);
+      return () => clearInterval(interval);
     }
-  }, [session]);
+  }, [session, editingCategory]);
 
   const handleOpenEdit = (category: BedCategory) => {
     setEditingCategory(category);
@@ -311,7 +317,7 @@ export default function DashboardPage() {
 
 
             <button
-              onClick={fetchTelemetry}
+              onClick={() => fetchTelemetry()}
               className="px-3 py-1.5 text-xs font-mono text-slate-700 dark:text-[#ededed] border border-slate-300 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#141414] rounded-sm transition-colors flex items-center gap-1.5"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

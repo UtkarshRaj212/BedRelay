@@ -41,9 +41,9 @@ export default function BedManagementPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const fetchBeds = async () => {
+  const fetchBeds = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await fetch("/api/hospital/beds");
       if (res.ok) {
         const data = await res.json();
@@ -53,15 +53,21 @@ export default function BedManagementPage() {
     } catch (err) {
       console.error("Failed to load hospital beds:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     if (session) {
       fetchBeds();
+      const interval = setInterval(() => {
+        if (!editingCategory) {
+          fetchBeds(true);
+        }
+      }, 5000);
+      return () => clearInterval(interval);
     }
-  }, [session]);
+  }, [session, editingCategory]);
 
   const handleOpenModal = (bed: BedCategory) => {
     setEditingCategory(bed);
@@ -312,7 +318,7 @@ export default function BedManagementPage() {
           </div>
 
           <button
-            onClick={fetchBeds}
+            onClick={() => fetchBeds()}
             className="px-3 py-1.5 text-xs font-mono text-slate-700 dark:text-[#ededed] border border-slate-300 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#141414] rounded-sm transition-colors cursor-pointer"
           >
             Refresh Telemetry Data

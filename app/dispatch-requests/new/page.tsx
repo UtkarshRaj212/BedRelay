@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { INDIAN_CITIES } from "@/lib/geo";
+import { getDispatcherSessionId } from "@/lib/dispatcher-session";
 
 interface BedCategory {
   id: string;
@@ -128,6 +129,7 @@ function CreateDispatchContent() {
           requestedBeds,
           etaMinutes,
           patientCondition,
+          dispatcherSessionId: getDispatcherSessionId(),
         }),
       });
 
@@ -211,10 +213,16 @@ function CreateDispatchContent() {
                 Track Live Request Details →
               </Link>
               <Link
+                href="/dispatcher/history"
+                className="w-full text-center px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-sm transition-colors"
+              >
+                View Request History
+              </Link>
+              <Link
                 href="/dispatcher"
                 className="w-full text-center px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 font-semibold text-sm rounded-sm transition-colors"
               >
-                Back to Dispatcher Dashboard
+                Dashboard
               </Link>
             </div>
           </div>
@@ -251,7 +259,7 @@ function CreateDispatchContent() {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-4 font-mono text-xs">
+          <nav className="flex items-center gap-3 font-mono text-xs">
             <Link
               href="/dispatcher"
               className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
@@ -263,6 +271,12 @@ function CreateDispatchContent() {
               className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
             >
               FIND HOSPITAL
+            </Link>
+            <Link
+              href="/dispatcher/history"
+              className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
+            >
+              REQUEST HISTORY
             </Link>
           </nav>
         </div>

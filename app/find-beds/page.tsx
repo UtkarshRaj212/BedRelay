@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { INDIAN_CITIES } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { formatDateTime } from "@/lib/format-date";
+import { getDispatcherSessionId } from "@/lib/dispatcher-session";
 
 interface BedCategory {
   id: string;
@@ -38,6 +40,7 @@ export default function FindHospitalPage() {
 
   const [hospitals, setHospitals] = useState<HospitalResult[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [lastSynced, setLastSynced] = useState<string>("");
 
   // Dispatch Request Modal State
   const [dispatchModalHospital, setDispatchModalHospital] = useState<HospitalResult | null>(null);
@@ -53,9 +56,9 @@ export default function FindHospitalPage() {
       ? Number(minBeds)
       : prevMinBedsRef.current || 1;
 
-  const fetchSuitableHospitals = async () => {
+  const fetchSuitableHospitals = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const url = `/api/hospitals/search?city=${encodeURIComponent(
         selectedCity
       )}&category=${selectedCategory}&minBeds=${activeMinBedsNumber}`;
@@ -63,11 +66,12 @@ export default function FindHospitalPage() {
       if (res.ok) {
         const data = await res.json();
         setHospitals(data.hospitals || []);
+        setLastSynced(formatDateTime(new Date(), true));
       }
     } catch (err) {
       console.error("Failed to fetch suitable hospitals:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -75,6 +79,8 @@ export default function FindHospitalPage() {
     // Only search if not in middle of empty backspace state
     if (minBeds !== "") {
       fetchSuitableHospitals();
+      const interval = setInterval(() => fetchSuitableHospitals(true), 5000);
+      return () => clearInterval(interval);
     }
   }, [selectedCity, selectedCategory, minBeds]);
 
@@ -109,6 +115,7 @@ export default function FindHospitalPage() {
           requestedBeds: activeMinBedsNumber,
           etaMinutes: activeEta,
           patientCondition,
+          dispatcherSessionId: getDispatcherSessionId(),
         }),
       });
 
@@ -143,10 +150,14 @@ export default function FindHospitalPage() {
       {/* Top Bar */}
       <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block"></span>
           <span>DISPATCH ROUTING & SUITABILITY SEARCH CONSOLE</span>
+          <span className="text-slate-500 dark:text-[#555]">|</span>
+          <span className="text-slate-400 dark:text-[#888888]">NEAR-REAL-TIME SYNC (5S)</span>
         </div>
         <div className="flex items-center gap-4 text-slate-400 dark:text-[#888888]">
+          <span className="hidden sm:inline">LAST UPDATED: {lastSynced || "CONNECTING..."}</span>
+          <span className="hidden sm:inline text-slate-600 dark:text-[#555]">|</span>
           <span className="font-mono text-[11px] text-slate-300 dark:text-[#a1a1a1]">DISPATCHER MODE (READ-ONLY)</span>
           <ThemeToggle />
         </div>
@@ -169,7 +180,7 @@ export default function FindHospitalPage() {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-4 font-mono text-xs">
+          <nav className="flex items-center gap-3 font-mono text-xs">
             <Link
               href="/dispatcher"
               className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors"
@@ -181,6 +192,12 @@ export default function FindHospitalPage() {
               className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm"
             >
               FIND HOSPITAL
+            </Link>
+            <Link
+              href="/dispatcher/history"
+              className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors"
+            >
+              REQUEST HISTORY
             </Link>
           </nav>
         </div>

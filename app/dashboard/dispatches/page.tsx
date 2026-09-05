@@ -36,9 +36,9 @@ export default function HospitalDispatchesPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const fetchDispatches = async () => {
+  const fetchDispatches = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const res = await fetch("/api/hospital/dispatches");
       if (res.ok) {
         const data = await res.json();
@@ -48,13 +48,15 @@ export default function HospitalDispatchesPage() {
     } catch (err) {
       console.error("Failed to load dispatch requests:", err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     if (session) {
       fetchDispatches();
+      const interval = setInterval(() => fetchDispatches(true), 5000);
+      return () => clearInterval(interval);
     }
   }, [session]);
 
@@ -269,7 +271,7 @@ export default function HospitalDispatchesPage() {
           </div>
 
           <button
-            onClick={fetchDispatches}
+            onClick={() => fetchDispatches()}
             className="px-3 py-1.5 text-xs font-mono text-slate-700 dark:text-[#ededed] border border-slate-300 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#141414] rounded-sm transition-colors cursor-pointer"
           >
             Refresh Dispatch Stream

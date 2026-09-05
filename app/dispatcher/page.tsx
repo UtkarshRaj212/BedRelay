@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { INDIAN_CITIES } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { formatDate } from "@/lib/format-date";
+import { formatDate, formatDateTime } from "@/lib/format-date";
+import { getDispatcherSessionId } from "@/lib/dispatcher-session";
 
 interface BedCategory {
   id: string;
@@ -69,7 +70,7 @@ export default function DispatcherDashboardPage() {
         const data = await res.json();
         setHospitals(data.hospitals || []);
         setActiveDispatches(data.activeDispatches || []);
-        setLastSynced(new Date().toLocaleTimeString());
+        setLastSynced(formatDateTime(new Date(), true));
       }
     } catch (err) {
       console.error("Failed to fetch live telemetry:", err);
@@ -80,7 +81,7 @@ export default function DispatcherDashboardPage() {
 
   useEffect(() => {
     fetchLiveData();
-    const interval = setInterval(fetchLiveData, 10000); // Auto-refresh every 10 seconds
+    const interval = setInterval(fetchLiveData, 5000); // Near-real-time refresh every 5 seconds
     return () => clearInterval(interval);
   }, [selectedCity]);
 
@@ -116,6 +117,7 @@ export default function DispatcherDashboardPage() {
           requestedBeds: finalRequestedBeds,
           etaMinutes: finalEtaMinutes,
           patientCondition,
+          dispatcherSessionId: getDispatcherSessionId(),
         }),
       });
 
@@ -150,13 +152,13 @@ export default function DispatcherDashboardPage() {
       {/* System Status Top Bar */}
       <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block"></span>
           <span>AMBULANCE DISPATCH TELEMETRY CONSOLE</span>
           <span className="text-slate-500 dark:text-[#555]">|</span>
-          <span className="text-slate-400 dark:text-[#888888]">LIVE SYNC (EVERY 10S)</span>
+          <span className="text-slate-400 dark:text-[#888888]">NEAR-REAL-TIME SYNC (5S)</span>
         </div>
         <div className="flex items-center gap-4 text-slate-400 dark:text-[#888888]">
-          <span className="hidden sm:inline">LAST SYNC: {lastSynced || "CONNECTING..."}</span>
+          <span className="hidden sm:inline">LAST UPDATED: {lastSynced || "CONNECTING..."}</span>
           <span className="hidden sm:inline text-slate-600 dark:text-[#555]">|</span>
           <span className="text-slate-300 dark:text-[#a1a1a1]">NO AUTH REQUIRED</span>
           <ThemeToggle />
@@ -180,12 +182,15 @@ export default function DispatcherDashboardPage() {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-4 font-mono text-xs">
+          <nav className="flex items-center gap-3 font-mono text-xs">
             <Link href="/dispatcher" className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm">
               DISPATCHER DASHBOARD
             </Link>
             <Link href="/find-beds" className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors">
               FIND HOSPITAL
+            </Link>
+            <Link href="/dispatcher/history" className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors">
+              REQUEST HISTORY
             </Link>
           </nav>
         </div>

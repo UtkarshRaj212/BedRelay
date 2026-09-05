@@ -8,6 +8,9 @@ import { desc, eq } from "drizzle-orm";
 // Maximum radius (km) for a hospital to be considered "local" to the selected city
 const LOCAL_DISPATCH_RADIUS_KM = 50;
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     await seedIndianHospitals(false);
@@ -120,10 +123,17 @@ export async function GET(req: NextRequest) {
       return b.totalAvailable - a.totalAvailable;
     });
 
-    return NextResponse.json({
-      hospitals: localHospitals,
-      activeDispatches: enrichedDispatches,
-    });
+    return NextResponse.json(
+      {
+        hospitals: localHospitals,
+        activeDispatches: enrichedDispatches,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, max-age=0, must-revalidate",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Failed to fetch hospital telemetry for dispatcher:", error);
     return NextResponse.json(
