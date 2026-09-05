@@ -14,6 +14,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    if (!id || typeof id !== "string") {
+      return NextResponse.json({ error: "Dispatch request ID is required" }, { status: 400 });
+    }
 
     const [dispatch] = await db
       .select()
@@ -26,6 +29,52 @@ export async function GET(
         { error: "Dispatch request not found" },
         { status: 404 }
       );
+    }
+
+    // Role-based security check:
+    // 1. If user is authenticated, check if SUPER_ADMIN or member of this hospital
+    // 2. If unauthenticated (dispatcher), verify dispatcherSessionId matches
+    const session = await auth.api.getSession({ headers: req.headers });
+    if (session?.user) {
+      const [dbUser] = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, session.user.id))
+        .limit(1);
+
+      if (dbUser?.role !== "SUPER_ADMIN") {
+        const [membership] = await db
+          .select()
+          .from(hospitalMemberships)
+          .where(
+            and(
+              eq(hospitalMemberships.userId, session.user.id),
+              eq(hospitalMemberships.hospitalId, dispatch.hospitalId),
+              eq(hospitalMemberships.status, "ACTIVE")
+            )
+          )
+          .limit(1);
+
+        if (!membership) {
+          return NextResponse.json(
+            { error: "Forbidden: You are not authorized to view dispatches for another hospital." },
+            { status: 403 }
+          );
+        }
+      }
+    } else {
+      // Dispatcher without login session
+      const { searchParams } = new URL(req.url);
+      const sessionId =
+        searchParams.get("sessionId") ||
+        req.cookies.get("bedrelay_dispatcher_session_id")?.value;
+
+      if (dispatch.dispatcherSessionId && sessionId && dispatch.dispatcherSessionId !== sessionId) {
+        return NextResponse.json(
+          { error: "Forbidden: Access denied to this dispatch request." },
+          { status: 403 }
+        );
+      }
     }
 
     const [hospital] = await db
@@ -82,20 +131,14 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-
-    // Verify session
-    const session = await auth.api.getSession({ headers: req.headers });
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Unauthorized: Active staff or SuperAdmin session required to modify dispatch state." },
-        { status: 401 }
-      );
+    if (!id || typeof id !== "string") {
+      return NextResponse.json({ error: "Dispatch request ID is required" }, { status: 400 });
     }
 
     const body = await req.json();
-    const { status } = body;
+    const { status, dispatcherSessionId: bodySessionId } = body;
 
-    if (!status) {
+    if (!status || typeof status !== "string") {
       return NextResponse.json(
         { error: "Missing required field: status" },
         { status: 400 }
@@ -103,7 +146,7 @@ export async function PATCH(
     }
 
     const validStatuses = ["PENDING", "ACCEPTED", "REJECTED", "COMPLETED", "CANCELLED"];
-    const nextStatus = status.toUpperCase();
+    const nextStatus = status.trim().toUpperCase();
     if (!validStatuses.includes(nextStatus)) {
       return NextResponse.json(
         { error: `Invalid status. Allowed values: ${validStatuses.join(", ")}` },
@@ -124,60 +167,66 @@ export async function PATCH(
       );
     }
 
-    // Check authorization: SUPER_ADMIN or staff member of existingDispatch.hospitalId
-    const [dbUser] = await db
-      .select()
-      .from(user)
-      .where(eq(user.id, session.user.id))
-      .limit(1);
+    // Role-based authorization:
+    // Case A: Dispatcher cancelling their own request
+    const cookieSessionId = req.cookies.get("bedrelay_dispatcher_session_id")?.value;
+    const clientSessionId = bodySessionId || cookieSessionId;
+    const isDispatcherOwner =
+      clientSessionId &&
+      existingDispatch.dispatcherSessionId &&
+      clientSessionId === existingDispatch.dispatcherSessionId;
 
-    const isSuperAdmin = dbUser?.role === "SUPER_ADMIN";
+    const session = await auth.api.getSession({ headers: req.headers });
 
-    if (!isSuperAdmin) {
-      const [membership] = await db
+    if (!session || !session.user) {
+      if (nextStatus === "CANCELLED" && isDispatcherOwner) {
+        // Permitted: Dispatcher cancelling their own pending dispatch
+      } else {
+        return NextResponse.json(
+          { error: "Unauthorized: Active staff or SuperAdmin session required to modify dispatch state." },
+          { status: 401 }
+        );
+      }
+    } else {
+      // Case B: Authenticated User (SUPER_ADMIN or Hospital Staff/Admin of target hospital)
+      const [dbUser] = await db
         .select()
-        .from(hospitalMemberships)
-        .where(
-          and(
-            eq(hospitalMemberships.userId, session.user.id),
-            eq(hospitalMemberships.hospitalId, existingDispatch.hospitalId),
-            eq(hospitalMemberships.status, "ACTIVE")
-          )
-        )
+        .from(user)
+        .where(eq(user.id, session.user.id))
         .limit(1);
 
-      if (!membership) {
-        return NextResponse.json(
-          { error: "Forbidden: You are not authorized to manage dispatches for this hospital." },
-          { status: 403 }
-        );
+      const isSuperAdmin = dbUser?.role === "SUPER_ADMIN";
+
+      if (!isSuperAdmin) {
+        const [membership] = await db
+          .select()
+          .from(hospitalMemberships)
+          .where(
+            and(
+              eq(hospitalMemberships.userId, session.user.id),
+              eq(hospitalMemberships.hospitalId, existingDispatch.hospitalId),
+              eq(hospitalMemberships.status, "ACTIVE")
+            )
+          )
+          .limit(1);
+
+        if (!membership) {
+          return NextResponse.json(
+            { error: "Forbidden: You are not authorized to manage dispatches for this hospital." },
+            { status: 403 }
+          );
+        }
       }
     }
 
     const prevStatus = existingDispatch.status.toUpperCase();
     const now = new Date();
 
-    // If transitioning from non-ACCEPTED to ACCEPTED, allocate beds atomically
-    if (nextStatus === "ACCEPTED" && prevStatus !== "ACCEPTED") {
-      const [updatedCategory] = await db
-        .update(bedCategories)
-        .set({
-          availableBeds: sql`${bedCategories.availableBeds} - ${existingDispatch.requestedBeds}`,
-          occupiedBeds: sql`LEAST(${bedCategories.totalBeds}, ${bedCategories.occupiedBeds} + ${existingDispatch.requestedBeds})`,
-          lastUpdated: now,
-          updatedAt: now,
-        })
-        .where(
-          and(
-            eq(bedCategories.hospitalId, existingDispatch.hospitalId),
-            eq(bedCategories.categoryCode, existingDispatch.bedCategoryCode.toUpperCase()),
-            sql`${bedCategories.availableBeds} >= ${existingDispatch.requestedBeds}`
-          )
-        )
-        .returning();
-
-      if (!updatedCategory) {
-        const [cat] = await db
+    // Atomic transaction with row-level locking for concurrency safety
+    const updatedDispatch = await db.transaction(async (tx) => {
+      // If transitioning from non-ACCEPTED to ACCEPTED, atomically allocate beds with row lock
+      if (nextStatus === "ACCEPTED" && prevStatus !== "ACCEPTED") {
+        const [cat] = await tx
           .select()
           .from(bedCategories)
           .where(
@@ -186,53 +235,77 @@ export async function PATCH(
               eq(bedCategories.categoryCode, existingDispatch.bedCategoryCode.toUpperCase())
             )
           )
+          .for("update")
           .limit(1);
 
-        return NextResponse.json(
-          {
-            error: `Insufficient available beds in ${existingDispatch.bedCategoryCode}. Requested: ${existingDispatch.requestedBeds}, Available: ${
+        if (!cat || cat.availableBeds < existingDispatch.requestedBeds) {
+          throw new Error(
+            `Insufficient available beds in ${existingDispatch.bedCategoryCode}. Requested: ${existingDispatch.requestedBeds}, Available: ${
               cat ? cat.availableBeds : 0
-            }. Cannot accept dispatch.`,
-          },
-          { status: 400 }
-        );
+            }. Cannot accept dispatch.`
+          );
+        }
+
+        await tx
+          .update(bedCategories)
+          .set({
+            availableBeds: cat.availableBeds - existingDispatch.requestedBeds,
+            occupiedBeds: Math.min(cat.totalBeds, cat.occupiedBeds + existingDispatch.requestedBeds),
+            lastUpdated: now,
+            updatedAt: now,
+          })
+          .where(eq(bedCategories.id, cat.id));
+
+        await tx
+          .update(hospitals)
+          .set({ updatedAt: now })
+          .where(eq(hospitals.id, existingDispatch.hospitalId));
+      } else if (
+        (nextStatus === "REJECTED" || nextStatus === "CANCELLED") &&
+        prevStatus === "ACCEPTED"
+      ) {
+        // Release allocated beds back to available pool
+        const [cat] = await tx
+          .select()
+          .from(bedCategories)
+          .where(
+            and(
+              eq(bedCategories.hospitalId, existingDispatch.hospitalId),
+              eq(bedCategories.categoryCode, existingDispatch.bedCategoryCode.toUpperCase())
+            )
+          )
+          .for("update")
+          .limit(1);
+
+        if (cat) {
+          await tx
+            .update(bedCategories)
+            .set({
+              availableBeds: Math.min(cat.totalBeds, cat.availableBeds + existingDispatch.requestedBeds),
+              occupiedBeds: Math.max(0, cat.occupiedBeds - existingDispatch.requestedBeds),
+              lastUpdated: now,
+              updatedAt: now,
+            })
+            .where(eq(bedCategories.id, cat.id));
+
+          await tx
+            .update(hospitals)
+            .set({ updatedAt: now })
+            .where(eq(hospitals.id, existingDispatch.hospitalId));
+        }
       }
 
-      await db
-        .update(hospitals)
-        .set({ updatedAt: now })
-        .where(eq(hospitals.id, existingDispatch.hospitalId));
-    } else if ((nextStatus === "REJECTED" || nextStatus === "CANCELLED") && prevStatus === "ACCEPTED") {
-      // Release allocated beds back to available pool
-      await db
-        .update(bedCategories)
+      const [updated] = await tx
+        .update(dispatchRequests)
         .set({
-          availableBeds: sql`LEAST(${bedCategories.totalBeds}, ${bedCategories.availableBeds} + ${existingDispatch.requestedBeds})`,
-          occupiedBeds: sql`GREATEST(0, ${bedCategories.occupiedBeds} - ${existingDispatch.requestedBeds})`,
-          lastUpdated: now,
+          status: nextStatus,
           updatedAt: now,
         })
-        .where(
-          and(
-            eq(bedCategories.hospitalId, existingDispatch.hospitalId),
-            eq(bedCategories.categoryCode, existingDispatch.bedCategoryCode.toUpperCase())
-          )
-        );
+        .where(eq(dispatchRequests.id, id))
+        .returning();
 
-      await db
-        .update(hospitals)
-        .set({ updatedAt: now })
-        .where(eq(hospitals.id, existingDispatch.hospitalId));
-    }
-
-    const [updatedDispatch] = await db
-      .update(dispatchRequests)
-      .set({
-        status: nextStatus,
-        updatedAt: now,
-      })
-      .where(eq(dispatchRequests.id, id))
-      .returning();
+      return updated;
+    });
 
     return NextResponse.json(
       {
@@ -247,9 +320,10 @@ export async function PATCH(
     );
   } catch (error: any) {
     console.error("Failed to update dispatch request:", error);
+    const isBadInput = error.message?.includes("Insufficient available beds");
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
-      { status: 500 }
+      { status: isBadInput ? 400 : 500 }
     );
   }
 }

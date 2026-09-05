@@ -155,10 +155,10 @@ export default function FindHospitalPage() {
           <span className="text-slate-500 dark:text-[#555]">|</span>
           <span className="text-slate-400 dark:text-[#888888]">NEAR-REAL-TIME SYNC (5S)</span>
         </div>
-        <div className="flex items-center gap-4 text-slate-400 dark:text-[#888888]">
-          <span className="hidden sm:inline">LAST UPDATED: {lastSynced || "CONNECTING..."}</span>
-          <span className="hidden sm:inline text-slate-600 dark:text-[#555]">|</span>
-          <span className="font-mono text-[11px] text-slate-300 dark:text-[#a1a1a1]">DISPATCHER MODE (READ-ONLY)</span>
+        <div className="flex items-center gap-3 sm:gap-4 text-slate-400 dark:text-[#888888]">
+          <span className="text-[11px]">LAST UPDATED: {lastSynced || "CONNECTING..."}</span>
+          <span className="text-slate-600 dark:text-[#555]">|</span>
+          <span className="hidden sm:inline font-mono text-[11px] text-slate-300 dark:text-[#a1a1a1]">DISPATCHER MODE (READ-ONLY)</span>
           <ThemeToggle />
         </div>
       </div>

@@ -83,30 +83,21 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    if (hospital.status === "DEACTIVATED") {
+      return NextResponse.json(
+        { error: "Action Forbidden: This hospital facility has been deactivated by National SuperAdmin." },
+        { status: 403 }
+      );
+    }
+
     const prevStatus = existingDispatch.status.toUpperCase();
     const now = new Date();
 
-    // If transitioning from non-ACCEPTED to ACCEPTED, atomically allocate beds
-    if (nextStatus === "ACCEPTED" && prevStatus !== "ACCEPTED") {
-      const [updatedCategory] = await db
-        .update(bedCategories)
-        .set({
-          availableBeds: sql`${bedCategories.availableBeds} - ${existingDispatch.requestedBeds}`,
-          occupiedBeds: sql`LEAST(${bedCategories.totalBeds}, ${bedCategories.occupiedBeds} + ${existingDispatch.requestedBeds})`,
-          lastUpdated: now,
-          updatedAt: now,
-        })
-        .where(
-          and(
-            eq(bedCategories.hospitalId, hospital.id),
-            eq(bedCategories.categoryCode, existingDispatch.bedCategoryCode.toUpperCase()),
-            sql`${bedCategories.availableBeds} >= ${existingDispatch.requestedBeds}`
-          )
-        )
-        .returning();
-
-      if (!updatedCategory) {
-        const [cat] = await db
+    // Atomic transaction with row-level locking for concurrency safety
+    const updatedDispatch = await db.transaction(async (tx) => {
+      // If transitioning from non-ACCEPTED to ACCEPTED, atomically allocate beds with row lock
+      if (nextStatus === "ACCEPTED" && prevStatus !== "ACCEPTED") {
+        const [cat] = await tx
           .select()
           .from(bedCategories)
           .where(
@@ -115,53 +106,77 @@ export async function PATCH(req: NextRequest) {
               eq(bedCategories.categoryCode, existingDispatch.bedCategoryCode.toUpperCase())
             )
           )
+          .for("update")
           .limit(1);
 
-        return NextResponse.json(
-          {
-            error: `Insufficient available beds in ${existingDispatch.bedCategoryCode}. Requested: ${existingDispatch.requestedBeds}, Available: ${
+        if (!cat || cat.availableBeds < existingDispatch.requestedBeds) {
+          throw new Error(
+            `Insufficient available beds in ${existingDispatch.bedCategoryCode}. Requested: ${existingDispatch.requestedBeds}, Available: ${
               cat ? cat.availableBeds : 0
-            }. Cannot accept dispatch.`,
-          },
-          { status: 400 }
-        );
+            }. Cannot accept dispatch.`
+          );
+        }
+
+        await tx
+          .update(bedCategories)
+          .set({
+            availableBeds: cat.availableBeds - existingDispatch.requestedBeds,
+            occupiedBeds: Math.min(cat.totalBeds, cat.occupiedBeds + existingDispatch.requestedBeds),
+            lastUpdated: now,
+            updatedAt: now,
+          })
+          .where(eq(bedCategories.id, cat.id));
+
+        await tx
+          .update(hospitals)
+          .set({ updatedAt: now })
+          .where(eq(hospitals.id, hospital.id));
+      } else if (
+        (nextStatus === "REJECTED" || nextStatus === "CANCELLED") &&
+        prevStatus === "ACCEPTED"
+      ) {
+        // Release allocated beds back to available pool
+        const [cat] = await tx
+          .select()
+          .from(bedCategories)
+          .where(
+            and(
+              eq(bedCategories.hospitalId, hospital.id),
+              eq(bedCategories.categoryCode, existingDispatch.bedCategoryCode.toUpperCase())
+            )
+          )
+          .for("update")
+          .limit(1);
+
+        if (cat) {
+          await tx
+            .update(bedCategories)
+            .set({
+              availableBeds: Math.min(cat.totalBeds, cat.availableBeds + existingDispatch.requestedBeds),
+              occupiedBeds: Math.max(0, cat.occupiedBeds - existingDispatch.requestedBeds),
+              lastUpdated: now,
+              updatedAt: now,
+            })
+            .where(eq(bedCategories.id, cat.id));
+
+          await tx
+            .update(hospitals)
+            .set({ updatedAt: now })
+            .where(eq(hospitals.id, hospital.id));
+        }
       }
 
-      await db
-        .update(hospitals)
-        .set({ updatedAt: now })
-        .where(eq(hospitals.id, hospital.id));
-    } else if ((nextStatus === "REJECTED" || nextStatus === "CANCELLED") && prevStatus === "ACCEPTED") {
-      // Release allocated beds back to available pool
-      await db
-        .update(bedCategories)
+      const [updated] = await tx
+        .update(dispatchRequests)
         .set({
-          availableBeds: sql`LEAST(${bedCategories.totalBeds}, ${bedCategories.availableBeds} + ${existingDispatch.requestedBeds})`,
-          occupiedBeds: sql`GREATEST(0, ${bedCategories.occupiedBeds} - ${existingDispatch.requestedBeds})`,
-          lastUpdated: now,
+          status: nextStatus,
           updatedAt: now,
         })
-        .where(
-          and(
-            eq(bedCategories.hospitalId, hospital.id),
-            eq(bedCategories.categoryCode, existingDispatch.bedCategoryCode.toUpperCase())
-          )
-        );
+        .where(and(eq(dispatchRequests.id, requestId), eq(dispatchRequests.hospitalId, hospital.id)))
+        .returning();
 
-      await db
-        .update(hospitals)
-        .set({ updatedAt: now })
-        .where(eq(hospitals.id, hospital.id));
-    }
-
-    const [updatedDispatch] = await db
-      .update(dispatchRequests)
-      .set({
-        status: nextStatus,
-        updatedAt: now,
-      })
-      .where(and(eq(dispatchRequests.id, requestId), eq(dispatchRequests.hospitalId, hospital.id)))
-      .returning();
+      return updated;
+    });
 
     return NextResponse.json(
       {
@@ -176,9 +191,10 @@ export async function PATCH(req: NextRequest) {
     );
   } catch (error: any) {
     console.error("Failed to update dispatch request status:", error);
+    const isBadInput = error.message?.includes("Insufficient available beds");
     return NextResponse.json(
       { error: error.message || "Internal Server Error" },
-      { status: 500 }
+      { status: isBadInput ? 400 : 500 }
     );
   }
 }

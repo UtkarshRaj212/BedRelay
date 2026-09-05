@@ -144,45 +144,61 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "categoryId is required" }, { status: 400 });
     }
 
-    const [existing] = await db
-      .select()
-      .from(bedCategories)
-      .where(eq(bedCategories.id, categoryId))
-      .limit(1);
+    // Concurrency-safe atomic transaction with row locking
+    const result = await db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(bedCategories)
+        .where(eq(bedCategories.id, categoryId))
+        .for("update")
+        .limit(1);
 
-    if (!existing) {
+      if (!existing) {
+        return { notFound: true };
+      }
+
+      const total = totalBeds !== undefined ? Number(totalBeds) : existing.totalBeds;
+      const available = availableBeds !== undefined ? Number(availableBeds) : existing.availableBeds;
+
+      if (isNaN(total) || isNaN(available) || total < 0 || available < 0) {
+        return { badRequest: "Invalid numeric bed values" };
+      }
+
+      if (available > total) {
+        return { badRequest: "Available beds cannot exceed total capacity" };
+      }
+
+      const occupied = Math.max(0, total - available);
+      const now = new Date();
+
+      const [updated] = await tx
+        .update(bedCategories)
+        .set({
+          name: name ? String(name).trim() : existing.name,
+          totalBeds: total,
+          availableBeds: available,
+          occupiedBeds: occupied,
+          lastUpdated: now,
+          updatedAt: now,
+        })
+        .where(eq(bedCategories.id, categoryId))
+        .returning();
+
+      // Touch hospital record updatedAt so listeners and search queries detect freshness
+      await tx
+        .update(hospitals)
+        .set({ updatedAt: now })
+        .where(eq(hospitals.id, existing.hospitalId));
+
+      return { updated, existing, total, available, occupied };
+    });
+
+    if (result.notFound) {
       return NextResponse.json({ error: "Bed category record not found" }, { status: 404 });
     }
-
-    const total = totalBeds !== undefined ? Number(totalBeds) : existing.totalBeds;
-    const available = availableBeds !== undefined ? Number(availableBeds) : existing.availableBeds;
-
-    if (isNaN(total) || isNaN(available) || total < 0 || available < 0) {
-      return NextResponse.json({ error: "Invalid numeric bed values" }, { status: 400 });
+    if (result.badRequest) {
+      return NextResponse.json({ error: result.badRequest }, { status: 400 });
     }
-
-    if (available > total) {
-      return NextResponse.json(
-        { error: "Available beds cannot exceed total capacity" },
-        { status: 400 }
-      );
-    }
-
-    const occupied = Math.max(0, total - available);
-    const now = new Date();
-
-    const [updated] = await db
-      .update(bedCategories)
-      .set({
-        name: name ? String(name).trim() : existing.name,
-        totalBeds: total,
-        availableBeds: available,
-        occupiedBeds: occupied,
-        lastUpdated: now,
-        updatedAt: now,
-      })
-      .where(eq(bedCategories.id, categoryId))
-      .returning();
 
     // Record audit log
     await recordAuditLog({
@@ -191,17 +207,17 @@ export async function PATCH(req: NextRequest) {
       resourceType: "BED_CATEGORY",
       resourceId: categoryId,
       details: {
-        hospitalId: existing.hospitalId,
-        categoryCode: existing.categoryCode,
-        previous: { total: existing.totalBeds, available: existing.availableBeds },
-        updated: { total, available, occupied },
+        hospitalId: result.existing!.hospitalId,
+        categoryCode: result.existing!.categoryCode,
+        previous: { total: result.existing!.totalBeds, available: result.existing!.availableBeds },
+        updated: { total: result.total, available: result.available, occupied: result.occupied },
       },
       req,
     });
 
     return NextResponse.json({
       success: true,
-      category: updated,
+      category: result.updated,
     });
   } catch (error: any) {
     console.error("SuperAdmin beds PATCH failed:", error);

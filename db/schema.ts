@@ -1,5 +1,6 @@
 import { pgTable } from "drizzle-orm/pg-core";
 import * as t from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const user = pgTable("user", {
   id: t.text("id").primaryKey(),
@@ -89,6 +90,7 @@ export const bedCategories = pgTable("bed_categories", {
   updatedAt: t.timestamp("updated_at", { precision: 6, withTimezone: true }).notNull(),
 }, (table) => [
   t.index("bed_categories_hospitalId_idx").on(table.hospitalId),
+  t.check("bed_categories_availability_check", sql`available_beds >= 0 AND available_beds <= total_beds AND total_beds >= 0 AND occupied_beds >= 0`),
 ]);
 
 export const dispatchRequests = pgTable("dispatch_requests", {
@@ -109,6 +111,7 @@ export const dispatchRequests = pgTable("dispatch_requests", {
 }, (table) => [
   t.index("dispatch_requests_hospitalId_idx").on(table.hospitalId),
   t.index("dispatch_requests_dispatcherSessionId_idx").on(table.dispatcherSessionId),
+  t.check("dispatch_requests_valid_request", sql`requested_beds >= 1 AND eta_minutes >= 1`),
 ]);
 
 export const hospitalMemberships = pgTable("hospital_memberships", {
