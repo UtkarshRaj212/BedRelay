@@ -998,8 +998,8 @@ export default function SuperAdminPage() {
           >
             System Overview
           </button>
-          <button
-            onClick={() => setActiveTab("hospitals")}
+          <Link
+            href="/superadmin/hospitals"
             className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "hospitals"
                 ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
@@ -1007,9 +1007,9 @@ export default function SuperAdminPage() {
             }`}
           >
             Hospitals ({hospitalsList.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("staff")}
+          </Link>
+          <Link
+            href="/superadmin/staff"
             className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${
               activeTab === "staff"
                 ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
@@ -1017,7 +1017,7 @@ export default function SuperAdminPage() {
             }`}
           >
             Staff & Memberships ({staffList.length})
-          </button>
+          </Link>
           <button
             onClick={() => setActiveTab("beds")}
             className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${

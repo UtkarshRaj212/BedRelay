@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assertSuperAdmin, recordAuditLog } from "@/lib/auth-server";
 import { db } from "@/db";
-import { hospitals, bedCategories, hospitalMemberships, user } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { hospitals, bedCategories, hospitalMemberships, dispatchRequests, user } from "@/db/schema";
+import { eq, desc, and, inArray } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   try {
@@ -272,6 +272,26 @@ export async function DELETE(req: NextRequest) {
 
     if (!existingHospital) {
       return NextResponse.json({ error: "Hospital not found" }, { status: 404 });
+    }
+
+    // Safety relation check: ensure no active emergency dispatches are en-route or pending
+    const activeDispatches = await db
+      .select({ id: dispatchRequests.id, status: dispatchRequests.status, ambulanceUnit: dispatchRequests.ambulanceUnit })
+      .from(dispatchRequests)
+      .where(
+        and(
+          eq(dispatchRequests.hospitalId, hospitalId),
+          inArray(dispatchRequests.status, ["PENDING", "ACCEPTED", "EN_ROUTE", "DISPATCHED"])
+        )
+      );
+
+    if (activeDispatches.length > 0) {
+      return NextResponse.json(
+        {
+          error: `Cannot delete hospital '${existingHospital.name}'. There are ${activeDispatches.length} active emergency dispatch request(s) (${activeDispatches.map((d) => `${d.ambulanceUnit}: ${d.status}`).join(", ")}) associated with this facility. Please resolve, redirect, or cancel them first.`,
+        },
+        { status: 400 }
+      );
     }
 
     // Delete hospital (foreign keys cascade-delete bed_categories, dispatch_requests, hospital_memberships, hospital_invitations)
