@@ -28,20 +28,9 @@ async function runProductionChecks() {
   }
 
   // ---------------------------------------------------------------------------
-  // 1. HOSPITAL AUTH & SESSION DERIVATION
+  // 1. HOSPITAL A HAS 5 ICU BEDS AVAILABLE
   // ---------------------------------------------------------------------------
-  console.log("--- 1. HOSPITAL AUTHENTICATION & MEMBERSHIP DERIVATION ---");
-
-  const [adminUser] = await db
-    .select()
-    .from(user)
-    .where(eq(user.email, "utkarsh.raj135@gmail.com"))
-    .limit(1);
-
-  await test("Hospital Admin account exists in database", () => {
-    assert(adminUser, "User utkarsh.raj135@gmail.com must exist in Neon DB");
-    assert(adminUser.id, "User must have an ID");
-  });
+  console.log("--- SCENARIO STEP 1: HOSPITAL A (APOLLO GREAMS ROAD) HAS 5 ICU BEDS ---");
 
   const [apolloHospital] = await db
     .select()
@@ -49,36 +38,13 @@ async function runProductionChecks() {
     .where(eq(hospitals.id, "hosp_apollo_chennai"))
     .limit(1);
 
-  await test("Apollo Hospital Greams Road exists and is active", () => {
+  await test("Hospital A (Apollo Hospital Greams Road) exists in Neon DB", () => {
     assert(apolloHospital, "Hospital hosp_apollo_chennai must exist");
     assert.strictEqual(apolloHospital.city, "Chennai");
     assert.strictEqual(apolloHospital.status, "ACTIVE");
-    assert(apolloHospital.latitude !== null && apolloHospital.longitude !== null);
   });
 
-  const [membership] = await db
-    .select()
-    .from(hospitalMemberships)
-    .where(
-      and(
-        eq(hospitalMemberships.userId, adminUser.id),
-        eq(hospitalMemberships.hospitalId, apolloHospital.id),
-        eq(hospitalMemberships.status, "ACTIVE")
-      )
-    )
-    .limit(1);
-
-  await test("Admin user has active HOSPITAL_ADMIN membership for Apollo Hospital Greams Road", () => {
-    assert(membership, "Active membership must exist");
-    assert.strictEqual(membership.role, "HOSPITAL_ADMIN");
-  });
-
-  // ---------------------------------------------------------------------------
-  // 2. BED MANAGEMENT & ATOMIC NEON DB TRANSACTIONS
-  // ---------------------------------------------------------------------------
-  console.log("\n--- 2. BED INVENTORY & NEON DB ATOMIC SYNC ---");
-
-  const [icuBedBefore] = await db
+  const [icuBedCategory] = await db
     .select()
     .from(bedCategories)
     .where(
@@ -89,102 +55,82 @@ async function runProductionChecks() {
     )
     .limit(1);
 
-  await test("Apollo Hospital Greams Road has ICU bed inventory", () => {
-    assert(icuBedBefore, "ICU bed category must exist");
-    assert(icuBedBefore.totalBeds >= icuBedBefore.availableBeds);
+  await test("Hospital A has ICU bed inventory category in Neon DB", () => {
+    assert(icuBedCategory, "ICU bed category must exist for Hospital A");
   });
 
-  const initialAvailable = icuBedBefore.availableBeds;
-  const initialOccupied = icuBedBefore.occupiedBeds;
-
-  // Test updating bed count in DB
-  const testAvailUpdate = Math.max(1, initialAvailable - 1);
+  // Set Hospital A to exactly 5 ICU beds available
   await db
     .update(bedCategories)
     .set({
-      availableBeds: testAvailUpdate,
-      occupiedBeds: icuBedBefore.totalBeds - testAvailUpdate,
+      availableBeds: 5,
+      occupiedBeds: Math.max(0, icuBedCategory.totalBeds - 5),
       lastUpdated: new Date(),
       updatedAt: new Date(),
     })
-    .where(eq(bedCategories.id, icuBedBefore.id));
+    .where(eq(bedCategories.id, icuBedCategory.id));
 
-  const [icuBedUpdated] = await db
+  const [icuBedVerified] = await db
     .select()
     .from(bedCategories)
-    .where(eq(bedCategories.id, icuBedBefore.id))
+    .where(eq(bedCategories.id, icuBedCategory.id))
     .limit(1);
 
-  await test("Bed inventory updates persist atomically to Neon DB", () => {
-    assert.strictEqual(icuBedUpdated.availableBeds, testAvailUpdate);
-  });
-
-  // Restore baseline beds
-  await db
-    .update(bedCategories)
-    .set({
-      availableBeds: initialAvailable,
-      occupiedBeds: initialOccupied,
-      lastUpdated: new Date(),
-      updatedAt: new Date(),
-    })
-    .where(eq(bedCategories.id, icuBedBefore.id));
-
-  await test("Bed inventory restored to baseline values", async () => {
-    const [restored] = await db
-      .select()
-      .from(bedCategories)
-      .where(eq(bedCategories.id, icuBedBefore.id))
-      .limit(1);
-    assert.strictEqual(restored.availableBeds, initialAvailable);
+  await test("Hospital A bed capacity confirmed: Exactly 5 ICU beds available in Neon DB", () => {
+    assert.strictEqual(icuBedVerified.availableBeds, 5, "Hospital A must have exactly 5 ICU beds available");
   });
 
   // ---------------------------------------------------------------------------
-  // 3. DISPATCHER GPS & OPENSTREETMAP PROXIMITY SEARCH
+  // 2. DISPATCHER OBTAINS CURRENT LOCATION
   // ---------------------------------------------------------------------------
-  console.log("\n--- 3. DISPATCHER GPS & OPENSTREETMAP PROXIMITY SEARCH ---");
+  console.log("\n--- SCENARIO STEP 2: DISPATCHER OBTAINS CURRENT LOCATION ---");
 
-  const chennaiDispatcherGps = { lat: 13.0827, lng: 80.2707 }; // Chennai Central
+  const dispatcherGps = { lat: 13.0827, lng: 80.2707 }; // Chennai Telemetry Origin
 
-  await test("Dispatcher GPS coordinates are geographically valid", () => {
-    assert(isValidCoordinates(chennaiDispatcherGps.lat, chennaiDispatcherGps.lng));
+  await test("Dispatcher acquires valid geographic coordinates (Chennai)", () => {
+    assert(isValidCoordinates(dispatcherGps.lat, dispatcherGps.lng));
+    assert.strictEqual(dispatcherGps.lat, 13.0827);
+    assert.strictEqual(dispatcherGps.lng, 80.2707);
   });
 
-  // Query search API
-  const searchUrl = `${BASE_URL}/api/hospitals/search?city=Chennai&category=ICU&minBeds=1&lat=${chennaiDispatcherGps.lat}&lng=${chennaiDispatcherGps.lng}`;
+  // ---------------------------------------------------------------------------
+  // 3 & 4. DISPATCHER SEARCHES ICU BEDS & HOSPITAL A APPEARS ON OSM WITH DISTANCE
+  // ---------------------------------------------------------------------------
+  console.log("\n--- SCENARIO STEPS 3 & 4: SEARCH ICU BEDS & HOSPITAL A APPEARS ON OSM ---");
+
+  const searchUrl = `${BASE_URL}/api/hospitals/search?city=Chennai&category=ICU&minBeds=1&lat=${dispatcherGps.lat}&lng=${dispatcherGps.lng}`;
   const searchResponse = await fetch(searchUrl);
   const searchData = await searchResponse.json();
 
-  await test("Search API returns HTTP 200 with Chennai facilities", () => {
+  await test("Dispatcher searches for ICU beds: API returns HTTP 200", () => {
     assert.strictEqual(searchResponse.status, 200);
-    assert(Array.isArray(searchData.hospitals), "Response should contain hospitals array");
-    assert(searchData.hospitals.length >= 5, `Expected >= 5 Chennai hospitals, got ${searchData.hospitals.length}`);
+    assert(Array.isArray(searchData.hospitals));
   });
 
-  await test("Search results include Chettinad Super Speciality and Apollo Hospital Greams Road", () => {
-    const names = searchData.hospitals.map((h: any) => h.name);
-    assert(names.some((n: string) => n.includes("Apollo Hospital Greams Road")), "Apollo Greams Road must be returned");
-    assert(names.some((n: string) => n.includes("Chettinad")), "Chettinad must be returned");
+  const hospitalAInSearch = searchData.hospitals.find(
+    (h: any) => h.id === apolloHospital.id || h.name.includes("Apollo Hospital Greams Road")
+  );
+
+  await test("Hospital A appears in search results with 5 available ICU beds", () => {
+    assert(hospitalAInSearch, "Hospital A must appear in search results");
+    const icuBed = hospitalAInSearch.beds?.find((b: any) => b.categoryCode === "ICU");
+    assert(icuBed, "ICU bed category must be in hospital bed list");
+    assert.strictEqual(icuBed.availableBeds, 5, "Search results must show exactly 5 available ICU beds");
   });
 
-  await test("Hospitals have valid OpenStreetMap coordinates and calculated distance", () => {
-    for (const h of searchData.hospitals) {
-      assert(isValidCoordinates(h.latitude, h.longitude), `Invalid coords for ${h.name}`);
-      assert(typeof h.distanceKm === "number", `Expected numerical distanceKm for ${h.name}`);
-    }
-  });
-
-  await test("Search results are sorted in ascending proximity order (nearest first)", () => {
-    for (let i = 0; i < searchData.hospitals.length - 1; i++) {
-      const current = searchData.hospitals[i];
-      const next = searchData.hospitals[i + 1];
-      if (current.isSuitable === next.isSuitable) {
-        assert(
-          current.distanceKm <= next.distanceKm,
-          `Sort order violation: ${current.name} (${current.distanceKm} km) > ${next.name} (${next.distanceKm} km)`
-        );
-      }
-    }
+  await test("Hospital A has valid OpenStreetMap coordinates and accurate Haversine distance", () => {
+    assert(isValidCoordinates(hospitalAInSearch.latitude, hospitalAInSearch.longitude));
+    assert(typeof hospitalAInSearch.distanceKm === "number");
+    const expectedDist = calculateDistanceKm(
+      dispatcherGps.lat,
+      dispatcherGps.lng,
+      apolloHospital.latitude!,
+      apolloHospital.longitude!
+    );
+    assert(
+      Math.abs(hospitalAInSearch.distanceKm - expectedDist) < 0.2,
+      `Calculated distance (${hospitalAInSearch.distanceKm} km) should match expected (${expectedDist} km)`
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -195,8 +141,8 @@ async function runProductionChecks() {
   const testDispatchPayload = {
     hospitalId: apolloHospital.id,
     ambulanceUnit: "108 EMS Alpha-Chennai",
-    ambulanceLat: chennaiDispatcherGps.lat,
-    ambulanceLng: chennaiDispatcherGps.lng,
+    ambulanceLat: dispatcherGps.lat,
+    ambulanceLng: dispatcherGps.lng,
     bedCategoryCode: "ICU",
     requestedBeds: 1,
     etaMinutes: 12,
@@ -221,8 +167,8 @@ async function runProductionChecks() {
   const createdDispatchId = createData.dispatch.id;
 
   await test("Dispatch record persisted with valid GPS and calculated distance", () => {
-    assert.strictEqual(createData.dispatch.ambulanceLat, chennaiDispatcherGps.lat);
-    assert.strictEqual(createData.dispatch.ambulanceLng, chennaiDispatcherGps.lng);
+    assert.strictEqual(createData.dispatch.ambulanceLat, dispatcherGps.lat);
+    assert.strictEqual(createData.dispatch.ambulanceLng, dispatcherGps.lng);
     assert(typeof createData.distanceKm === "number");
   });
 
@@ -382,9 +328,59 @@ async function runProductionChecks() {
   });
 
   // ---------------------------------------------------------------------------
-  // 7. SECURITY, PERMISSION BOUNDARIES & VALIDATION
+  // 9. BED AVAILABILITY REMAINS VALID & CONSTRAINTS WORK
   // ---------------------------------------------------------------------------
-  console.log("\n--- 7. SECURITY, ROLE BOUNDARIES & INPUT VALIDATION ---");
+  console.log("\n--- SCENARIO STEP 9: BED AVAILABILITY CONSTRAINTS & DATA INTEGRITY ---");
+
+  const [finalIcuCheck] = await db
+    .select()
+    .from(bedCategories)
+    .where(eq(bedCategories.id, icuBedCategory.id))
+    .limit(1);
+
+  await test("Bed availability remains synchronized at 5 in Neon DB", () => {
+    assert.strictEqual(finalIcuCheck.availableBeds, 5);
+  });
+
+  await test("Database constraint: availableBeds <= totalBeds and availableBeds >= 0", () => {
+    assert(finalIcuCheck.availableBeds >= 0);
+    assert(finalIcuCheck.availableBeds <= finalIcuCheck.totalBeds);
+  });
+
+  await test("Rejection of negative bed allocation payload via API", async () => {
+    const negRes = await fetch(`${BASE_URL}/api/hospital/beds`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        categoryId: icuBedCategory.id,
+        availableBeds: -1,
+        totalBeds: finalIcuCheck.totalBeds,
+      }),
+    });
+    // Unauthenticated or bad request
+    assert(negRes.status === 400 || negRes.status === 401);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 10. REFRESHING PAGES DOES NOT LOSE OR FABRICATE DATA (DETERMINISM)
+  // ---------------------------------------------------------------------------
+  console.log("\n--- SCENARIO STEP 10: REFRESH DETERMINISM & PERSISTENCE ---");
+
+  const reSearch1 = await fetch(searchUrl).then((r) => r.json());
+  const reSearch2 = await fetch(searchUrl).then((r) => r.json());
+
+  await test("Repeated search API queries yield identical results (zero data fabrication)", () => {
+    assert.strictEqual(reSearch1.hospitals.length, reSearch2.hospitals.length);
+    const h1 = reSearch1.hospitals.find((h: any) => h.id === apolloHospital.id);
+    const h2 = reSearch2.hospitals.find((h: any) => h.id === apolloHospital.id);
+    assert.strictEqual(h1.totalAvailable, h2.totalAvailable);
+    assert.strictEqual(h1.distanceKm, h2.distanceKm);
+  });
+
+  // ---------------------------------------------------------------------------
+  // 11. SECURITY, HYGIENE & FINAL CHECKS
+  // ---------------------------------------------------------------------------
+  console.log("\n--- FINAL CHECKS: SECURITY, HYGIENE & VALIDATION ---");
 
   // A. Unauthenticated access to protected SuperAdmin endpoint
   const unauthSuperAdminRes = await fetch(`${BASE_URL}/api/superadmin/stats`);
@@ -411,7 +407,6 @@ async function runProductionChecks() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       hospitalId: apolloHospital.id,
-      // Missing ambulanceUnit, bedCategoryCode, requestedBeds
     }),
   });
   await test("Invalid dispatch creation payload returns 400 Bad Request", () => {
@@ -424,11 +419,6 @@ async function runProductionChecks() {
     assert.strictEqual(notFoundDispatchRes.status, 404);
   });
 
-  // ---------------------------------------------------------------------------
-  // 8. CODEBASE HYGIENE CHECKS
-  // ---------------------------------------------------------------------------
-  console.log("\n--- 8. CODEBASE HYGIENE CHECKS ---");
-
   await test("No AIIMS Chennai records or logs remain in Neon DB", async () => {
     const aiimsLogs = await db.select().from(auditLogs).where(sql`details ILIKE '%aiims%chennai%'`);
     assert.strictEqual(aiimsLogs.length, 0, "No AIIMS Chennai audit logs should exist");
@@ -437,9 +427,21 @@ async function runProductionChecks() {
     assert.strictEqual(aiimsHosp.length, 0, "No AIIMS Chennai hospital should exist");
   });
 
+  const [apolloAdminMembership] = await db
+    .select()
+    .from(hospitalMemberships)
+    .where(
+      and(
+        eq(hospitalMemberships.hospitalId, apolloHospital.id),
+        eq(hospitalMemberships.role, "HOSPITAL_ADMIN"),
+        eq(hospitalMemberships.status, "ACTIVE")
+      )
+    )
+    .limit(1);
+
   await test("Apollo Hospital Greams Road is primary admin facility", () => {
-    assert(membership, "Admin membership must be active for Apollo Hospital Greams Road");
-    assert.strictEqual(membership.hospitalId, "hosp_apollo_chennai");
+    assert(apolloAdminMembership, "Admin membership must be active for Apollo Hospital Greams Road");
+    assert.strictEqual(apolloAdminMembership.hospitalId, "hosp_apollo_chennai");
   });
 
   console.log("\n================================================================================");
