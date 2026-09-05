@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { dispatchRequests, bedCategories, hospitals } from "@/db/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { calculateDistanceKm } from "@/lib/geo";
+import { calculateDistanceKm, isValidCoordinates } from "@/lib/geo";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -180,6 +180,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let validAmbulanceLat: number | null = null;
+    let validAmbulanceLng: number | null = null;
+
+    if (ambulanceLat !== undefined && ambulanceLat !== null && ambulanceLng !== undefined && ambulanceLng !== null) {
+      const numLat = Number(ambulanceLat);
+      const numLng = Number(ambulanceLng);
+      if (isValidCoordinates(numLat, numLng)) {
+        validAmbulanceLat = numLat;
+        validAmbulanceLng = numLng;
+      }
+    }
+
+    let distanceKm: number | null = null;
+    if (validAmbulanceLat !== null && validAmbulanceLng !== null && targetHospital.latitude && targetHospital.longitude) {
+      distanceKm = calculateDistanceKm(validAmbulanceLat, validAmbulanceLng, targetHospital.latitude, targetHospital.longitude);
+    }
+
     const now = new Date();
     const newDispatchId = `disp_${Date.now()}`;
 
@@ -190,8 +207,8 @@ export async function POST(req: NextRequest) {
         hospitalId,
         dispatcherSessionId: finalSessionId,
         ambulanceUnit: ambulanceUnit.trim(),
-        ambulanceLat: ambulanceLat ? Number(ambulanceLat) : null,
-        ambulanceLng: ambulanceLng ? Number(ambulanceLng) : null,
+        ambulanceLat: validAmbulanceLat,
+        ambulanceLng: validAmbulanceLng,
         patientRef: patientRef ? patientRef.trim() : `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
         bedCategoryCode: bedCategoryCode.toUpperCase(),
         requestedBeds: numRequested,
@@ -206,7 +223,17 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json(
       {
         success: true,
-        dispatch: createdDispatch,
+        distanceKm,
+        dispatch: {
+          ...createdDispatch,
+          distanceKm,
+          hospitalName: targetHospital.name,
+          hospitalAddress: targetHospital.address,
+          hospitalCity: targetHospital.city,
+          hospitalPhone: targetHospital.phone,
+          hospitalLat: targetHospital.latitude,
+          hospitalLng: targetHospital.longitude,
+        },
         sessionId: finalSessionId,
       },
       {

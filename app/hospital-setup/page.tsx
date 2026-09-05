@@ -6,6 +6,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate } from "@/lib/format-date";
+import { DynamicOSMLocationPicker } from "@/components/map/dynamic-map";
 
 const INDIAN_CITIES = [
   { city: "New Delhi", state: "Delhi", lat: 28.5921, lng: 77.0460 },
@@ -459,6 +460,22 @@ function HospitalSetupContent() {
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="mb-4">
+                  <DynamicOSMLocationPicker
+                    latitude={parseFloat(createForm.latitude) || 28.5921}
+                    longitude={parseFloat(createForm.longitude) || 77.046}
+                    cityName={createForm.city}
+                    onChange={(lat, lng) =>
+                      setCreateForm({
+                        ...createForm,
+                        latitude: lat.toString(),
+                        longitude: lng.toString(),
+                      })
+                    }
+                    className="w-full h-56"
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

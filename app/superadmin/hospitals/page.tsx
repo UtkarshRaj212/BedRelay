@@ -5,6 +5,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { SuperAdminNav, SuperAdminGateway } from "@/components/superadmin-nav";
 import { formatDate } from "@/lib/format-date";
+import { DynamicOSMMapView, DynamicOSMLocationPicker } from "@/components/map/dynamic-map";
 
 interface BedCategory {
   id: string;
@@ -737,6 +738,38 @@ export default function SuperAdminHospitalsPage() {
                 </div>
               </div>
 
+              {/* Interactive OpenStreetMap Facility Location */}
+              {viewingHospital.latitude != null && viewingHospital.longitude != null && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5 font-mono text-[10px] text-slate-500 uppercase">
+                    <span>Facility Location (OpenStreetMap)</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">
+                      {viewingHospital.latitude.toFixed(4)}, {viewingHospital.longitude.toFixed(4)}
+                    </span>
+                  </div>
+                  <DynamicOSMMapView
+                    center={[viewingHospital.latitude, viewingHospital.longitude]}
+                    zoom={14}
+                    className="w-full h-52"
+                    hospitals={[
+                      {
+                        id: viewingHospital.id,
+                        name: viewingHospital.name,
+                        latitude: viewingHospital.latitude,
+                        longitude: viewingHospital.longitude,
+                        city: viewingHospital.city || undefined,
+                        state: viewingHospital.state || undefined,
+                        phone: viewingHospital.phone || undefined,
+                        availableBeds: viewingHospital.availableBeds,
+                        totalBeds: viewingHospital.totalBeds,
+                        isSuitable: viewingHospital.status === "ACTIVE",
+                      },
+                    ]}
+                    autoFitBounds={false}
+                  />
+                </div>
+              )}
+
               {/* Bed Categories Telemetry Breakdown */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -926,6 +959,25 @@ export default function SuperAdminHospitalsPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-slate-700 dark:text-[#ccc] mb-1 font-semibold">
+                  Pinpoint Facility Location (OpenStreetMap)
+                </label>
+                <DynamicOSMLocationPicker
+                  latitude={parseFloat(newHospitalForm.latitude) || 28.6139}
+                  longitude={parseFloat(newHospitalForm.longitude) || 77.209}
+                  cityName={newHospitalForm.city}
+                  onChange={(lat, lng) =>
+                    setNewHospitalForm({
+                      ...newHospitalForm,
+                      latitude: lat.toString(),
+                      longitude: lng.toString(),
+                    })
+                  }
+                  className="w-full h-56"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 dark:text-[#ccc] mb-1 font-semibold">Latitude</label>
@@ -933,7 +985,7 @@ export default function SuperAdminHospitalsPage() {
                     type="text"
                     value={newHospitalForm.latitude}
                     onChange={(e) => setNewHospitalForm({ ...newHospitalForm, latitude: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 font-mono text-xs"
                   />
                 </div>
                 <div>
@@ -942,7 +994,7 @@ export default function SuperAdminHospitalsPage() {
                     type="text"
                     value={newHospitalForm.longitude}
                     onChange={(e) => setNewHospitalForm({ ...newHospitalForm, longitude: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 font-mono text-xs"
                   />
                 </div>
               </div>
@@ -1065,6 +1117,25 @@ export default function SuperAdminHospitalsPage() {
                 />
               </div>
 
+              <div>
+                <label className="block text-slate-700 dark:text-[#ccc] mb-1 font-semibold">
+                  Pinpoint Facility Location (OpenStreetMap)
+                </label>
+                <DynamicOSMLocationPicker
+                  latitude={parseFloat(editHospitalForm.latitude) || 28.6139}
+                  longitude={parseFloat(editHospitalForm.longitude) || 77.209}
+                  cityName={editHospitalForm.city}
+                  onChange={(lat, lng) =>
+                    setEditHospitalForm({
+                      ...editHospitalForm,
+                      latitude: lat.toString(),
+                      longitude: lng.toString(),
+                    })
+                  }
+                  className="w-full h-56"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 dark:text-[#ccc] mb-1 font-semibold">Latitude</label>
@@ -1072,7 +1143,7 @@ export default function SuperAdminHospitalsPage() {
                     type="text"
                     value={editHospitalForm.latitude}
                     onChange={(e) => setEditHospitalForm({ ...editHospitalForm, latitude: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 font-mono text-xs"
                   />
                 </div>
                 <div>
@@ -1081,7 +1152,7 @@ export default function SuperAdminHospitalsPage() {
                     type="text"
                     value={editHospitalForm.longitude}
                     onChange={(e) => setEditHospitalForm({ ...editHospitalForm, longitude: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 font-mono text-xs"
                   />
                 </div>
               </div>

@@ -63,6 +63,8 @@ export async function GET(req: NextRequest) {
   }
 }
 
+import { isValidCoordinates } from "@/lib/geo";
+
 export async function POST(req: NextRequest) {
   try {
     const { errorResponse, user: superAdmin } = await assertSuperAdmin(req);
@@ -79,8 +81,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "City and State are required" }, { status: 400 });
     }
 
-    const latNum = latitude !== undefined && latitude !== null ? Number(latitude) : 20.5937;
-    const lngNum = longitude !== undefined && longitude !== null ? Number(longitude) : 78.9629;
+    let latNum = 20.5937;
+    let lngNum = 78.9629;
+    if (latitude !== undefined && latitude !== null && longitude !== undefined && longitude !== null) {
+      const parsedLat = Number(latitude);
+      const parsedLng = Number(longitude);
+      if (!isValidCoordinates(parsedLat, parsedLng)) {
+        return NextResponse.json(
+          { error: "Invalid coordinates. Latitude must be between -90 and 90, and longitude between -180 and 180." },
+          { status: 400 }
+        );
+      }
+      latNum = parsedLat;
+      lngNum = parsedLng;
+    }
     const hospitalStatus = status === "DEACTIVATED" || status === "INACTIVE" ? status : "ACTIVE";
 
     const now = new Date();
@@ -204,9 +218,15 @@ export async function PATCH(req: NextRequest) {
     if (address !== undefined) updateFields.address = String(address).trim();
     if (city !== undefined) updateFields.city = String(city).trim();
     if (state !== undefined) updateFields.state = String(state).trim();
-    if (phone !== undefined) updateFields.phone = String(phone).trim();
-    if (latitude !== undefined) updateFields.latitude = Number(latitude);
-    if (longitude !== undefined) updateFields.longitude = Number(longitude);
+    if (latitude !== undefined || longitude !== undefined) {
+      const latToCheck = latitude !== undefined ? Number(latitude) : existingHospital.latitude;
+      const lngToCheck = longitude !== undefined ? Number(longitude) : existingHospital.longitude;
+      if (latToCheck !== null && lngToCheck !== null && !isValidCoordinates(latToCheck, lngToCheck)) {
+        return NextResponse.json({ error: "Invalid coordinates provided. Latitude must be between -90 and 90, and longitude between -180 and 180." }, { status: 400 });
+      }
+      if (latitude !== undefined) updateFields.latitude = Number(latitude);
+      if (longitude !== undefined) updateFields.longitude = Number(longitude);
+    }
     if (status !== undefined) {
       if (status !== "ACTIVE" && status !== "DEACTIVATED" && status !== "INACTIVE") {
         return NextResponse.json({ error: "Invalid hospital status" }, { status: 400 });

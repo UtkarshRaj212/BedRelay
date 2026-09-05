@@ -3,8 +3,9 @@
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { INDIAN_CITIES } from "@/lib/geo";
+import { INDIAN_CITIES, isValidCoordinates } from "@/lib/geo";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
+import { DynamicOSMLocationPicker } from "@/components/map/dynamic-map";
 
 interface BedCategory {
   id: string;
@@ -49,6 +50,30 @@ function CreateDispatchContent() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [createdRequest, setCreatedRequest] = useState<any | null>(null);
+
+  const [detectingGps, setDetectingGps] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+
+  const handleDetectGPS = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setGpsError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setDetectingGps(true);
+    setGpsError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(Math.round(pos.coords.latitude * 10000) / 10000);
+        setLng(Math.round(pos.coords.longitude * 10000) / 10000);
+        setDetectingGps(false);
+      },
+      (err) => {
+        setGpsError(`GPS Access Denied (${err.message}).`);
+        setDetectingGps(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
 
   useEffect(() => {
     const fetchHospitals = async () => {
@@ -166,7 +191,7 @@ function CreateDispatchContent() {
         <main className="max-w-xl mx-auto my-16 px-4">
           <div className="bg-white p-8 border border-emerald-300 rounded-sm shadow-sm">
             <div className="inline-block px-2.5 py-1 bg-emerald-100 text-emerald-800 font-mono text-xs font-bold mb-4 rounded-sm">
-              ✓ DISPATCH REQUEST CREATED & TRANSMITTED
+              DISPATCH REQUEST CREATED & TRANSMITTED
             </div>
 
             <h1 className="text-2xl font-bold text-slate-900">Pre-Arrival Alert Sent</h1>
@@ -291,7 +316,7 @@ function CreateDispatchContent() {
 
           {validationError && (
             <div className="p-4 mb-6 bg-red-50 border border-red-200 text-red-700 text-xs font-mono rounded-sm">
-              ⚠ {validationError}
+              Notice: {validationError}
             </div>
           )}
 
@@ -416,11 +441,19 @@ function CreateDispatchContent() {
 
             {/* 04. Current Location Coordinates */}
             <div>
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-mono text-slate-700 uppercase font-semibold">
                   06. Ambulance GPS Coordinates (India)
                 </label>
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDetectGPS}
+                    disabled={detectingGps}
+                    className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white font-mono text-xs rounded-sm transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {detectingGps ? "Acquiring GPS..." : "Detect Ambulance GPS"}
+                  </button>
                   <span className="text-[11px] font-mono text-slate-500">Presets:</span>
                   <button
                     type="button"
@@ -444,6 +477,24 @@ function CreateDispatchContent() {
                     Bengaluru
                   </button>
                 </div>
+              </div>
+
+              {gpsError && (
+                <div className="mb-2 text-xs font-mono text-amber-700">
+                  Notice: {gpsError}
+                </div>
+              )}
+
+              <div className="mb-3">
+                <DynamicOSMLocationPicker
+                  latitude={lat}
+                  longitude={lng}
+                  onChange={(newLat, newLng) => {
+                    setLat(newLat);
+                    setLng(newLng);
+                  }}
+                  className="h-[260px] w-full border border-slate-200 rounded-sm overflow-hidden"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">

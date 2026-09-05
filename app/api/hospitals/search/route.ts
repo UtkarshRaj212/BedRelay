@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { hospitals, bedCategories, dispatchRequests } from "@/db/schema";
-import { calculateDistanceKm, INDIAN_CITIES } from "@/lib/geo";
+import { calculateDistanceKm, INDIAN_CITIES, isValidCoordinates } from "@/lib/geo";
 import { seedIndianHospitals } from "@/lib/seed-service";
 import { desc, eq } from "drizzle-orm";
 
-// Maximum radius (km) for a hospital to be considered "local" to the selected city
+// Maximum radius (km) for a hospital to be considered "local" to the selected city or GPS position
 const LOCAL_DISPATCH_RADIUS_KM = 50;
 
 export const dynamic = "force-dynamic";
@@ -15,29 +15,41 @@ export async function GET(req: NextRequest) {
   try {
     await seedIndianHospitals(false);
 
+    const [allHospitals, allBeds, activeDispatches] = await Promise.all([
+      db.select().from(hospitals).where(eq(hospitals.status, "ACTIVE")),
+      db.select().from(bedCategories),
+      db
+        .select()
+        .from(dispatchRequests)
+        .where(eq(dispatchRequests.status, "PENDING"))
+        .orderBy(desc(dispatchRequests.createdAt)),
+    ]);
+
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category") || "ALL";
     const minBeds = parseInt(searchParams.get("minBeds") || "1", 10);
-    const userLat = searchParams.get("lat") ? parseFloat(searchParams.get("lat")!) : null;
-    const userLng = searchParams.get("lng") ? parseFloat(searchParams.get("lng")!) : null;
+    const rawLat = searchParams.get("lat");
+    const rawLng = searchParams.get("lng");
     const cityParam = searchParams.get("city");
 
-    // Only ACTIVE hospitals are surfaced for EMS dispatch availability
-    const allHospitals = await db
-      .select()
-      .from(hospitals)
-      .where(eq(hospitals.status, "ACTIVE"));
-    const allBeds = await db.select().from(bedCategories);
+    let originLat: number | null = null;
+    let originLng: number | null = null;
 
-    const activeDispatches = await db
-      .select()
-      .from(dispatchRequests)
-      .orderBy(desc(dispatchRequests.createdAt))
-      .limit(10);
+    if (rawLat !== null && rawLng !== null) {
+      const parsedLat = parseFloat(rawLat);
+      const parsedLng = parseFloat(rawLng);
+      if (!isValidCoordinates(parsedLat, parsedLng)) {
+        return NextResponse.json(
+          {
+            error: "Invalid GPS coordinates. Latitude must be between -90 and 90, and longitude between -180 and 180.",
+          },
+          { status: 400 }
+        );
+      }
+      originLat = parsedLat;
+      originLng = parsedLng;
+    }
 
-    // Resolve the search origin coordinates from city name or explicit lat/lng
-    let originLat: number | null = userLat;
-    let originLng: number | null = userLng;
     const cleanCity = cityParam ? cityParam.split(",")[0].trim().toLowerCase() : null;
 
     if (originLat === null && originLng === null && cleanCity) {
@@ -125,6 +137,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       {
+        origin: originLat !== null && originLng !== null ? { lat: originLat, lng: originLng } : null,
         hospitals: localHospitals,
         activeDispatches: enrichedDispatches,
       },

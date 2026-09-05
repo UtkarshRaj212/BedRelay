@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { INDIAN_CITIES } from "@/lib/geo";
+import { INDIAN_CITIES, calculateDistanceKm, formatDistanceKm, isValidCoordinates } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDateTime } from "@/lib/format-date";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
+import { DynamicOSMMapView } from "@/components/map/dynamic-map";
 
 interface BedCategory {
   id: string;
@@ -24,6 +25,8 @@ interface HospitalResult {
   city: string;
   state: string;
   phone: string;
+  latitude: number | null;
+  longitude: number | null;
   distanceKm: number | null;
   totalAvailable: number;
   totalBeds: number;
@@ -42,6 +45,36 @@ export default function FindHospitalPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [lastSynced, setLastSynced] = useState<string>("");
 
+  // Ambulance GPS State
+  const [ambulanceCoordinates, setAmbulanceCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [detectingGps, setDetectingGps] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [manualLat, setManualLat] = useState("19.0760");
+  const [manualLng, setManualLng] = useState("72.8777");
+  const [showManualCoords, setShowManualCoords] = useState(false);
+  const [selectedHospitalMapId, setSelectedHospitalMapId] = useState<string | null>(null);
+
+  // Auto-detect user geolocation on initial page load
+  useEffect(() => {
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = {
+            lat: Math.round(pos.coords.latitude * 10000) / 10000,
+            lng: Math.round(pos.coords.longitude * 10000) / 10000,
+          };
+          setAmbulanceCoordinates(coords);
+          setManualLat(coords.lat.toString());
+          setManualLng(coords.lng.toString());
+        },
+        () => {
+          // Graceful fallback to city center coordinates
+        },
+        { enableHighAccuracy: true, timeout: 6000 }
+      );
+    }
+  }, []);
+
   // Dispatch Request Modal State
   const [dispatchModalHospital, setDispatchModalHospital] = useState<HospitalResult | null>(null);
   const [ambulanceUnit, setAmbulanceUnit] = useState<string>("108 EMS Unit-101");
@@ -56,12 +89,59 @@ export default function FindHospitalPage() {
       ? Number(minBeds)
       : prevMinBedsRef.current || 1;
 
+  const handleDetectGPS = () => {
+    if (typeof window === "undefined" || !navigator.geolocation) {
+      setGpsError("Geolocation is not supported by your browser environment.");
+      return;
+    }
+    setDetectingGps(true);
+    setGpsError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const coords = {
+          lat: Math.round(pos.coords.latitude * 10000) / 10000,
+          lng: Math.round(pos.coords.longitude * 10000) / 10000,
+        };
+        setAmbulanceCoordinates(coords);
+        setManualLat(coords.lat.toString());
+        setManualLng(coords.lng.toString());
+        setDetectingGps(false);
+      },
+      (err) => {
+        setGpsError(`GPS Access Denied (${err.message}). Enter manual coordinates below.`);
+        setDetectingGps(false);
+        setShowManualCoords(true);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
+  const handleApplyManualCoords = (e: React.FormEvent) => {
+    e.preventDefault();
+    const lat = parseFloat(manualLat);
+    const lng = parseFloat(manualLng);
+    if (isValidCoordinates(lat, lng)) {
+      setAmbulanceCoordinates({ lat, lng });
+      setGpsError(null);
+    } else {
+      setGpsError("Invalid coordinates. Latitude (-90 to 90), Longitude (-180 to 180).");
+    }
+  };
+
+  const handleClearGPS = () => {
+    setAmbulanceCoordinates(null);
+    setGpsError(null);
+  };
+
   const fetchSuitableHospitals = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      const url = `/api/hospitals/search?city=${encodeURIComponent(
+      let url = `/api/hospitals/search?city=${encodeURIComponent(
         selectedCity
       )}&category=${selectedCategory}&minBeds=${activeMinBedsNumber}`;
+      if (ambulanceCoordinates) {
+        url += `&lat=${ambulanceCoordinates.lat}&lng=${ambulanceCoordinates.lng}`;
+      }
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -82,13 +162,14 @@ export default function FindHospitalPage() {
       const interval = setInterval(() => fetchSuitableHospitals(true), 5000);
       return () => clearInterval(interval);
     }
-  }, [selectedCity, selectedCategory, minBeds]);
+  }, [selectedCity, selectedCategory, minBeds, ambulanceCoordinates]);
 
   const suitableHospitals = hospitals.filter((h) => h.isSuitable);
   const unsuitableHospitals = hospitals.filter((h) => !h.isSuitable);
 
   const handleOpenDispatch = (hosp: HospitalResult) => {
     setDispatchModalHospital(hosp);
+    setSelectedHospitalMapId(hosp.id);
     setDispatchMsg(null);
   };
 
@@ -111,6 +192,8 @@ export default function FindHospitalPage() {
         body: JSON.stringify({
           hospitalId: dispatchModalHospital.id,
           ambulanceUnit,
+          ambulanceLat: ambulanceCoordinates ? ambulanceCoordinates.lat : null,
+          ambulanceLng: ambulanceCoordinates ? ambulanceCoordinates.lng : null,
           bedCategoryCode: selectedCategory,
           requestedBeds: activeMinBedsNumber,
           etaMinutes: activeEta,
@@ -291,130 +374,347 @@ export default function FindHospitalPage() {
               />
             </div>
           </div>
+
+          {/* Ambulance GPS Telemetry & Manual Coordinate Fallback */}
+          <div className="mt-6 pt-4 border-t border-slate-200 dark:border-[#222222]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold uppercase text-slate-700 dark:text-[#a1a1a1]">
+                  Ambulance Telemetry Origin:
+                </span>
+                {ambulanceCoordinates ? (
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 font-mono text-xs font-bold border border-blue-300 dark:border-blue-800/60 rounded-sm">
+                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+                      GPS: {ambulanceCoordinates.lat.toFixed(4)}, {ambulanceCoordinates.lng.toFixed(4)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleClearGPS}
+                      className="text-xs text-slate-400 hover:text-red-600 font-mono underline cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-xs font-mono text-slate-500 italic">
+                    Using city base location ({selectedCity})
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleDetectGPS}
+                  disabled={detectingGps}
+                  className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-mono text-xs font-semibold rounded-sm transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <span>{detectingGps ? "Acquiring GPS..." : "Detect Ambulance GPS"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowManualCoords(!showManualCoords)}
+                  className="px-3 py-1.5 bg-white dark:bg-[#111111] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] text-slate-700 dark:text-[#ccc] border border-slate-300 dark:border-[#2a2a2a] font-mono text-xs rounded-sm transition-colors cursor-pointer"
+                >
+                  {showManualCoords ? "Hide Coords" : "Manual Coords"}
+                </button>
+              </div>
+            </div>
+
+            {gpsError && (
+              <div className="mt-2 text-xs font-mono text-amber-700 dark:text-amber-400">
+                Notice: {gpsError}
+              </div>
+            )}
+
+            {/* Manual Coordinate Form */}
+            {showManualCoords && (
+              <form onSubmit={handleApplyManualCoords} className="mt-3 p-3 bg-slate-50 dark:bg-[#111111] border border-slate-200 dark:border-[#222222] rounded-sm flex flex-wrap items-center gap-3 font-mono text-xs">
+                <span className="text-slate-600 dark:text-[#888] uppercase">Set Testing Coordinates:</span>
+                <div className="flex items-center gap-1">
+                  <span>Lat:</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={manualLat}
+                    onChange={(e) => setManualLat(e.target.value)}
+                    className="w-24 px-2 py-1 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs"
+                    required
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>Lng:</span>
+                  <input
+                    type="number"
+                    step="any"
+                    value={manualLng}
+                    onChange={(e) => setManualLng(e.target.value)}
+                    className="w-24 px-2 py-1 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-3 py-1 bg-slate-900 dark:bg-white text-white dark:text-black font-semibold rounded-sm hover:opacity-90 cursor-pointer"
+                >
+                  Apply
+                </button>
+              </form>
+            )}
+          </div>
         </div>
 
-        {/* Results Section */}
+        {/* Results Section - Split Layout */}
         {loading ? (
           <div className="p-12 text-center text-sm font-mono text-slate-500 dark:text-[#737373] bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
             EVALUATING HOSPITAL SUITABILITY & PROXIMITY...
           </div>
         ) : (
-          <div className="space-y-8">
-            {/* Suitable Hospitals List */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-[#ededed]">
-                  Suitable Hospitals ({suitableHospitals.length} Facilities with ≥ {activeMinBedsNumber} {selectedCategory} Bed{activeMinBedsNumber > 1 ? "s" : ""})
-                </h2>
-                <span className="text-xs font-mono text-slate-500 dark:text-[#737373]">SORTED BY PROXIMITY (KM)</span>
-              </div>
-
-              {suitableHospitals.length === 0 ? (
-                <div className="p-8 text-center bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
-                  <div className="text-xs font-mono text-amber-700 dark:text-amber-400 font-bold mb-1">NO SUITABLE FACILITIES FOUND</div>
-                  <p className="text-sm text-slate-600 dark:text-[#888888]">
-                    No hospitals near {selectedCity} currently have at least {activeMinBedsNumber} available {selectedCategory} bed(s).
-                  </p>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Map Column (Sticky on desktop) */}
+            <div className="lg:col-span-5 xl:col-span-5">
+              <div className="sticky top-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold uppercase text-slate-700 dark:text-[#a1a1a1]">
+                    LIVE PROXIMITY RADAR (OSM)
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-500">
+                    Click pin to view details
+                  </span>
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {suitableHospitals.map((hosp) => {
-                    const catBed = hosp.beds.find((b) => b.categoryCode.toUpperCase() === selectedCategory.toUpperCase());
-                    const availCount = catBed ? catBed.availableBeds : 0;
+                <div className="h-[560px] border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden shadow-sm">
+                  {(() => {
+                    const activeCityData = INDIAN_CITIES.find(
+                      (c) => c.name.toLowerCase() === selectedCity.toLowerCase()
+                    );
+                    const currentUserLocation = ambulanceCoordinates
+                      ? {
+                          lat: ambulanceCoordinates.lat,
+                          lng: ambulanceCoordinates.lng,
+                          label: ambulanceUnit || "Ambulance / User Location",
+                          isLiveGPS: true,
+                        }
+                      : activeCityData
+                      ? {
+                          lat: activeCityData.lat,
+                          lng: activeCityData.lng,
+                          label: `Your Location (City Base: ${activeCityData.name})`,
+                          isLiveGPS: false,
+                        }
+                      : {
+                          lat: 19.076,
+                          lng: 72.8777,
+                          label: "Your Location (Base)",
+                          isLiveGPS: false,
+                        };
 
                     return (
-                      <div key={hosp.id} className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm p-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-[#222222] pb-4 mb-4">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 text-xs font-mono font-bold rounded-sm">
-                                ✓ SUITABLE FACILITY
-                              </span>
-                              <span className="text-xs text-slate-500 dark:text-[#737373] font-mono">
-                                {hosp.city}, {hosp.state || "India"}
-                              </span>
-                              {hosp.distanceKm !== null && (
-                                <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-400 font-mono text-xs font-bold border border-blue-200 dark:border-blue-900/60 rounded-sm">
-                                  {hosp.distanceKm} km away
-                                </span>
-                              )}
-                            </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1">{hosp.name}</h3>
-                            <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5">
-                              {hosp.address} • Phone: <span className="font-bold text-slate-900 dark:text-[#ededed]">{hosp.phone}</span>
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-6">
-                            <div className="text-right">
-                              <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">{selectedCategory} Available</div>
-                              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 font-mono mt-0.5">
-                                {availCount} <span className="text-xs font-normal text-slate-500 dark:text-[#737373]">/ {catBed ? catBed.totalBeds : 0} Beds</span>
-                              </div>
-                            </div>
-
-                            <button
-                              onClick={() => handleOpenDispatch(hosp)}
-                              className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer"
-                            >
-                              Send Dispatch Request
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Bed Categories breakdown */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          {hosp.beds.map((b) => (
-                            <div key={b.id} className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm text-xs font-mono">
-                              <div className="text-slate-500 dark:text-[#737373] uppercase font-semibold">{b.name}</div>
-                              <div className="text-sm font-bold text-slate-900 dark:text-[#ededed] mt-1">
-                                <span className="text-emerald-700 dark:text-emerald-400">{b.availableBeds}</span> / {b.totalBeds} Available
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <DynamicOSMMapView
+                        userLocation={currentUserLocation}
+                        ambulanceLocation={currentUserLocation}
+                        hospitals={hospitals
+                          .filter((h) => h.latitude !== null && h.longitude !== null)
+                          .map((h) => {
+                            const catBed = h.beds.find(
+                              (b) => b.categoryCode.toUpperCase() === selectedCategory.toUpperCase()
+                            );
+                            return {
+                              id: h.id,
+                              name: h.name,
+                              latitude: h.latitude!,
+                              longitude: h.longitude!,
+                              address: h.address,
+                              city: h.city,
+                              state: h.state,
+                              phone: h.phone,
+                              distanceKm: h.distanceKm,
+                              availableBeds: h.totalAvailable,
+                              totalBeds: h.totalBeds,
+                              targetCategoryBeds: catBed ? catBed.availableBeds : 0,
+                              isSuitable: h.isSuitable,
+                              isSelected: selectedHospitalMapId === h.id,
+                            };
+                          })}
+                        center={[currentUserLocation.lat, currentUserLocation.lng]}
+                        selectedHospitalId={selectedHospitalMapId}
+                        onSelectHospital={(pin) => setSelectedHospitalMapId(pin.id)}
+                        onInitiateDispatch={(pin) => {
+                          const target = hospitals.find((h) => h.id === pin.id);
+                          if (target) handleOpenDispatch(target);
+                        }}
+                        className="h-full w-full"
+                      />
                     );
-                  })}
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* List Column */}
+            <div className="lg:col-span-7 xl:col-span-7 space-y-6">
+              {/* Suitable Hospitals List */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-[#ededed]">
+                    Suitable Hospitals ({suitableHospitals.length})
+                  </h2>
+                  <span className="text-xs font-mono text-slate-500 dark:text-[#737373]">
+                    SORTED BY PROXIMITY (KM)
+                  </span>
+                </div>
+
+                {suitableHospitals.length === 0 ? (
+                  <div className="p-8 text-center bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
+                    <div className="text-xs font-mono text-amber-700 dark:text-amber-400 font-bold mb-1">
+                      NO SUITABLE FACILITIES FOUND
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-[#888888]">
+                      No hospitals near {selectedCity} currently have at least {activeMinBedsNumber}{" "}
+                      available {selectedCategory} bed(s).
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {suitableHospitals.map((hosp) => {
+                      const catBed = hosp.beds.find(
+                        (b) => b.categoryCode.toUpperCase() === selectedCategory.toUpperCase()
+                      );
+                      const availCount = catBed ? catBed.availableBeds : 0;
+                      const isSelected = selectedHospitalMapId === hosp.id;
+
+                      return (
+                        <div
+                          key={hosp.id}
+                          onClick={() => setSelectedHospitalMapId(hosp.id)}
+                          className={`bg-white dark:bg-[#0f0f0f] border rounded-sm p-5 transition-colors cursor-pointer ${
+                            isSelected
+                              ? "border-blue-600 dark:border-blue-500 ring-1 ring-blue-500/30"
+                              : "border-slate-200 dark:border-[#222222] hover:border-slate-300 dark:hover:border-[#333333]"
+                          }`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-[#1e1e1e] pb-3 mb-3">
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 text-xs font-mono font-bold rounded-sm">
+                                  SUITABLE
+                                </span>
+                                <span className="text-xs text-slate-500 dark:text-[#737373] font-mono">
+                                  {hosp.city}, {hosp.state || "India"}
+                                </span>
+                                {hosp.distanceKm !== null && (
+                                  <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-400 font-mono text-xs font-bold border border-blue-200 dark:border-blue-900/60 rounded-sm">
+                                    {formatDistanceKm(hosp.distanceKm)} away
+                                  </span>
+                                )}
+                              </div>
+                              <h3 className="text-lg font-bold text-slate-900 dark:text-[#ededed] mt-1">
+                                {hosp.name}
+                              </h3>
+                              <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5">
+                                {hosp.address} • Ph:{" "}
+                                <span className="font-bold text-slate-900 dark:text-[#ededed]">
+                                  {hosp.phone}
+                                </span>
+                              </p>
+                            </div>
+
+                            <div className="flex items-center gap-4 self-end sm:self-center">
+                              <div className="text-right">
+                                <div className="text-[11px] font-mono text-slate-500 dark:text-[#737373] uppercase">
+                                  {selectedCategory}
+                                </div>
+                                <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400 font-mono">
+                                  {availCount}{" "}
+                                  <span className="text-xs font-normal text-slate-500">
+                                    / {catBed ? catBed.totalBeds : 0}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenDispatch(hosp);
+                                }}
+                                className="px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer"
+                              >
+                                Dispatch
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Bed Categories breakdown */}
+                          <div className="grid grid-cols-3 gap-2">
+                            {hosp.beds.map((b) => (
+                              <div
+                                key={b.id}
+                                className="p-2 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm text-xs font-mono"
+                              >
+                                <div className="text-slate-500 dark:text-[#737373] uppercase text-[10px]">
+                                  {b.name}
+                                </div>
+                                <div className="text-xs font-bold text-slate-900 dark:text-[#ededed] mt-0.5">
+                                  <span className="text-emerald-700 dark:text-emerald-400">
+                                    {b.availableBeds}
+                                  </span>{" "}
+                                  / {b.totalBeds}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Unsuitable Hospitals List */}
+              {unsuitableHospitals.length > 0 && (
+                <div className="pt-4 border-t border-slate-200 dark:border-[#222222]">
+                  <h3 className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase font-bold mb-3">
+                    Nearby Hospitals with Insufficient {selectedCategory} Beds ({unsuitableHospitals.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {unsuitableHospitals.map((hosp) => {
+                      const catBed = hosp.beds.find(
+                        (b) => b.categoryCode.toUpperCase() === selectedCategory.toUpperCase()
+                      );
+                      const availCount = catBed ? catBed.availableBeds : 0;
+                      const totalCount = catBed ? catBed.totalBeds : 0;
+
+                      return (
+                        <div
+                          key={hosp.id}
+                          onClick={() => setSelectedHospitalMapId(hosp.id)}
+                          className="bg-white dark:bg-[#0f0f0f] p-3 border border-slate-200 dark:border-[#222222] rounded-sm flex items-center justify-between cursor-pointer hover:border-slate-300 dark:hover:border-[#333333]"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-400 text-[10px] font-mono font-bold border border-amber-200 dark:border-amber-900/60 rounded-sm">
+                              {availCount}/{totalCount} {selectedCategory}
+                            </span>
+                            <span className="text-xs font-semibold text-slate-800 dark:text-[#ededed]">
+                              {hosp.name}
+                            </span>
+                            {hosp.distanceKm !== null && (
+                              <span className="text-[11px] font-mono text-slate-400 dark:text-[#666]">
+                                • {formatDistanceKm(hosp.distanceKm)}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] font-mono text-slate-500 dark:text-[#737373]">
+                            Need {activeMinBedsNumber}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Local hospitals that don't meet the bed requirement */}
-            {unsuitableHospitals.length > 0 && (
-              <div className="pt-4 border-t border-slate-200 dark:border-[#222222]">
-                <h3 className="text-sm font-mono text-slate-500 dark:text-[#737373] uppercase font-bold mb-3">
-                  Nearby Hospitals with Insufficient {selectedCategory} Beds ({unsuitableHospitals.length})
-                </h3>
-                <div className="space-y-3">
-                  {unsuitableHospitals.map((hosp) => {
-                    const catBed = hosp.beds.find((b) => b.categoryCode.toUpperCase() === selectedCategory.toUpperCase());
-                    const availCount = catBed ? catBed.availableBeds : 0;
-                    const totalCount = catBed ? catBed.totalBeds : 0;
-
-                    return (
-                      <div key={hosp.id} className="bg-white dark:bg-[#0f0f0f] p-4 border border-slate-200 dark:border-[#222222] rounded-sm flex items-center justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-400 text-[10px] font-mono font-bold border border-amber-200 dark:border-amber-900/60 rounded-sm">
-                              {availCount} / {totalCount} {selectedCategory}
-                            </span>
-                            <span className="text-sm font-semibold text-slate-800 dark:text-[#ededed]">{hosp.name}</span>
-                            <span className="text-xs font-mono text-slate-500 dark:text-[#737373]">{hosp.city}</span>
-                            {hosp.distanceKm !== null && (
-                              <span className="text-xs font-mono text-slate-400 dark:text-[#666]">{hosp.distanceKm} km</span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-xs font-mono text-slate-500 dark:text-[#737373]">
-                          Need {activeMinBedsNumber}, only {availCount} available
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </main>
@@ -447,6 +747,26 @@ export default function FindHospitalPage() {
             )}
 
             <form onSubmit={handleSendDispatch} className="space-y-4">
+              {/* Telemetry & Proximity Route Summary */}
+              <div className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm space-y-1.5 font-mono text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 uppercase">Ambulance GPS Origin:</span>
+                  <span className="font-semibold text-slate-800 dark:text-[#ededed]">
+                    {ambulanceCoordinates
+                      ? `${ambulanceCoordinates.lat.toFixed(4)}, ${ambulanceCoordinates.lng.toFixed(4)}`
+                      : `City Center (${selectedCity})`}
+                  </span>
+                </div>
+                {dispatchModalHospital.distanceKm !== null && (
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-[#222222]">
+                    <span className="text-blue-700 dark:text-blue-400 font-semibold uppercase">Straight-Line Distance:</span>
+                    <span className="font-bold text-blue-900 dark:text-blue-300">
+                      {formatDistanceKm(dispatchModalHospital.distanceKm)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">Ambulance Unit Identifier</label>
                 <input
