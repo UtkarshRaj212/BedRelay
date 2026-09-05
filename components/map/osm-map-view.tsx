@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import { createAmbulanceIcon, createHospitalIcon, createUserLocationIcon, HospitalMarkerStatus } from "./osm-icons";
@@ -51,7 +51,7 @@ export interface OSMMapViewProps {
   autoFitBounds?: boolean;
 }
 
-// Sub-component to handle map viewport bounds & recentering
+// Sub-component to handle map viewport bounds & recentering safely
 function MapController({
   center,
   zoom,
@@ -68,37 +68,48 @@ function MapController({
   autoFitBounds?: boolean;
 }) {
   const map = useMap();
+  const prevBoundsSigRef = useRef<string>("");
 
   useEffect(() => {
+    if (!map) return;
     if (!autoFitBounds) {
-      map.setView(center, zoom);
+      map.setView(center, zoom, { animate: false });
       return;
     }
 
     const points: [number, number][] = [];
-    if (userLocation) {
+    if (userLocation && typeof userLocation.lat === "number" && typeof userLocation.lng === "number") {
       points.push([userLocation.lat, userLocation.lng]);
     }
-    if (ambulanceLocation) {
+    if (ambulanceLocation && typeof ambulanceLocation.lat === "number" && typeof ambulanceLocation.lng === "number") {
       points.push([ambulanceLocation.lat, ambulanceLocation.lng]);
     }
     if (hospitals && hospitals.length > 0) {
       hospitals.forEach((h) => {
-        if (h.latitude && h.longitude) {
+        if (typeof h.latitude === "number" && typeof h.longitude === "number") {
           points.push([h.latitude, h.longitude]);
         }
       });
     }
 
+    // Stable signature to avoid repetitive fitBounds calls on innocent re-renders
+    const boundsSig = points.map((p) => `${p[0].toFixed(3)},${p[1].toFixed(3)}`).join("|");
+    if (boundsSig === prevBoundsSigRef.current) {
+      return;
+    }
+    prevBoundsSigRef.current = boundsSig;
+
     if (points.length === 1) {
-      map.setView(points[0], Math.max(zoom, 13));
+      map.setView(points[0], Math.max(zoom, 13), { animate: false });
     } else if (points.length > 1) {
       const bounds = L.latLngBounds(points);
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15, animate: false });
+      }
     } else {
-      map.setView(center, zoom);
+      map.setView(center, zoom, { animate: false });
     }
-  }, [map, center, zoom, ambulanceLocation, hospitals, autoFitBounds]);
+  }, [map, center, zoom, ambulanceLocation, userLocation, hospitals, autoFitBounds]);
 
   return null;
 }
@@ -107,7 +118,7 @@ export default function OSMMapView({
   ambulanceLocation,
   userLocation,
   hospitals = [],
-  center = [28.6139, 77.209], // Default New Delhi
+  center = [13.0827, 80.2707], // Default Chennai
   zoom = 12,
   showRoute = false,
   selectedHospitalId,
@@ -180,8 +191,10 @@ export default function OSMMapView({
         {/* User / Dispatcher Location Marker */}
         {userLocation && (
           <Marker
+            key={`user-loc-${userLocation.lat.toFixed(4)}-${userLocation.lng.toFixed(4)}`}
             position={[userLocation.lat, userLocation.lng]}
             icon={userLocationIcon}
+            autoPan={false}
           >
             <Popup>
               <div className="p-3 font-sans min-w-[200px]">
@@ -203,8 +216,10 @@ export default function OSMMapView({
         {/* Ambulance GPS Marker */}
         {ambulanceLocation && (!userLocation || (userLocation.lat !== ambulanceLocation.lat || userLocation.lng !== ambulanceLocation.lng)) && (
           <Marker
+            key={`amb-loc-${ambulanceLocation.lat.toFixed(4)}-${ambulanceLocation.lng.toFixed(4)}`}
             position={[ambulanceLocation.lat, ambulanceLocation.lng]}
             icon={ambulanceIcon}
+            autoPan={false}
           >
             <Popup>
               <div className="p-3 font-sans min-w-[200px]">
@@ -249,6 +264,7 @@ export default function OSMMapView({
               key={hosp.id}
               position={[hosp.latitude, hosp.longitude]}
               icon={createHospitalIcon(status, displayBeds)}
+              autoPan={false}
               eventHandlers={{
                 click: () => onSelectHospital?.(hosp),
               }}

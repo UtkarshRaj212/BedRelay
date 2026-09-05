@@ -51,7 +51,7 @@ interface DispatchItem {
 export default function DispatcherDashboardPage() {
   const [hospitals, setHospitals] = useState<HospitalItem[]>([]);
   const [activeDispatches, setActiveDispatches] = useState<DispatchItem[]>([]);
-  const [selectedCity, setSelectedCity] = useState<string>("Mumbai");
+  const [selectedCity, setSelectedCity] = useState<string>("Chennai");
   const [loading, setLoading] = useState(true);
   const [lastSynced, setLastSynced] = useState<string>("");
 
@@ -59,8 +59,8 @@ export default function DispatcherDashboardPage() {
   const [ambulanceCoordinates, setAmbulanceCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [detectingGps, setDetectingGps] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [manualLat, setManualLat] = useState("19.0760");
-  const [manualLng, setManualLng] = useState("72.8777");
+  const [manualLat, setManualLat] = useState("13.0827");
+  const [manualLng, setManualLng] = useState("80.2707");
   const [showManualCoords, setShowManualCoords] = useState(false);
   const [showMap, setShowMap] = useState(true);
   const [selectedHospitalMapId, setSelectedHospitalMapId] = useState<string | null>(null);
@@ -448,7 +448,7 @@ export default function DispatcherDashboardPage() {
                           (c) => c.name.toLowerCase() === selectedCity.toLowerCase()
                         )!.lng,
                       ]
-                    : [19.076, 72.8777]
+                    : [13.0827, 80.2707]
                 }
                 selectedHospitalId={selectedHospitalMapId}
                 onSelectHospital={(pin) => setSelectedHospitalMapId(pin.id)}

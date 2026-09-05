@@ -964,8 +964,8 @@ export default function SuperAdminHospitalsPage() {
                   Pinpoint Facility Location (OpenStreetMap)
                 </label>
                 <DynamicOSMLocationPicker
-                  latitude={parseFloat(newHospitalForm.latitude) || 28.6139}
-                  longitude={parseFloat(newHospitalForm.longitude) || 77.209}
+                  latitude={parseFloat(newHospitalForm.latitude) || 13.0827}
+                  longitude={parseFloat(newHospitalForm.longitude) || 80.2707}
                   cityName={newHospitalForm.city}
                   onChange={(lat, lng) =>
                     setNewHospitalForm({
@@ -1122,8 +1122,8 @@ export default function SuperAdminHospitalsPage() {
                   Pinpoint Facility Location (OpenStreetMap)
                 </label>
                 <DynamicOSMLocationPicker
-                  latitude={parseFloat(editHospitalForm.latitude) || 28.6139}
-                  longitude={parseFloat(editHospitalForm.longitude) || 77.209}
+                  latitude={parseFloat(editHospitalForm.latitude) || 13.0827}
+                  longitude={parseFloat(editHospitalForm.longitude) || 80.2707}
                   cityName={editHospitalForm.city}
                   onChange={(lat, lng) =>
                     setEditHospitalForm({

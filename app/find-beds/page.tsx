@@ -36,7 +36,7 @@ interface HospitalResult {
 }
 
 export default function FindHospitalPage() {
-  const [selectedCity, setSelectedCity] = useState<string>("Mumbai");
+  const [selectedCity, setSelectedCity] = useState<string>("Chennai");
   const [selectedCategory, setSelectedCategory] = useState<string>("ICU");
   const [minBeds, setMinBeds] = useState<string | number>(1);
   const prevMinBedsRef = useRef<number>(1);
@@ -49,8 +49,8 @@ export default function FindHospitalPage() {
   const [ambulanceCoordinates, setAmbulanceCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [detectingGps, setDetectingGps] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [manualLat, setManualLat] = useState("19.0760");
-  const [manualLng, setManualLng] = useState("72.8777");
+  const [manualLat, setManualLat] = useState("13.0827");
+  const [manualLng, setManualLng] = useState("80.2707");
   const [showManualCoords, setShowManualCoords] = useState(false);
   const [selectedHospitalMapId, setSelectedHospitalMapId] = useState<string | null>(null);
 
@@ -504,9 +504,9 @@ export default function FindHospitalPage() {
                           isLiveGPS: false,
                         }
                       : {
-                          lat: 19.076,
-                          lng: 72.8777,
-                          label: "Your Location (Base)",
+                          lat: 13.0827,
+                          lng: 80.2707,
+                          label: "Your Location (Chennai Base)",
                           isLiveGPS: false,
                         };
 

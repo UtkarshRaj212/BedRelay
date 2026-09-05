@@ -1,5 +1,32 @@
 import L from "leaflet";
 
+// Defensive monkeypatch for Leaflet DomUtil to prevent 'Cannot read properties of undefined (reading _leaflet_pos)'
+if (typeof window !== "undefined" && L && L.DomUtil) {
+  const origGetPosition = L.DomUtil.getPosition;
+  if (origGetPosition) {
+    L.DomUtil.getPosition = function (el: any) {
+      if (!el) return new L.Point(0, 0);
+      try {
+        return origGetPosition.call(L.DomUtil, el) || new L.Point(0, 0);
+      } catch {
+        return new L.Point(0, 0);
+      }
+    };
+  }
+
+  const origSetPosition = L.DomUtil.setPosition;
+  if (origSetPosition) {
+    L.DomUtil.setPosition = function (el: any, point: any) {
+      if (!el) return;
+      try {
+        origSetPosition.call(L.DomUtil, el, point);
+      } catch {
+        // Safe no-op if element is in transition or unmounted
+      }
+    };
+  }
+}
+
 /**
  * Custom SVG DivIcons designed specifically for BedRelay.
  * Eliminates Webpack/Next.js broken marker image paths and aligns with

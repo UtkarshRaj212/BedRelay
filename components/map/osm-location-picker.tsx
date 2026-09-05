@@ -27,20 +27,33 @@ function MapClickEvents({ onLocationSelect }: { onLocationSelect: (lat: number, 
   return null;
 }
 
-// Controller to programmatic view adjustments
-function MapCenterController({ center }: { center: [number, number] }) {
+// Controller to programmatic view adjustments without animation collision
+function MapCenterController({
+  center,
+  isDraggingRef,
+}: {
+  center: [number, number];
+  isDraggingRef: React.MutableRefObject<boolean>;
+}) {
   const map = useMap();
   const prevCenterRef = useRef<[number, number]>(center);
 
   useEffect(() => {
+    // If the position change was just initiated by the user dragging the pin, do not re-center the map
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      prevCenterRef.current = center;
+      return;
+    }
+
     if (
       Math.abs(prevCenterRef.current[0] - center[0]) > 0.0001 ||
       Math.abs(prevCenterRef.current[1] - center[1]) > 0.0001
     ) {
-      map.setView(center, map.getZoom());
+      map.setView(center, map.getZoom(), { animate: false });
       prevCenterRef.current = center;
     }
-  }, [center, map]);
+  }, [center, map, isDraggingRef]);
 
   return null;
 }
@@ -53,7 +66,8 @@ export default function OSMLocationPicker({
   cityName,
 }: OSMLocationPickerProps) {
   const valid = isValidCoordinates(latitude, longitude);
-  const currentPos: [number, number] = valid ? [latitude, longitude] : [28.6139, 77.209];
+  const currentPos: [number, number] = valid ? [latitude, longitude] : [13.0827, 80.2707];
+  const isDraggingRef = useRef(false);
 
   const markerIcon = useMemo(() => createLocationPickerIcon(), []);
 
@@ -61,6 +75,7 @@ export default function OSMLocationPicker({
     const marker = event.target;
     if (marker) {
       const position = marker.getLatLng();
+      isDraggingRef.current = true;
       onChange(
         Math.round(position.lat * 10000) / 10000,
         Math.round(position.lng * 10000) / 10000
@@ -69,6 +84,7 @@ export default function OSMLocationPicker({
   };
 
   const handleCityPreset = (cityLat: number, cityLng: number) => {
+    isDraggingRef.current = false;
     onChange(cityLat, cityLng);
   };
 
@@ -101,13 +117,19 @@ export default function OSMLocationPicker({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maxZoom={19}
           />
-          <MapCenterController center={currentPos} />
-          <MapClickEvents onLocationSelect={(lat, lng) => onChange(lat, lng)} />
+          <MapCenterController center={currentPos} isDraggingRef={isDraggingRef} />
+          <MapClickEvents
+            onLocationSelect={(lat, lng) => {
+              isDraggingRef.current = false;
+              onChange(lat, lng);
+            }}
+          />
 
           <Marker
             position={currentPos}
             icon={markerIcon}
             draggable={true}
+            autoPan={false}
             eventHandlers={{
               dragend: handleDragEnd,
             }}

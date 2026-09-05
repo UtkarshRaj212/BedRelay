@@ -38,8 +38,8 @@ function CreateDispatchContent() {
   const [hospitals, setHospitals] = useState<HospitalItem[]>([]);
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>(preselectedHospitalId || "");
   const [ambulanceUnit, setAmbulanceUnit] = useState<string>("108 EMS Unit-402");
-  const [lat, setLat] = useState<number>(19.076); // Default Mumbai
-  const [lng, setLng] = useState<number>(72.8777);
+  const [lat, setLat] = useState<number>(13.0827); // Default Chennai
+  const [lng, setLng] = useState<number>(80.2707);
   const [bedCategory, setBedCategory] = useState<string>("ICU");
   const [requestedBeds, setRequestedBeds] = useState<number>(1);
   const [patientRef, setPatientRef] = useState<string>(`PAT-${Math.floor(1000 + Math.random() * 9000)}`);
