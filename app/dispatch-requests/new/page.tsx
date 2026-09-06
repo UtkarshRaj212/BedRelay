@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { INDIAN_CITIES, isValidCoordinates } from "@/lib/geo";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
 import { DynamicOSMLocationPicker } from "@/components/map/dynamic-map";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface BedCategory {
   id: string;
@@ -174,57 +175,65 @@ function CreateDispatchContent() {
 
   if (createdRequest) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
-        <header className="bg-white border-b border-slate-200">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
+        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+            <span>PRE-ARRIVAL ALERT TRANSMITTED</span>
+          </div>
+          <ThemeToggle />
+        </div>
+
+        <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-slate-900 text-white font-bold flex items-center justify-center text-sm font-mono rounded-sm">
+              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
                 BR
               </div>
-              <span className="font-bold text-lg text-slate-900 font-mono tracking-tight">
-                BED<span className="text-blue-700">RELAY</span>
+              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight">
+                BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
               </span>
             </Link>
           </div>
         </header>
 
-        <main className="max-w-xl mx-auto my-16 px-4">
-          <div className="bg-white p-8 border border-emerald-300 rounded-sm shadow-sm">
-            <div className="inline-block px-2.5 py-1 bg-emerald-100 text-emerald-800 font-mono text-xs font-bold mb-4 rounded-sm">
+        <main className="max-w-xl mx-auto my-8 sm:my-16 px-4">
+          <div className="bg-white dark:bg-[#0a0a0a] p-6 sm:p-8 border border-emerald-300 dark:border-emerald-800/60 rounded-sm shadow-sm">
+            <div className="inline-block px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 font-mono text-xs font-bold mb-4 rounded-sm border border-emerald-300 dark:border-emerald-800/60">
               DISPATCH REQUEST CREATED & TRANSMITTED
             </div>
 
-            <h1 className="text-2xl font-bold text-slate-900">Pre-Arrival Alert Sent</h1>
-            <p className="mt-2 text-sm text-slate-600">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Pre-Arrival Alert Sent</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-[#a1a1a1]">
               The dispatch request has been saved to Neon database and broadcasted to {selectedHospital?.name}.
             </p>
 
-            <div className="mt-6 p-4 bg-slate-50 border border-slate-200 font-mono text-xs space-y-2">
-              <div>
-                <span className="text-slate-500 uppercase">Request ID:</span>{" "}
-                <span className="font-bold text-slate-900">{createdRequest.id}</span>
+            <div className="mt-6 p-4 bg-slate-50 dark:bg-[#111111] border border-slate-200 dark:border-[#222222] font-mono text-xs space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                <span className="text-slate-500 dark:text-[#737373] uppercase">Request ID:</span>{" "}
+                <span className="font-bold text-slate-900 dark:text-[#ededed] break-all">{createdRequest.id}</span>
               </div>
-              <div>
-                <span className="text-slate-500 uppercase">Ambulance Unit:</span>{" "}
-                <span className="font-bold text-slate-900">{createdRequest.ambulanceUnit}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                <span className="text-slate-500 dark:text-[#737373] uppercase">Ambulance Unit:</span>{" "}
+                <span className="font-bold text-slate-900 dark:text-[#ededed]">{createdRequest.ambulanceUnit}</span>
               </div>
-              <div>
-                <span className="text-slate-500 uppercase">Patient Ref:</span>{" "}
-                <span className="font-bold text-slate-900">{createdRequest.patientRef}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                <span className="text-slate-500 dark:text-[#737373] uppercase">Patient Ref:</span>{" "}
+                <span className="font-bold text-slate-900 dark:text-[#ededed]">{createdRequest.patientRef}</span>
               </div>
-              <div>
-                <span className="text-slate-500 uppercase">Hospital:</span>{" "}
-                <span className="font-bold text-slate-900">{selectedHospital?.name}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                <span className="text-slate-500 dark:text-[#737373] uppercase">Hospital:</span>{" "}
+                <span className="font-bold text-slate-900 dark:text-[#ededed]">{selectedHospital?.name}</span>
               </div>
-              <div>
-                <span className="text-slate-500 uppercase">Category / Beds:</span>{" "}
-                <span className="font-bold text-blue-700">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                <span className="text-slate-500 dark:text-[#737373] uppercase">Category / Beds:</span>{" "}
+                <span className="font-bold text-blue-700 dark:text-blue-400">
                   {createdRequest.bedCategoryCode} ({createdRequest.requestedBeds} bed)
                 </span>
               </div>
-              <div>
-                <span className="text-slate-500 uppercase">Status:</span>{" "}
-                <span className="px-2 py-0.5 bg-amber-100 text-amber-800 font-bold border border-amber-300 rounded-sm">
+              <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
+                <span className="text-slate-500 dark:text-[#737373] uppercase">Status:</span>{" "}
+                <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 font-bold border border-amber-300 dark:border-amber-800/60 rounded-sm w-fit">
                   {createdRequest.status}
                 </span>
               </div>
@@ -233,19 +242,19 @@ function CreateDispatchContent() {
             <div className="mt-6 flex flex-col sm:flex-row gap-3">
               <Link
                 href={`/dispatch-requests/${createdRequest.id}`}
-                className="w-full text-center px-4 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm rounded-sm transition-colors"
+                className="w-full text-center px-4 py-3 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-sm rounded-sm transition-colors"
               >
                 Track Live Request Details →
               </Link>
               <Link
                 href="/dispatcher/history"
-                className="w-full text-center px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-sm transition-colors"
+                className="w-full text-center px-4 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-[#ededed] dark:hover:bg-white text-white dark:text-black font-semibold text-sm rounded-sm transition-colors"
               >
                 View Request History
               </Link>
               <Link
                 href="/dispatcher"
-                className="w-full text-center px-4 py-3 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 font-semibold text-sm rounded-sm transition-colors"
+                className="w-full text-center px-4 py-3 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-[#181818] text-slate-900 dark:text-[#ededed] border border-slate-300 dark:border-[#2a2a2a] font-semibold text-sm rounded-sm transition-colors"
               >
                 Dashboard
               </Link>
@@ -257,28 +266,31 @@ function CreateDispatchContent() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* System Bar */}
-      <div className="bg-slate-900 text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 font-mono">
+      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
           <span className="font-semibold">CREATE DISPATCH REQUEST</span>
         </div>
-        <div className="text-slate-400 text-[11px] font-mono shrink-0">DISPATCHER CONSOLE</div>
+        <div className="flex items-center gap-3 text-slate-400 dark:text-[#888888] text-[11px] font-mono shrink-0">
+          <span>DISPATCHER CONSOLE</span>
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+      <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-slate-900 text-white font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
+            <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
               BR
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-lg text-slate-900 font-mono tracking-tight leading-none">
-                BED<span className="text-blue-700">RELAY</span>
+              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight leading-none">
+                BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
               </span>
-              <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-0.5">
+              <span className="text-[10px] text-slate-500 dark:text-[#737373] font-mono tracking-widest uppercase mt-0.5">
                 Ambulance Dispatcher Console
               </span>
             </div>
@@ -287,19 +299,19 @@ function CreateDispatchContent() {
           <nav className="flex items-center gap-1.5 sm:gap-2 font-mono text-xs overflow-x-auto no-scrollbar py-0.5 max-w-full">
             <Link
               href="/dispatcher"
-              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 hover:text-slate-900 rounded-sm whitespace-nowrap shrink-0"
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm whitespace-nowrap shrink-0"
             >
               DISPATCHER DASHBOARD
             </Link>
             <Link
               href="/find-beds"
-              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 hover:text-slate-900 rounded-sm whitespace-nowrap shrink-0"
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm whitespace-nowrap shrink-0"
             >
               FIND HOSPITAL
             </Link>
             <Link
               href="/dispatcher/history"
-              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 hover:text-slate-900 rounded-sm whitespace-nowrap shrink-0"
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm whitespace-nowrap shrink-0"
             >
               REQUEST HISTORY
             </Link>
@@ -308,14 +320,14 @@ function CreateDispatchContent() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="bg-white p-4 sm:p-8 border border-slate-200 rounded-sm">
-          <div className="border-l-2 border-blue-700 pl-3 mb-6">
-            <span className="text-xs font-mono text-blue-700 uppercase tracking-widest block">PRE-ARRIVAL ALERT TRANSMISSION</span>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">Create New Dispatch Request</h1>
+        <div className="bg-white dark:bg-[#0a0a0a] p-4 sm:p-8 border border-slate-200 dark:border-[#222222] rounded-sm shadow-xs">
+          <div className="border-l-2 border-blue-700 dark:border-blue-500 pl-3 mb-6">
+            <span className="text-xs font-mono text-blue-700 dark:text-blue-400 uppercase tracking-widest block">PRE-ARRIVAL ALERT TRANSMISSION</span>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-0.5">Create New Dispatch Request</h1>
           </div>
 
           {validationError && (
-            <div className="p-4 mb-6 bg-red-50 border border-red-200 text-red-700 text-xs font-mono rounded-sm">
+            <div className="p-4 mb-6 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs font-mono rounded-sm">
               Notice: {validationError}
             </div>
           )}
@@ -323,18 +335,18 @@ function CreateDispatchContent() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* 01. Select Target Hospital & Show Real Availability */}
             <div>
-              <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-1">
+              <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
                 01. Select Destination Hospital
               </label>
               {loadingHospitals ? (
-                <div className="p-3 text-xs font-mono text-slate-500 bg-slate-50 border border-slate-300">
+                <div className="p-3 text-xs font-mono text-slate-500 dark:text-[#737373] bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a]">
                   Loading hospitals...
                 </div>
               ) : (
                 <select
                   value={selectedHospitalId}
                   onChange={(e) => setSelectedHospitalId(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 text-slate-900 font-mono text-sm font-semibold focus:outline-none focus:border-slate-900 rounded-sm"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm font-semibold focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
                   required
                 >
                   {hospitals.map((h) => (
@@ -348,8 +360,8 @@ function CreateDispatchContent() {
 
             {/* Selected Hospital Availability Summary Box */}
             {selectedHospital && (
-              <div className="p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-sm">
-                <div className="text-xs font-mono text-slate-500 uppercase font-semibold mb-2">
+              <div className="p-3 sm:p-4 bg-slate-50 dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
+                <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase font-semibold mb-2">
                   Real-Time Availability at {selectedHospital.name}:
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
@@ -358,13 +370,13 @@ function CreateDispatchContent() {
                       key={b.id}
                       className={`p-2.5 border rounded-sm ${
                         b.categoryCode.toUpperCase() === bedCategory.toUpperCase()
-                          ? "bg-blue-50 border-blue-300"
-                          : "bg-white border-slate-200"
+                          ? "bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800/60"
+                          : "bg-white dark:bg-[#141414] border-slate-200 dark:border-[#222222]"
                       }`}
                     >
-                      <div className="text-[10px] font-mono text-slate-500 uppercase truncate">{b.name}</div>
-                      <div className="text-sm sm:text-base font-bold font-mono text-slate-900 mt-0.5">
-                        <span className="text-emerald-700">{b.availableBeds}</span> / {b.totalBeds}
+                      <div className="text-[10px] font-mono text-slate-500 dark:text-[#737373] uppercase truncate">{b.name}</div>
+                      <div className="text-sm sm:text-base font-bold font-mono text-slate-900 dark:text-[#ededed] mt-0.5">
+                        <span className="text-emerald-700 dark:text-emerald-400">{b.availableBeds}</span> / {b.totalBeds}
                       </div>
                     </div>
                   ))}
@@ -375,28 +387,28 @@ function CreateDispatchContent() {
             {/* 02. Ambulance Vehicle ID & Patient Reference */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-1">
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
                   02. Ambulance / Vehicle ID
                 </label>
                 <input
                   type="text"
                   value={ambulanceUnit}
                   onChange={(e) => setAmbulanceUnit(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 text-slate-900 font-mono text-sm focus:outline-none focus:border-slate-900 rounded-sm"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
                   placeholder="e.g. 108 EMS Unit-402"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-1">
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
                   03. Patient Reference ID
                 </label>
                 <input
                   type="text"
                   value={patientRef}
                   onChange={(e) => setPatientRef(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 text-slate-900 font-mono text-sm focus:outline-none focus:border-slate-900 rounded-sm"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
                   placeholder="e.g. PAT-9204"
                   required
                 />
@@ -406,13 +418,13 @@ function CreateDispatchContent() {
             {/* 03. Required Bed Category & Count */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-1">
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
                   04. Required Bed Category
                 </label>
                 <select
                   value={bedCategory}
                   onChange={(e) => setBedCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 text-slate-900 font-mono text-sm font-semibold focus:outline-none focus:border-slate-900 rounded-sm"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm font-semibold focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
                 >
                   <option value="ICU">Intensive Care Unit (ICU)</option>
                   <option value="GENERAL">General Ward</option>
@@ -421,7 +433,7 @@ function CreateDispatchContent() {
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-1">
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
                   05. Number of Beds Required
                 </label>
                 <input
@@ -430,11 +442,11 @@ function CreateDispatchContent() {
                   max={availableBeds || 1}
                   value={requestedBeds}
                   onChange={(e) => setRequestedBeds(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-300 text-slate-900 font-mono text-sm focus:outline-none focus:border-slate-900 rounded-sm"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
                   required
                 />
-                <span className="text-[11px] font-mono text-slate-500 block mt-1">
-                  Currently available in {bedCategory}: <span className="font-bold text-emerald-700">{availableBeds}</span>
+                <span className="text-[11px] font-mono text-slate-500 dark:text-[#737373] block mt-1">
+                  Currently available in {bedCategory}: <span className="font-bold text-emerald-700 dark:text-emerald-400">{availableBeds}</span>
                 </span>
               </div>
             </div>
@@ -442,7 +454,7 @@ function CreateDispatchContent() {
             {/* 04. Current Location Coordinates */}
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                <label className="text-xs font-mono text-slate-700 uppercase font-semibold">
+                <label className="text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold">
                   06. Ambulance GPS Coordinates (India)
                 </label>
                 <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -450,29 +462,29 @@ function CreateDispatchContent() {
                     type="button"
                     onClick={handleDetectGPS}
                     disabled={detectingGps}
-                    className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white font-mono text-xs rounded-sm transition-colors cursor-pointer disabled:opacity-50"
+                    className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-mono text-xs rounded-sm transition-colors cursor-pointer disabled:opacity-50"
                   >
                     {detectingGps ? "Acquiring GPS..." : "Detect Ambulance GPS"}
                   </button>
-                  <span className="text-[11px] font-mono text-slate-500">Presets:</span>
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-[#737373]">Presets:</span>
                   <button
                     type="button"
                     onClick={() => handleCityPresetSelect("Mumbai")}
-                    className="text-[11px] font-mono text-blue-700 hover:underline cursor-pointer"
+                    className="text-[11px] font-mono text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
                   >
                     Mumbai
                   </button>
                   <button
                     type="button"
                     onClick={() => handleCityPresetSelect("New Delhi")}
-                    className="text-[11px] font-mono text-blue-700 hover:underline cursor-pointer"
+                    className="text-[11px] font-mono text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
                   >
                     Delhi
                   </button>
                   <button
                     type="button"
                     onClick={() => handleCityPresetSelect("Bengaluru")}
-                    className="text-[11px] font-mono text-blue-700 hover:underline cursor-pointer"
+                    className="text-[11px] font-mono text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
                   >
                     Bengaluru
                   </button>
@@ -480,7 +492,7 @@ function CreateDispatchContent() {
               </div>
 
               {gpsError && (
-                <div className="mb-2 text-xs font-mono text-amber-700">
+                <div className="mb-2 text-xs font-mono text-amber-700 dark:text-amber-400">
                   Notice: {gpsError}
                 </div>
               )}
@@ -493,30 +505,30 @@ function CreateDispatchContent() {
                     setLat(newLat);
                     setLng(newLng);
                   }}
-                  className="h-[220px] sm:h-[260px] w-full border border-slate-200 rounded-sm overflow-hidden"
+                  className="h-[220px] sm:h-[260px] w-full border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <span className="text-[10px] font-mono text-slate-500 block">Latitude</span>
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-[#737373] block">Latitude</span>
                   <input
                     type="number"
                     step="any"
                     value={lat}
                     onChange={(e) => setLat(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-300 text-slate-900 font-mono text-sm focus:outline-none rounded-sm"
+                    className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
                     required
                   />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono text-slate-500 block">Longitude</span>
+                  <span className="text-[10px] font-mono text-slate-500 dark:text-[#737373] block">Longitude</span>
                   <input
                     type="number"
                     step="any"
                     value={lng}
                     onChange={(e) => setLng(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-300 text-slate-900 font-mono text-sm focus:outline-none rounded-sm"
+                    className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
                     required
                   />
                 </div>
@@ -526,7 +538,7 @@ function CreateDispatchContent() {
             {/* 05. ETA & Clinical Condition Notes */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-1">
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
                   07. Travel ETA (Mins)
                 </label>
                 <input
@@ -534,37 +546,37 @@ function CreateDispatchContent() {
                   min="1"
                   value={etaMinutes}
                   onChange={(e) => setEtaMinutes(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-300 text-slate-900 font-mono text-sm focus:outline-none rounded-sm"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
                   required
                 />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="block text-xs font-mono text-slate-700 uppercase font-semibold mb-1">
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
                   08. Patient Clinical Condition
                 </label>
                 <input
                   type="text"
                   value={patientCondition}
                   onChange={(e) => setPatientCondition(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 text-slate-900 text-sm focus:outline-none rounded-sm"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] text-sm focus:outline-none rounded-sm"
                   placeholder="e.g. Acute Trauma / Cardiac distress"
                   required
                 />
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2.5 sm:gap-3">
+            <div className="pt-4 border-t border-slate-200 dark:border-[#222222] flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2.5 sm:gap-3">
               <Link
                 href="/find-beds"
-                className="w-full sm:w-auto px-4 py-2.5 text-xs font-semibold uppercase text-slate-600 hover:text-slate-900 border border-slate-300 rounded-sm text-center"
+                className="w-full sm:w-auto px-4 py-2.5 text-xs font-semibold uppercase text-slate-600 dark:text-[#a1a1a1] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#111111] rounded-sm text-center"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
+                className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
               >
                 {submitting ? "Transmitting to Neon..." : "Submit Dispatch Request"}
               </button>
@@ -578,7 +590,16 @@ function CreateDispatchContent() {
 
 export default function CreateDispatchRequestPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center font-mono text-xs text-slate-500">Loading form...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] flex items-center justify-center font-mono text-xs">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping"></span>
+            <span>Loading dispatch form...</span>
+          </div>
+        </div>
+      }
+    >
       <CreateDispatchContent />
     </Suspense>
   );

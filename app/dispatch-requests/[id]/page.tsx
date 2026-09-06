@@ -110,27 +110,51 @@ export default function DispatchRequestDetailsPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-mono text-sm text-slate-600">
-        LOADING DISPATCH REQUEST TELEMETRY...
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col transition-colors duration-150">
+        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="h-2 w-2 rounded-full bg-blue-500 inline-block animate-pulse"></span>
+            <span className="font-semibold">LIVE REQUEST TRACKING</span>
+          </div>
+          <ThemeToggle />
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center font-mono text-sm p-4">
+          <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md animate-pulse mb-4">
+            BR
+          </div>
+          <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-[#888888]">
+            <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
+            <span>LOADING DISPATCH REQUEST TELEMETRY...</span>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (errorMsg || !dispatch) {
     return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased flex items-center justify-center p-4">
-        <div className="bg-white p-8 border border-slate-200 rounded-sm max-w-md w-full text-center">
-          <div className="text-xs font-mono text-red-700 font-bold uppercase mb-2">ERROR</div>
-          <h1 className="text-xl font-bold text-slate-900">{errorMsg || "Request Not Found"}</h1>
-          <p className="mt-2 text-sm text-slate-600">
-            The requested dispatch request ID could not be located in the Neon database.
-          </p>
-          <Link
-            href="/dispatcher"
-            className="mt-6 inline-block w-full text-center px-4 py-2 bg-slate-900 text-white font-semibold text-sm rounded-sm"
-          >
-            Return to Dispatcher Dashboard
-          </Link>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col transition-colors duration-150">
+        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="h-2 w-2 rounded-full bg-red-500 inline-block"></span>
+            <span className="font-semibold">DISPATCH TELEMETRY ERROR</span>
+          </div>
+          <ThemeToggle />
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#0f0f0f] p-8 border border-slate-200 dark:border-[#222222] rounded-sm max-w-md w-full text-center shadow-sm">
+            <div className="text-xs font-mono text-red-700 dark:text-red-400 font-bold uppercase mb-2">ERROR</div>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-[#ededed]">{errorMsg || "Request Not Found"}</h1>
+            <p className="mt-2 text-sm text-slate-600 dark:text-[#888888]">
+              The requested dispatch request ID could not be located in the Neon database.
+            </p>
+            <Link
+              href="/dispatcher"
+              className="mt-6 inline-block w-full text-center px-4 py-2.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold text-sm rounded-sm transition-colors"
+            >
+              Return to Dispatcher Dashboard
+            </Link>
+          </div>
         </div>
       </div>
     );

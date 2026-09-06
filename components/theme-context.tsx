@@ -21,15 +21,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem("bedrelay_theme") as Theme | null;
-      if (stored === "dark" || stored === "light") {
-        setThemeState(stored);
-        if (stored === "dark") {
-          document.documentElement.classList.add("dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-        }
+      const prefersDark =
+        typeof window !== "undefined" &&
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+      if (stored === "dark" || (!stored && prefersDark)) {
+        setThemeState("dark");
+        document.documentElement.classList.add("dark");
       } else {
-        // Light is default as requested
+        setThemeState("light");
         document.documentElement.classList.remove("dark");
       }
     } catch {

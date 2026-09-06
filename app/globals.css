@@ -22,10 +22,12 @@
 html {
   max-width: 100vw;
   overflow-x: hidden;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   max-width: 100vw;

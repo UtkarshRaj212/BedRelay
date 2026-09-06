@@ -178,7 +178,7 @@ export default function StaffManagementPage() {
 
   if (isPending || (loading && !hospital && !forbidden && !needsOnboarding)) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] flex items-center justify-center font-mono text-sm text-slate-500">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] flex items-center justify-center font-mono text-sm">
         <span className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping mr-3"></span>
         Loading Hospital Staff Management Console...
       </div>

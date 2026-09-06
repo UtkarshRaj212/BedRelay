@@ -31,7 +31,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             __html: `
               try {
                 var stored = localStorage.getItem('bedrelay_theme');
-                if (stored === 'dark') {
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (stored === 'dark' || (!stored && prefersDark)) {
                   document.documentElement.classList.add('dark');
                 } else {
                   document.documentElement.classList.remove('dark');

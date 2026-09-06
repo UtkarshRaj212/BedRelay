@@ -197,8 +197,8 @@ function HospitalSetupContent() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-500 font-mono text-sm">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-500 dark:text-[#888888] font-mono text-sm">
           <span className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping"></span>
           Authenticating hospital staff credentials...
         </div>
@@ -688,8 +688,8 @@ function HospitalSetupContent() {
 export default function HospitalSetupPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-500 font-mono text-sm">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] flex items-center justify-center">
+        <div className="flex items-center gap-3 text-slate-500 dark:text-[#888888] font-mono text-sm">
           <span className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping"></span>
           Loading BedRelay Facility Setup...
         </div>

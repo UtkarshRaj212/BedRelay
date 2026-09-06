@@ -85,7 +85,7 @@ export default function Home() {
               </h1>
 
               <p className="mt-6 text-base sm:text-lg text-slate-600 dark:text-[#a1a1a1] leading-relaxed font-normal">
-                BedRelay bridges the critical gap between hospital bed control managers and inbound ambulance dispatchers. 
+                BedRelay bridges the critical gap between hospital bed control managers and inbound ambulance dispatchers.
                 Maintain live capacity data, prevent emergency room overcrowding, and ensure ambulances divert only to facilities with verified, ready beds.
               </p>
 
@@ -111,7 +111,7 @@ export default function Home() {
               <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-slate-200 dark:border-[#222222]">
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Live Synchronization</div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">&lt; 30 Seconds</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">&lt; 02 Seconds</div>
                   <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">From floor update to dispatcher screen</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
