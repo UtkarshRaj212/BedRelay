@@ -141,22 +141,12 @@ export default function DashboardPage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col transition-colors duration-150">
-        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-500 inline-block animate-pulse"></span>
-            <span>BEDRELAY TELEMETRY SYSTEM</span>
-          </div>
-          <ThemeToggle />
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col items-center justify-center font-mono text-sm p-4 transition-colors duration-150">
+        <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md mb-4">
+          BR
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center font-mono text-sm p-4">
-          <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md animate-pulse mb-4">
-            BR
-          </div>
-          <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-[#888888]">
-            <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
-            <span>INITIALIZING AUTHENTICATION SESSION...</span>
-          </div>
+        <div className="text-xs text-slate-600 dark:text-[#888888]">
+          Loading dashboard session...
         </div>
       </div>
     );
@@ -253,12 +243,9 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
-      {/* System Status Top Header */}
+      {/* Top Header */}
       <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0"></span>
-          <span className="font-semibold">LIVE TELEMETRY: ONLINE</span>
-          <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
           <span className="text-slate-300 dark:text-[#a1a1a1] break-all">STAFF: {session.user.email}</span>
         </div>
         <div className="flex items-center gap-4 shrink-0 self-end sm:self-auto">
@@ -418,13 +405,13 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed]">Bed Categories Availability Telemetry</h2>
               <p className="text-xs text-slate-500 dark:text-[#737373] font-mono mt-0.5">
-                Real-time unit capacity broadcasted to regional ambulance dispatchers
+                Unit capacity broadcasted to regional ambulance dispatchers
               </p>
             </div>
           </div>
 
           {loadingData ? (
-            <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">FETCHING REAL-TIME BED TELEMETRY...</div>
+            <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">Loading bed capacity...</div>
           ) : (
             <>
               {/* Mobile Cards: Bed Categories */}
@@ -556,7 +543,7 @@ export default function DashboardPage() {
                 <div key={disp.id} className="p-4 space-y-3 bg-white dark:bg-[#0f0f0f]">
                   <div className="flex items-center justify-between gap-2">
                     {disp.reviewRequired ? (
-                      <span className="px-2 py-0.5 text-[10px] font-mono font-bold border rounded-xs uppercase bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
+                      <span className="px-2 py-0.5 text-[10px] font-mono font-bold border rounded-xs uppercase bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800">
                         REVIEW REQUIRED
                       </span>
                     ) : (
@@ -648,7 +635,7 @@ export default function DashboardPage() {
                       <td className="py-4 px-6 font-mono text-center font-bold text-slate-900 dark:text-[#ededed]">{disp.etaMinutes} mins</td>
                       <td className="py-4 px-6 text-center">
                         {disp.reviewRequired ? (
-                          <span className="px-2.5 py-1 text-xs font-mono font-bold border rounded-sm bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
+                          <span className="px-2.5 py-1 text-xs font-mono font-bold border rounded-sm bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800">
                             REVIEW REQUIRED
                           </span>
                         ) : (

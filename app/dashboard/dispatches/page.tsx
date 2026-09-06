@@ -109,22 +109,12 @@ export default function HospitalDispatchesPage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col transition-colors duration-150">
-        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-500 inline-block animate-pulse"></span>
-            <span>BEDRELAY TELEMETRY SYSTEM</span>
-          </div>
-          <ThemeToggle />
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col items-center justify-center font-mono text-sm p-4 transition-colors duration-150">
+        <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md mb-4">
+          BR
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center font-mono text-sm p-4">
-          <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md animate-pulse mb-4">
-            BR
-          </div>
-          <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-[#888888]">
-            <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
-            <span>VERIFYING AUTHENTICATION SESSION...</span>
-          </div>
+        <div className="text-xs text-slate-600 dark:text-[#888888]">
+          Loading dispatch console...
         </div>
       </div>
     );
@@ -200,8 +190,7 @@ export default function HospitalDispatchesPage() {
       {/* Top Status Header */}
       <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span>INBOUND DISPATCH CONTROL CONSOLE</span>
+          <span>INBOUND DISPATCH CONSOLE</span>
           <span className="text-slate-500 dark:text-[#555]">|</span>
           <span className="text-slate-300 dark:text-[#a1a1a1]">STAFF: {session.user.email}</span>
         </div>
@@ -354,7 +343,7 @@ export default function HospitalDispatchesPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div>
                           {disp.reviewRequired ? (
-                            <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-bold border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
+                            <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-bold border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800">
                               ACCEPTED · REVIEW REQUIRED
                             </span>
                           ) : (
@@ -506,7 +495,7 @@ export default function HospitalDispatchesPage() {
                           </td>
                           <td className="py-4 px-6 text-center font-mono text-xs font-bold">
                             {disp.reviewRequired ? (
-                              <span className="inline-block px-2.5 py-1 rounded-sm border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
+                              <span className="inline-block px-2.5 py-1 rounded-sm border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800">
                                 ACCEPTED · REVIEW REQUIRED
                               </span>
                             ) : (

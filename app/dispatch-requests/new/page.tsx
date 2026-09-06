@@ -212,14 +212,6 @@ function CreateDispatchContent() {
   if (createdRequest) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
-        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-            <span>PRE-ARRIVAL ALERT TRANSMITTED</span>
-          </div>
-          <ThemeToggle />
-        </div>
-
         <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
@@ -230,6 +222,7 @@ function CreateDispatchContent() {
                 BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
               </span>
             </Link>
+            <ThemeToggle />
           </div>
         </header>
 
@@ -280,7 +273,7 @@ function CreateDispatchContent() {
                 href={`/dispatch-requests/${createdRequest.id}`}
                 className="w-full text-center px-4 py-3 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-sm rounded-sm transition-colors"
               >
-                Track Live Request Details →
+                Track Request Details →
               </Link>
               <Link
                 href="/dispatcher/history"
@@ -303,18 +296,6 @@ function CreateDispatchContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
-      {/* System Bar */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span className="font-semibold">CREATE DISPATCH REQUEST</span>
-        </div>
-        <div className="flex items-center gap-3 text-slate-400 dark:text-[#888888] text-[11px] font-mono shrink-0">
-          <span>DISPATCHER CONSOLE</span>
-          <ThemeToggle />
-        </div>
-      </div>
-
       {/* Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -351,6 +332,7 @@ function CreateDispatchContent() {
             >
               REQUEST HISTORY
             </Link>
+            <ThemeToggle />
           </nav>
         </div>
       </header>
@@ -416,7 +398,7 @@ function CreateDispatchContent() {
             {selectedHospital && (
               <div className="p-3 sm:p-4 bg-slate-50 dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
                 <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase font-semibold mb-2">
-                  Real-Time Availability at {selectedHospital.name}:
+                  Availability at {selectedHospital.name}:
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                   {selectedHospital.beds.map((b) => (
@@ -651,10 +633,7 @@ export default function CreateDispatchRequestPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] flex items-center justify-center font-mono text-xs">
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping"></span>
-            <span>Loading dispatch form...</span>
-          </div>
+          Loading dispatch form...
         </div>
       }
     >

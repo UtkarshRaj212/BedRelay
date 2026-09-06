@@ -108,26 +108,6 @@ export default function DispatcherHistoryPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
-      {/* System Status Top Bar */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block"></span>
-          <span>AMBULANCE DISPATCH TELEMETRY CONSOLE</span>
-          <span className="text-slate-500 dark:text-[#555]">|</span>
-          <span className="text-slate-400 dark:text-[#888888]">REQUEST HISTORY</span>
-        </div>
-        <div className="flex items-center gap-4 text-slate-400 dark:text-[#888888]">
-          <span className="hidden sm:inline">
-            Last updated: {lastSynced || "Connecting..."}
-          </span>
-          <span className="hidden sm:inline text-slate-600 dark:text-[#555]">|</span>
-          <span className="text-slate-300 dark:text-[#a1a1a1]">
-            SESSION: {sessionId ? `${sessionId.substring(0, 16)}...` : "ACTIVE"}
-          </span>
-          <ThemeToggle />
-        </div>
-      </div>
-
       {/* Header Navigation */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
@@ -164,6 +144,7 @@ export default function DispatcherHistoryPage() {
             >
               REQUEST HISTORY
             </Link>
+            <ThemeToggle />
           </nav>
         </div>
       </header>
@@ -190,7 +171,7 @@ export default function DispatcherHistoryPage() {
               Ambulance Dispatch Request History
             </h1>
             <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5">
-              Live log of pre-arrival alerts transmitted from this ambulance dispatcher console.
+              Log of pre-arrival alerts transmitted from this ambulance dispatcher console.
             </p>
           </div>
 
@@ -307,7 +288,7 @@ export default function DispatcherHistoryPage() {
           <div className="block md:hidden divide-y divide-slate-100 dark:divide-[#1a1a1a] bg-white dark:bg-[#0a0a0a]">
             {loading && dispatches.length === 0 ? (
               <div className="py-12 text-center text-xs font-mono text-slate-500 dark:text-[#777]">
-                Loading dispatch request telemetry from Neon...
+                Loading dispatch requests...
               </div>
             ) : filteredDispatches.length === 0 ? (
               <div className="py-10 px-4 text-center text-slate-500 dark:text-[#777]">
@@ -429,7 +410,7 @@ export default function DispatcherHistoryPage() {
                 {loading && dispatches.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="py-12 text-center text-slate-500 dark:text-[#777]">
-                      Loading dispatch request telemetry from Neon...
+                      Loading dispatch requests...
                     </td>
                   </tr>
                 ) : filteredDispatches.length === 0 ? (

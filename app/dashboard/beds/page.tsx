@@ -138,22 +138,12 @@ export default function BedManagementPage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col transition-colors duration-150">
-        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-500 inline-block animate-pulse"></span>
-            <span>BEDRELAY TELEMETRY SYSTEM</span>
-          </div>
-          <ThemeToggle />
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col items-center justify-center font-mono text-sm p-4 transition-colors duration-150">
+        <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md mb-4">
+          BR
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center font-mono text-sm p-4">
-          <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md animate-pulse mb-4">
-            BR
-          </div>
-          <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-[#888888]">
-            <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
-            <span>VERIFYING AUTHENTICATION SESSION...</span>
-          </div>
+        <div className="text-xs text-slate-600 dark:text-[#888888]">
+          Loading bed management...
         </div>
       </div>
     );
@@ -225,7 +215,6 @@ export default function BedManagementPage() {
       {/* Top Status Header */}
       <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0"></span>
           <span className="font-semibold">BED MANAGEMENT</span>
           <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
           <span className="text-slate-300 dark:text-[#a1a1a1] break-all">STAFF: {session.user.email}</span>
@@ -334,14 +323,14 @@ export default function BedManagementPage() {
         {/* Main Bed Categories Table */}
         <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden">
           <div className="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-[#222222]">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed]">Bed Categories Telemetry & Capacity</h2>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed]">Bed Categories & Capacity</h2>
             <p className="text-xs text-slate-500 dark:text-[#737373] font-mono mt-0.5">
               Strictly authorized to {hospital?.name || "your hospital"}
             </p>
           </div>
 
           {loading ? (
-            <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">LOADING BED CAPACITY TELEMETRY...</div>
+            <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">Loading bed capacity...</div>
           ) : (
             <>
               {/* Mobile Cards: Bed Categories */}
@@ -395,7 +384,7 @@ export default function BedManagementPage() {
                           />
                         </div>
                         <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 dark:text-[#666]">
-                          <span>Telemetry Sync</span>
+                          <span>Last Updated</span>
                           <span>{formatDate(bed.lastUpdated)} {new Date(bed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                       </div>
