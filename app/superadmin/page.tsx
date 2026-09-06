@@ -855,25 +855,25 @@ export default function SuperAdminPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Top System Status Banner */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span>NATIONAL HEALTH TELEMETRY COMMAND</span>
-          <span className="text-slate-500 dark:text-[#555]">|</span>
+      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0"></span>
+          <span className="font-semibold">NATIONAL TELEMETRY COMMAND</span>
+          <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
           <span className="text-emerald-400 dark:text-emerald-300 font-bold">SUPER_ADMIN ACTIVE</span>
         </div>
-        <div className="flex items-center gap-4 text-slate-400 dark:text-[#888888]">
-          <span className="hidden md:inline">ONE SOURCE OF TRUTH (NEON POSTGRES)</span>
+        <div className="flex items-center gap-4 text-slate-400 dark:text-[#888888] shrink-0 self-end sm:self-auto">
+          <span className="hidden md:inline text-[11px]">NEON POSTGRES (SSOT)</span>
           <ThemeToggle />
         </div>
       </div>
 
       {/* Main Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono tracking-wider rounded-sm shadow-xs">
+              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono tracking-wider rounded-sm shadow-xs shrink-0">
                 BR
               </div>
               <div className="flex flex-col">
@@ -887,7 +887,7 @@ export default function SuperAdminPage() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
             <button
               onClick={fetchAllData}
               disabled={refreshing}
@@ -921,9 +921,9 @@ export default function SuperAdminPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Action confirmation alert */}
         {actionMessage && (
-          <div className="mb-6 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs font-mono rounded-sm flex items-center justify-between">
-            <span>✓ {actionMessage}</span>
-            <button onClick={() => setActionMessage(null)} className="text-emerald-600 hover:text-emerald-900 font-bold ml-4">✕</button>
+          <div className="mb-6 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs font-mono rounded-sm flex items-center justify-between gap-2">
+            <span className="break-words">✓ {actionMessage}</span>
+            <button onClick={() => setActionMessage(null)} className="text-emerald-600 hover:text-emerald-900 font-bold ml-4 shrink-0">✕</button>
           </div>
         )}
 
@@ -987,10 +987,10 @@ export default function SuperAdminPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 dark:border-[#222222] font-mono text-xs uppercase tracking-wider overflow-x-auto mb-6">
+        <div className="flex border-b border-slate-200 dark:border-[#222222] font-mono text-xs uppercase tracking-wider overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap mb-6">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${
+            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === "overview"
                 ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
                 : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
@@ -1389,7 +1389,7 @@ export default function SuperAdminPage() {
         {/* ============================================================= */}
         {activeTab === "beds" && (
           <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm shadow-xs overflow-hidden">
-            <div className="p-4 border-b border-slate-200 dark:border-[#222222] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-4 border-b border-slate-200 dark:border-[#222222] flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-[#ededed] font-mono uppercase">
                   National Bed Telemetry Records
@@ -1399,11 +1399,11 @@ export default function SuperAdminPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
                 <select
                   value={bedHospitalFilter}
                   onChange={(e) => setBedHospitalFilter(e.target.value)}
-                  className="px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed]"
+                  className="w-full sm:w-auto px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed]"
                 >
                   <option value="ALL">All Hospitals ({hospitalsList.length})</option>
                   {hospitalsList.map((h) => (
@@ -1416,19 +1416,84 @@ export default function SuperAdminPage() {
                   placeholder="Filter beds by category/hospital..."
                   value={bedSearch}
                   onChange={(e) => setBedSearch(e.target.value)}
-                  className="px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm focus:outline-none focus:border-blue-600 text-slate-900 dark:text-[#ededed] w-52"
+                  className="w-full sm:w-52 px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm focus:outline-none focus:border-blue-600 text-slate-900 dark:text-[#ededed]"
                 />
 
                 <button
                   onClick={() => setShowAddBedModal(true)}
-                  className="px-3.5 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-all cursor-pointer whitespace-nowrap"
+                  className="w-full sm:w-auto px-3.5 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-all cursor-pointer text-center shrink-0"
                 >
                   + Add Bed Unit
                 </button>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile Cards: Bed Records */}
+            <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f]">
+              {filteredBeds.length === 0 ? (
+                <div className="py-8 px-4 text-center text-xs font-mono text-slate-500">NO BED RECORDS FOUND</div>
+              ) : (
+                filteredBeds.map((bed) => {
+                  const occPct = bed.totalBeds > 0 ? Math.round((bed.occupiedBeds / bed.totalBeds) * 100) : 0;
+                  return (
+                    <div key={bed.id} className="p-4 space-y-3 bg-white dark:bg-[#0a0a0a]">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="font-bold text-sm text-slate-900 dark:text-[#ededed]">{bed.hospitalName}</div>
+                          <div className="text-xs text-slate-500 dark:text-[#777] font-mono">{bed.hospitalCity || "India"}</div>
+                        </div>
+                        <span className="font-bold font-mono text-xs px-2 py-0.5 rounded-xs bg-slate-100 dark:bg-[#1a1a1a] text-blue-700 dark:text-blue-400 border border-slate-200 dark:border-[#333]">
+                          {bed.categoryCode}
+                        </span>
+                      </div>
+
+                      <div className="text-xs font-semibold text-slate-700 dark:text-[#ccc]">
+                        {bed.name}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-[#121212] p-3 rounded-xs text-xs font-mono">
+                        <div className="text-center">
+                          <span className="text-[10px] text-slate-500 block">Available</span>
+                          <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">{bed.availableBeds}</span>
+                        </div>
+                        <div className="text-center border-x border-slate-200 dark:border-[#222]">
+                          <span className="text-[10px] text-slate-500 block">Occupied</span>
+                          <span className="text-base font-bold text-slate-700 dark:text-[#ccc]">{bed.occupiedBeds}</span>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-[10px] text-slate-500 block">Total</span>
+                          <span className="text-base font-bold text-slate-900 dark:text-white">{bed.totalBeds}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
+                        <span>Occupancy: {occPct}%</span>
+                        <span>{formatDate(bed.lastUpdated)}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1 font-mono text-xs">
+                        <button
+                          onClick={() => handleOpenEditBed(bed)}
+                          className="flex-1 py-2 text-center font-semibold uppercase rounded-xs border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#ccc] hover:border-slate-400 transition-all cursor-pointer"
+                        >
+                          Edit Capacity
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBed(bed)}
+                          disabled={updatingId === bed.id}
+                          className="px-4 py-2 font-bold uppercase rounded-xs border border-red-300 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Desktop Table: Bed Records */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>
@@ -1497,11 +1562,12 @@ export default function SuperAdminPage() {
         )}
 
         {/* ============================================================= */}
+        {/* ============================================================= */}
         {/* TAB 5: DISPATCH REQUESTS MANAGEMENT */}
         {/* ============================================================= */}
         {activeTab === "dispatches" && (
           <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm shadow-xs overflow-hidden">
-            <div className="p-4 border-b border-slate-200 dark:border-[#222222] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-4 border-b border-slate-200 dark:border-[#222222] flex flex-col md:flex-row md:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-[#ededed] font-mono uppercase">
                   Central Inbound EMS Dispatches
@@ -1511,11 +1577,11 @@ export default function SuperAdminPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 w-full md:w-auto">
                 <select
                   value={dispStatusFilter}
                   onChange={(e) => setDispStatusFilter(e.target.value)}
-                  className="px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed]"
+                  className="w-full sm:w-auto px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed]"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="PENDING">PENDING</option>
@@ -1530,12 +1596,107 @@ export default function SuperAdminPage() {
                   placeholder="Filter by ambulance/patient/hospital..."
                   value={dispSearch}
                   onChange={(e) => setDispSearch(e.target.value)}
-                  className="px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm focus:outline-none focus:border-blue-600 text-slate-900 dark:text-[#ededed] w-56"
+                  className="w-full sm:w-56 px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm focus:outline-none focus:border-blue-600 text-slate-900 dark:text-[#ededed]"
                 />
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile Cards: Dispatches */}
+            <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f]">
+              {filteredDispatches.length === 0 ? (
+                <div className="py-8 px-4 text-center text-xs font-mono text-slate-500">NO DISPATCH REQUESTS FOUND</div>
+              ) : (
+                filteredDispatches.map((disp) => (
+                  <div key={disp.id} className="p-4 space-y-3 bg-white dark:bg-[#0a0a0a]">
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`px-2 py-0.5 rounded-xs text-[10px] font-bold font-mono ${
+                          disp.status === "PENDING"
+                            ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/40"
+                            : disp.status === "ACCEPTED"
+                            ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/40"
+                            : disp.status === "COMPLETED"
+                            ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-800/40"
+                            : "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border border-red-300 dark:border-red-800/40"
+                        }`}
+                      >
+                        {disp.status}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-500 break-all">{disp.id}</span>
+                    </div>
+
+                    <div>
+                      <div className="font-bold text-sm text-slate-900 dark:text-[#ededed]">{disp.hospitalName}</div>
+                      <div className="text-xs text-slate-500 dark:text-[#777] font-mono">{disp.hospitalCity}</div>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-[#121212] p-3 rounded-xs space-y-1.5 text-xs font-mono">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 text-[11px]">Ambulance</span>
+                        <span className="font-bold text-slate-900 dark:text-white">{disp.ambulanceUnit}</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 text-[11px]">Requirement</span>
+                        <span className="font-semibold text-blue-700 dark:text-blue-400">
+                          {disp.bedCategoryCode} · {disp.requestedBeds} bed{disp.requestedBeds > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 text-[11px]">ETA</span>
+                        <span className="font-bold text-amber-600 dark:text-amber-400">{disp.etaMinutes} mins</span>
+                      </div>
+                      {disp.patientCondition && (
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-slate-500 text-[11px]">Condition</span>
+                          <span className="text-slate-700 dark:text-[#ccc] text-right truncate max-w-[180px]">{disp.patientCondition}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-xs">
+                      {disp.status === "PENDING" && (
+                        <button
+                          onClick={() => handleUpdateDispatchStatus(disp.id, "ACCEPTED")}
+                          disabled={updatingId === disp.id}
+                          className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-emerald-300 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all cursor-pointer"
+                        >
+                          Accept
+                        </button>
+                      )}
+                      {disp.status === "ACCEPTED" && (
+                        <button
+                          onClick={() => handleUpdateDispatchStatus(disp.id, "COMPLETED")}
+                          disabled={updatingId === disp.id}
+                          className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-blue-300 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all cursor-pointer"
+                        >
+                          Complete
+                        </button>
+                      )}
+                      {disp.status !== "CANCELLED" && disp.status !== "COMPLETED" && (
+                        <button
+                          onClick={() => handleUpdateDispatchStatus(disp.id, "CANCELLED")}
+                          disabled={updatingId === disp.id}
+                          className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-slate-300 dark:border-[#2a2a2a] text-slate-600 dark:text-[#aaa] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] transition-all cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteDispatch(disp.id)}
+                        disabled={updatingId === disp.id}
+                        className="w-full py-2 text-center font-bold uppercase rounded-xs border border-red-300 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                      >
+                        Purge
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table: Dispatches */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>
@@ -1648,18 +1809,59 @@ export default function SuperAdminPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
                 <input
                   type="text"
                   placeholder="Filter audit logs..."
                   value={auditSearch}
                   onChange={(e) => setAuditSearch(e.target.value)}
-                  className="px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm focus:outline-none focus:border-blue-600 text-slate-900 dark:text-[#ededed] w-56"
+                  className="w-full sm:w-56 px-3 py-1.5 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm focus:outline-none focus:border-blue-600 text-slate-900 dark:text-[#ededed]"
                 />
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {/* Mobile Cards: Audit Logs */}
+            <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f]">
+              {filteredAuditLogs.length === 0 ? (
+                <div className="py-8 px-4 text-center text-xs font-mono text-slate-500">NO AUDIT RECORDS FOUND</div>
+              ) : (
+                filteredAuditLogs.map((log) => (
+                  <div key={log.id} className="p-4 space-y-2 bg-white dark:bg-[#0a0a0a]">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="px-2 py-0.5 rounded-xs bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-900/40 font-bold text-[10px] font-mono">
+                        {log.action}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        {formatDateTime(log.createdAt, true)}
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-[#121212] p-2.5 rounded-xs space-y-1 text-xs font-mono">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 text-[11px]">Target</span>
+                        <span className="text-slate-800 dark:text-[#ccc] font-medium truncate max-w-[200px]">
+                          {log.resourceType} {log.resourceId && `(${log.resourceId})`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 text-[11px]">Actor</span>
+                        <span className="text-slate-900 dark:text-white font-medium truncate max-w-[200px]">
+                          {log.userName || log.userEmail || "System"}
+                        </span>
+                      </div>
+                      {log.details && (
+                        <div className="pt-1 border-t border-slate-200/50 dark:border-[#222] text-[11px] text-slate-600 dark:text-[#888] break-words">
+                          {log.details}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table: Audit Logs */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>

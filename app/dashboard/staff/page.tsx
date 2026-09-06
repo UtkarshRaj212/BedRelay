@@ -307,8 +307,8 @@ export default function StaffManagementPage() {
 
       {/* Navigation Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
               BR
             </div>
@@ -322,29 +322,29 @@ export default function StaffManagementPage() {
             </div>
           </Link>
 
-          <div className="flex items-center gap-6">
-            <nav className="flex items-center gap-2 font-mono text-xs">
+          <div className="w-full sm:w-auto overflow-x-auto no-scrollbar scroll-smooth">
+            <nav className="flex items-center gap-2 font-mono text-xs py-1">
               <Link
                 href="/dashboard"
-                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors whitespace-nowrap shrink-0"
               >
                 OVERVIEW
               </Link>
               <Link
                 href="/dashboard/beds"
-                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors whitespace-nowrap shrink-0"
               >
                 BED MANAGEMENT
               </Link>
               <Link
                 href="/dashboard/dispatches"
-                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors whitespace-nowrap shrink-0"
               >
                 DISPATCH REQUESTS
               </Link>
               <Link
                 href="/dashboard/staff"
-                className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm"
+                className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm whitespace-nowrap shrink-0"
               >
                 STAFF MANAGEMENT
               </Link>
@@ -428,7 +428,60 @@ export default function StaffManagementPage() {
             </span>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Cards: Active Staff */}
+          <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#222]">
+            {members.map((member) => (
+              <div key={member.membershipId} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-[#222] text-slate-700 dark:text-[#ddd] flex items-center justify-center font-mono font-bold text-xs shrink-0">
+                      {member.name ? member.name.substring(0, 2).toUpperCase() : "MD"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-sm text-slate-900 dark:text-white block">
+                        {member.name || "Medical Staff"}
+                      </span>
+                      {member.userId === session.user.id && (
+                        <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold">
+                          (Current You)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-xs font-mono text-[10px] font-bold shrink-0 ${
+                      member.role === "HOSPITAL_ADMIN"
+                        ? "bg-yellow-100 dark:bg-yellow-950/80 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50"
+                        : "bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50"
+                    }`}
+                  >
+                    {member.role}
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-[#121212] p-3 rounded-xs space-y-1.5 text-xs font-mono">
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-slate-500 dark:text-[#777] text-[11px]">Email</span>
+                    <span className="text-slate-700 dark:text-[#ccc] break-all text-right font-medium">{member.email}</span>
+                  </div>
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-slate-500 dark:text-[#777] text-[11px]">Status</span>
+                    <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      {member.status}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-slate-500 dark:text-[#777] text-[11px]">Joined</span>
+                    <span className="text-slate-600 dark:text-[#aaa]">{formatDate(member.joinedAt)}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table: Active Staff */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-[#1f1f1f] bg-slate-50/50 dark:bg-[#121212]/50 text-[11px] font-mono uppercase text-slate-500 dark:text-[#777]">
@@ -491,7 +544,7 @@ export default function StaffManagementPage() {
 
         {/* Section 2: Pending Invitations */}
         <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden shadow-2xs">
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <h2 className="text-sm font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-white">
                 Pending Staff Invitations ({invitations.length})
@@ -500,7 +553,7 @@ export default function StaffManagementPage() {
                 Staff members can enter these codes on the Hospital Setup page to join this facility.
               </p>
             </div>
-            <span className="text-[11px] font-mono text-slate-500">Auto-expires in 7 days</span>
+            <span className="text-[11px] font-mono text-slate-500 shrink-0">Auto-expires in 7 days</span>
           </div>
 
           {invitations.length === 0 ? (
@@ -508,65 +561,120 @@ export default function StaffManagementPage() {
               No pending invitations. Click &quot;Invite Staff Member&quot; above to issue an invitation code.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-200 dark:border-[#1f1f1f] bg-slate-50/50 dark:bg-[#121212]/50 text-[11px] font-mono uppercase text-slate-500 dark:text-[#777]">
-                    <th className="py-3 px-6">Invitation Code</th>
-                    <th className="py-3 px-6">Target Email</th>
-                    <th className="py-3 px-6">Role Offered</th>
-                    <th className="py-3 px-6">Expires Date</th>
-                    <th className="py-3 px-6 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] text-xs">
-                  {invitations.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-slate-50/70 dark:hover:bg-[#111111] transition-colors">
-                      <td className="py-3.5 px-6">
-                        <div className="flex items-center gap-2">
-                          <code className="font-mono text-sm font-bold tracking-widest text-slate-900 dark:text-white bg-slate-100 dark:bg-[#1a1a1a] px-2 py-1 rounded-xs border border-slate-200 dark:border-[#333]">
-                            {inv.code}
-                          </code>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(inv.code, "code")}
-                            className="text-[11px] font-mono text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                          >
-                            Copy Code
-                          </button>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-6 font-mono text-slate-600 dark:text-[#a1a1a1]">
-                        {inv.email || <span className="text-slate-400 italic">Open / Any Recipient</span>}
-                      </td>
-                      <td className="py-3.5 px-6">
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-xs font-mono text-[11px] font-bold ${
-                            inv.role === "HOSPITAL_ADMIN"
-                              ? "bg-yellow-100 dark:bg-yellow-950/80 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50"
-                              : "bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50"
-                          }`}
-                        >
-                          {inv.role}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-6 font-mono text-slate-500 dark:text-[#777]">
-                        {formatDateTime(inv.expiresAt)}
-                      </td>
-                      <td className="py-3.5 px-6 text-right">
+            <>
+              {/* Mobile Cards: Pending Invitations */}
+              <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#222]">
+                {invitations.map((inv) => (
+                  <div key={inv.id} className="p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <code className="font-mono text-sm font-bold tracking-widest text-slate-900 dark:text-white bg-slate-100 dark:bg-[#1a1a1a] px-2 py-1 rounded-xs border border-slate-200 dark:border-[#333]">
+                          {inv.code}
+                        </code>
                         <button
-                          onClick={() => handleRevokeInvite(inv.id)}
-                          disabled={revokingId === inv.id}
-                          className="px-3 py-1 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/80 text-red-700 dark:text-red-400 font-mono text-[11px] font-semibold border border-red-200 dark:border-red-900/50 rounded-xs transition-colors cursor-pointer disabled:opacity-50"
+                          type="button"
+                          onClick={() => copyToClipboard(inv.code, "code")}
+                          className="text-[11px] font-mono text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                         >
-                          {revokingId === inv.id ? "Revoking..." : "Revoke"}
+                          Copy Code
                         </button>
-                      </td>
+                      </div>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-xs font-mono text-[10px] font-bold ${
+                          inv.role === "HOSPITAL_ADMIN"
+                            ? "bg-yellow-100 dark:bg-yellow-950/80 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50"
+                            : "bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50"
+                        }`}
+                      >
+                        {inv.role}
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-[#121212] p-3 rounded-xs space-y-1.5 text-xs font-mono">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 dark:text-[#777] text-[11px]">Recipient</span>
+                        <span className="text-slate-700 dark:text-[#ccc] text-right break-all">
+                          {inv.email || <span className="text-slate-400 italic">Open / Any</span>}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 dark:text-[#777] text-[11px]">Expires</span>
+                        <span className="text-slate-600 dark:text-[#aaa] text-right">{formatDateTime(inv.expiresAt)}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleRevokeInvite(inv.id)}
+                      disabled={revokingId === inv.id}
+                      className="w-full py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/80 text-red-700 dark:text-red-400 font-mono text-xs font-semibold border border-red-200 dark:border-red-900/50 rounded-xs transition-colors cursor-pointer disabled:opacity-50 text-center"
+                    >
+                      {revokingId === inv.id ? "Revoking..." : "Revoke Invitation"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table: Pending Invitations */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-[#1f1f1f] bg-slate-50/50 dark:bg-[#121212]/50 text-[11px] font-mono uppercase text-slate-500 dark:text-[#777]">
+                      <th className="py-3 px-6">Invitation Code</th>
+                      <th className="py-3 px-6">Target Email</th>
+                      <th className="py-3 px-6">Role Offered</th>
+                      <th className="py-3 px-6">Expires Date</th>
+                      <th className="py-3 px-6 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] text-xs">
+                    {invitations.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-slate-50/70 dark:hover:bg-[#111111] transition-colors">
+                        <td className="py-3.5 px-6">
+                          <div className="flex items-center gap-2">
+                            <code className="font-mono text-sm font-bold tracking-widest text-slate-900 dark:text-white bg-slate-100 dark:bg-[#1a1a1a] px-2 py-1 rounded-xs border border-slate-200 dark:border-[#333]">
+                              {inv.code}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(inv.code, "code")}
+                              className="text-[11px] font-mono text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                            >
+                              Copy Code
+                            </button>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-6 font-mono text-slate-600 dark:text-[#a1a1a1]">
+                          {inv.email || <span className="text-slate-400 italic">Open / Any Recipient</span>}
+                        </td>
+                        <td className="py-3.5 px-6">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-xs font-mono text-[11px] font-bold ${
+                              inv.role === "HOSPITAL_ADMIN"
+                                ? "bg-yellow-100 dark:bg-yellow-950/80 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50"
+                                : "bg-sky-100 dark:bg-sky-950/80 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50"
+                            }`}
+                          >
+                            {inv.role}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-6 font-mono text-slate-500 dark:text-[#777]">
+                          {formatDateTime(inv.expiresAt)}
+                        </td>
+                        <td className="py-3.5 px-6 text-right">
+                          <button
+                            onClick={() => handleRevokeInvite(inv.id)}
+                            disabled={revokingId === inv.id}
+                            className="px-3 py-1 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-950/80 text-red-700 dark:text-red-400 font-mono text-[11px] font-semibold border border-red-200 dark:border-red-900/50 rounded-xs transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            {revokingId === inv.id ? "Revoking..." : "Revoke"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </main>
@@ -651,7 +759,6 @@ export default function StaffManagementPage() {
                     onChange={(e) => setInviteRole(e.target.value as "HOSPITAL_STAFF" | "HOSPITAL_ADMIN")}
                     className="w-full px-3 py-2 bg-white dark:bg-[#141414] border border-slate-300 dark:border-[#333] rounded-sm text-xs font-mono text-slate-900 dark:text-white outline-none"
                   >
-
                     <option value="HOSPITAL_STAFF">HOSPITAL_STAFF — Bed telemetry & dispatch handling</option>
                     <option value="HOSPITAL_ADMIN">HOSPITAL_ADMIN — Full facility & staff management</option>
                   </select>
@@ -673,18 +780,18 @@ export default function StaffManagementPage() {
                   </span>
                 </div>
 
-                <div className="pt-2 flex justify-end gap-3">
+                <div className="pt-2 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                   <button
                     type="button"
                     onClick={() => setShowInviteModal(false)}
-                    className="px-4 py-2 border border-slate-300 dark:border-[#333] text-xs font-mono rounded-sm text-slate-700 dark:text-slate-300"
+                    className="w-full sm:w-auto px-4 py-2 border border-slate-300 dark:border-[#333] text-xs font-mono rounded-sm text-slate-700 dark:text-slate-300"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={creatingInvite}
-                    className="px-5 py-2 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-mono font-semibold rounded-sm transition-colors disabled:opacity-50 cursor-pointer"
+                    className="w-full sm:w-auto px-5 py-2 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-xs font-mono font-semibold rounded-sm transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     {creatingInvite ? "GENERATING..." : "GENERATE INVITATION"}
                   </button>

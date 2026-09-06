@@ -5,12 +5,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Top System Status Banner */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-        <div className="flex items-center gap-2">
+      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
           <span>SYSTEM STATUS: OPERATIONAL</span>
-          <span className="text-slate-500 dark:text-[#555]">|</span>
-          <span className="text-slate-400 dark:text-[#888888]">REGIONAL EMS TELEMETRY NETWORK</span>
+          <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
+          <span className="text-slate-400 dark:text-[#888888] text-[11px] sm:text-xs">REGIONAL EMS TELEMETRY</span>
         </div>
         <div className="flex items-center gap-4 text-slate-400 dark:text-[#888888]">
           <span className="hidden md:inline">LATENCY: 14ms</span>
@@ -21,17 +21,17 @@ export default function Home() {
 
       {/* Navigation Bar */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono tracking-wider rounded-sm">
+              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono tracking-wider rounded-sm shrink-0">
                 BR
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] tracking-tight leading-none font-mono">
+                <span className="font-bold text-base sm:text-lg text-slate-900 dark:text-[#ededed] tracking-tight leading-none font-mono">
                   BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
                 </span>
-                <span className="text-[10px] text-slate-500 dark:text-[#737373] font-mono tracking-widest uppercase mt-0.5">
+                <span className="text-[9px] sm:text-[10px] text-slate-500 dark:text-[#737373] font-mono tracking-widest uppercase mt-0.5 truncate max-w-[140px] sm:max-w-none">
                   EMS Capacity Telemetry
                 </span>
               </div>
@@ -53,16 +53,16 @@ export default function Home() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Link
               href="/dashboard"
-              className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ededed] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] hover:border-slate-400 dark:hover:border-[#444] bg-white dark:bg-[#0f0f0f] rounded-sm transition-all"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ededed] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] hover:border-slate-400 dark:hover:border-[#444] bg-white dark:bg-[#0f0f0f] rounded-sm transition-all"
             >
               Hospital Staff
             </Link>
             <Link
               href="/find-beds"
-              className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-slate-900 dark:bg-[#ededed] dark:text-black hover:bg-slate-800 dark:hover:bg-white rounded-sm transition-all shadow-sm"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white bg-slate-900 dark:bg-[#ededed] dark:text-black hover:bg-slate-800 dark:hover:bg-white rounded-sm transition-all shadow-sm"
             >
               Ambulance / Dispatcher
             </Link>
@@ -75,16 +75,16 @@ export default function Home() {
         <section id="overview" className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] py-16 sm:py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] font-mono text-xs font-semibold rounded-sm mb-6">
-                <span className="w-1.5 h-1.5 bg-blue-700 dark:bg-blue-500 rounded-full"></span>
-                PRE-HOSPITAL DIVERSION REDUCTION PLATFORM
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] font-mono text-xs font-semibold rounded-sm mb-6 max-w-full overflow-hidden text-ellipsis">
+                <span className="w-1.5 h-1.5 bg-blue-700 dark:bg-blue-500 rounded-full shrink-0"></span>
+                <span className="truncate">PRE-HOSPITAL DIVERSION REDUCTION PLATFORM</span>
               </div>
 
               <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-[#ededed] font-sans leading-tight">
                 Real-Time Hospital Bed Telemetry for Emergency Medical Services
               </h1>
 
-              <p className="mt-6 text-lg text-slate-600 dark:text-[#a1a1a1] leading-relaxed font-normal">
+              <p className="mt-6 text-base sm:text-lg text-slate-600 dark:text-[#a1a1a1] leading-relaxed font-normal">
                 BedRelay bridges the critical gap between hospital bed control managers and inbound ambulance dispatchers. 
                 Maintain live capacity data, prevent emergency room overcrowding, and ensure ambulances divert only to facilities with verified, ready beds.
               </p>
@@ -95,7 +95,7 @@ export default function Home() {
                   className="inline-flex items-center justify-center px-6 py-3.5 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-sm tracking-wide rounded-sm transition-colors shadow-sm"
                 >
                   Hospital Staff Sign In
-                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 ml-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                 </Link>
@@ -179,7 +179,56 @@ export default function Home() {
               <h2 className="text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">Supported Bed Categories</h2>
             </div>
 
-            <div className="overflow-hidden border border-slate-200 dark:border-[#222222] rounded-sm">
+            {/* Mobile Cards Layout (visible < md) */}
+            <div className="block md:hidden space-y-3">
+              {[
+                {
+                  code: "ICU-01",
+                  name: "Intensive Care Unit (ICU)",
+                  scope: "Cardiac, Surgical, Trauma & Neurological critical care",
+                  metric: "Total / Available / Occupied",
+                },
+                {
+                  code: "GEN-02",
+                  name: "General Medical / Surgical",
+                  scope: "Standard inpatient beds, observation units, step-down wards",
+                  metric: "Total / Available / Occupied",
+                },
+                {
+                  code: "VENT-03",
+                  name: "Ventilator & Respiratory Care",
+                  scope: "Advanced mechanical ventilation and high-flow oxygen beds",
+                  metric: "Total / Available / Occupied",
+                },
+              ].map((cat) => (
+                <div
+                  key={cat.code}
+                  className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] p-4 rounded-sm space-y-3 shadow-xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono font-bold text-xs bg-slate-100 dark:bg-[#1f1f1f] text-slate-900 dark:text-[#ededed] px-2.5 py-1 rounded-sm border border-slate-200 dark:border-[#333]">
+                      {cat.code}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-[#777] uppercase">
+                      Telemetry Active
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-sm text-slate-900 dark:text-[#ededed]">{cat.name}</h3>
+                    <p className="text-xs text-slate-600 dark:text-[#888] mt-1 leading-relaxed">{cat.scope}</p>
+                  </div>
+                  <div className="pt-2 border-t border-slate-100 dark:border-[#1a1a1a] flex items-center justify-between text-xs">
+                    <span className="text-slate-500 dark:text-[#777] font-mono text-[11px]">Metric:</span>
+                    <span className="font-mono text-[11px] text-slate-700 dark:text-[#aaa] bg-slate-50 dark:bg-[#141414] px-2 py-0.5 rounded">
+                      {cat.metric}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table (visible md+) */}
+            <div className="hidden md:block overflow-x-auto border border-slate-200 dark:border-[#222222] rounded-sm">
               <table className="w-full text-left text-sm border-collapse">
                 <thead className="bg-slate-100 dark:bg-[#141414] text-slate-700 dark:text-[#888888] font-mono text-xs uppercase border-b border-slate-200 dark:border-[#222222]">
                   <tr>

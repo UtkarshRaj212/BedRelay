@@ -231,8 +231,8 @@ export default function DispatcherDashboardPage() {
 
       {/* Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
               BR
             </div>
@@ -246,14 +246,14 @@ export default function DispatcherDashboardPage() {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-3 font-mono text-xs">
-            <Link href="/dispatcher" className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm">
+          <nav className="flex items-center gap-2 sm:gap-3 font-mono text-xs overflow-x-auto no-scrollbar scroll-smooth py-1 w-full sm:w-auto">
+            <Link href="/dispatcher" className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm whitespace-nowrap shrink-0">
               DISPATCHER DASHBOARD
             </Link>
-            <Link href="/find-beds" className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors">
+            <Link href="/find-beds" className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors whitespace-nowrap shrink-0">
               FIND HOSPITAL
             </Link>
-            <Link href="/dispatcher/history" className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors">
+            <Link href="/dispatcher/history" className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors whitespace-nowrap shrink-0">
               REQUEST HISTORY
             </Link>
           </nav>
@@ -464,19 +464,95 @@ export default function DispatcherDashboardPage() {
 
         {/* Active Dispatch Requests Section */}
         <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm mb-8 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-[#ededed]">Current Active Dispatch Requests</h2>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed]">Current Active Dispatch Requests</h2>
               <p className="text-xs text-slate-500 dark:text-[#737373] font-mono mt-0.5">
                 Real-time ambulance pre-arrival alerts transmitted to receiving facilities
               </p>
             </div>
-            <span className="px-2.5 py-1 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] font-mono text-xs font-bold text-slate-700 dark:text-[#a1a1a1] rounded-sm">
+            <span className="self-start sm:self-center px-2.5 py-1 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] font-mono text-xs font-bold text-slate-700 dark:text-[#a1a1a1] rounded-sm shrink-0">
               {activeDispatches.length} DISPATCHES IN PROGRESS
             </span>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Card List (< md) */}
+          <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f] bg-white dark:bg-[#0f0f0f]">
+            {activeDispatches.length === 0 ? (
+              <div className="py-8 px-4 text-center text-xs font-mono text-slate-500 dark:text-[#737373]">
+                NO ACTIVE DISPATCH ALERTS CURRENTLY BROADCASTING
+              </div>
+            ) : (
+              activeDispatches.map((disp) => (
+                <div key={disp.id} className="p-4 space-y-3">
+                  {/* Status & ID */}
+                  <div>
+                    <span
+                      className={`inline-block px-2 py-0.5 text-[11px] font-mono font-bold border rounded-sm ${
+                        disp.status === "ACCEPTED" || disp.status === "COMPLETED"
+                          ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                          : disp.status === "REJECTED" || disp.status === "CANCELLED"
+                          ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
+                          : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
+                      }`}
+                    >
+                      {disp.status}
+                    </span>
+                    <div className="font-mono text-xs text-slate-600 dark:text-[#888888] mt-1.5 break-all font-semibold">
+                      {disp.id}
+                    </div>
+                  </div>
+
+                  {/* Hospital & Location */}
+                  <div>
+                    <div className="font-bold text-slate-900 dark:text-[#ededed] text-sm">
+                      {disp.hospitalName}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-[#737373] mt-0.5">
+                      {disp.hospitalCity}{disp.hospitalState ? `, ${disp.hospitalState}` : ""}
+                    </div>
+                  </div>
+
+                  {/* Operational Key-Value Grid */}
+                  <div className="bg-slate-50 dark:bg-[#141414] p-3 rounded-sm border border-slate-200 dark:border-[#222222] space-y-1.5 text-xs font-mono">
+                    <div className="flex justify-between items-baseline gap-2">
+                      <span className="text-slate-500 dark:text-[#777] uppercase text-[11px]">Ambulance</span>
+                      <span className="font-bold text-slate-900 dark:text-[#ededed] text-right truncate">{disp.ambulanceUnit}</span>
+                    </div>
+                    <div className="flex justify-between items-baseline gap-2">
+                      <span className="text-slate-500 dark:text-[#777] uppercase text-[11px]">Requirement</span>
+                      <span className="font-semibold text-blue-700 dark:text-blue-400 text-right">
+                        {disp.bedCategoryCode} · {disp.requestedBeds || 1} bed{Number(disp.requestedBeds) > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-baseline gap-2">
+                      <span className="text-slate-500 dark:text-[#777] uppercase text-[11px]">ETA</span>
+                      <span className="font-bold text-slate-900 dark:text-[#ededed] text-right">~{disp.etaMinutes} min</span>
+                    </div>
+                    {disp.patientCondition && (
+                      <div className="pt-1.5 border-t border-slate-200 dark:border-[#222222] text-[11px] text-slate-600 dark:text-[#999] font-sans">
+                        <span className="font-mono text-slate-500 dark:text-[#777]">Condition: </span>
+                        {disp.patientCondition}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Button */}
+                  <div>
+                    <Link
+                      href={`/dispatch-requests/${disp.id}`}
+                      className="w-full inline-flex items-center justify-center px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ededed] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] hover:border-slate-400 bg-slate-50 dark:bg-[#141414] rounded-sm transition-colors"
+                    >
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table View (>= md) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-slate-100 dark:bg-[#141414] text-slate-700 dark:text-[#888888] font-mono text-xs uppercase border-b border-slate-200 dark:border-[#222222]">
                 <tr>
@@ -542,20 +618,21 @@ export default function DispatcherDashboardPage() {
 
         {/* Live Overview of Hospitals with Beds */}
         <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-[#ededed]">Hospital Bed Capacity Overview ({selectedCity} Base)</h2>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed]">Hospital Bed Capacity Overview ({selectedCity} Base)</h2>
               <p className="text-xs text-slate-500 dark:text-[#737373] font-mono mt-0.5">
                 Calculated straight-line distance (km) and real-time category breakdown
               </p>
             </div>
             <Link
               href="/find-beds"
-              className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors"
+              className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors self-start sm:self-center shrink-0"
             >
               Search & Filter Hospitals →
             </Link>
           </div>
+
 
           {loading ? (
             <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">FETCHING REAL-TIME TELEMETRY...</div>
@@ -822,18 +899,18 @@ export default function DispatcherDashboardPage() {
                 ></textarea>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-[#222222]">
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2 sm:gap-3 pt-4 border-t border-slate-200 dark:border-[#222222]">
                 <button
                   type="button"
                   onClick={() => setDispatchModalHospital(null)}
-                  className="px-4 py-2 text-xs font-semibold uppercase text-slate-600 dark:text-[#a1a1a1] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold uppercase text-slate-600 dark:text-[#a1a1a1] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm cursor-pointer text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
                 >
                   {submitting ? "Transmitting Alert..." : "Transmit Dispatch Alert"}
                 </button>

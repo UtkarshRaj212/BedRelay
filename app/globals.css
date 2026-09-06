@@ -19,11 +19,28 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  max-width: 100vw;
+  overflow-x: clip;
 }
+
+/* Isolated horizontal scroll containers without ugly scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 
 /* Leaflet Base & BedRelay Custom Styling */
 @import "leaflet/dist/leaflet.css";

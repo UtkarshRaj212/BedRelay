@@ -231,30 +231,30 @@ export default function FindHospitalPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Top Bar */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block"></span>
-          <span>DISPATCH ROUTING & SUITABILITY SEARCH CONSOLE</span>
-          <span className="text-slate-500 dark:text-[#555]">|</span>
-          <span className="text-slate-400 dark:text-[#888888]">NEAR-REAL-TIME SYNC (5S)</span>
+      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+          <span className="font-semibold">DISPATCH ROUTING & SUITABILITY</span>
+          <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
+          <span className="text-slate-400 dark:text-[#888888] text-[11px] sm:text-xs">SYNC (5S)</span>
         </div>
-        <div className="flex items-center gap-3 sm:gap-4 text-slate-400 dark:text-[#888888]">
-          <span className="text-[11px]">LAST UPDATED: {lastSynced || "CONNECTING..."}</span>
-          <span className="text-slate-600 dark:text-[#555]">|</span>
-          <span className="hidden sm:inline font-mono text-[11px] text-slate-300 dark:text-[#a1a1a1]">DISPATCHER MODE (READ-ONLY)</span>
+        <div className="flex items-center gap-3 sm:gap-4 text-slate-400 dark:text-[#888888] shrink-0">
+          <span className="text-[11px] hidden sm:inline">UPDATED: {lastSynced || "CONNECTING..."}</span>
+          <span className="hidden sm:inline text-slate-600 dark:text-[#555]">|</span>
+          <span className="hidden md:inline font-mono text-[11px] text-slate-300 dark:text-[#a1a1a1]">DISPATCHER MODE (READ-ONLY)</span>
           <ThemeToggle />
         </div>
       </div>
 
       {/* Header */}
-      <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
+            <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
               BR
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight">
+              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight leading-none">
                 BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
               </span>
               <span className="text-[10px] text-slate-500 dark:text-[#737373] font-mono tracking-widest uppercase mt-0.5">
@@ -263,22 +263,22 @@ export default function FindHospitalPage() {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-3 font-mono text-xs">
+          <nav className="flex items-center gap-1.5 sm:gap-2 font-mono text-xs overflow-x-auto no-scrollbar py-0.5 max-w-full">
             <Link
               href="/dispatcher"
-              className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors"
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors whitespace-nowrap shrink-0"
             >
               DISPATCHER DASHBOARD
             </Link>
             <Link
               href="/find-beds"
-              className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm"
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm whitespace-nowrap shrink-0"
             >
               FIND HOSPITAL
             </Link>
             <Link
               href="/dispatcher/history"
-              className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors"
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors whitespace-nowrap shrink-0"
             >
               REQUEST HISTORY
             </Link>
@@ -484,7 +484,7 @@ export default function FindHospitalPage() {
                     Click pin to view details
                   </span>
                 </div>
-                <div className="h-[560px] border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden shadow-sm">
+                <div className="h-[340px] sm:h-[420px] lg:h-[560px] border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden shadow-sm">
                   {(() => {
                     const activeCityData = INDIAN_CITIES.find(
                       (c) => c.name.toLowerCase() === selectedCity.toLowerCase()
@@ -588,15 +588,15 @@ export default function FindHospitalPage() {
                         <div
                           key={hosp.id}
                           onClick={() => setSelectedHospitalMapId(hosp.id)}
-                          className={`bg-white dark:bg-[#0f0f0f] border rounded-sm p-5 transition-colors cursor-pointer ${
+                          className={`bg-white dark:bg-[#0f0f0f] border rounded-sm p-4 sm:p-5 transition-colors cursor-pointer ${
                             isSelected
                               ? "border-blue-600 dark:border-blue-500 ring-1 ring-blue-500/30"
                               : "border-slate-200 dark:border-[#222222] hover:border-slate-300 dark:hover:border-[#333333]"
                           }`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-[#1e1e1e] pb-3 mb-3">
-                            <div>
-                              <div className="flex items-center gap-2 flex-wrap">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                 <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 text-xs font-mono font-bold rounded-sm">
                                   SUITABLE
                                 </span>
@@ -609,10 +609,10 @@ export default function FindHospitalPage() {
                                   </span>
                                 )}
                               </div>
-                              <h3 className="text-lg font-bold text-slate-900 dark:text-[#ededed] mt-1">
+                              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed] mt-1 break-words">
                                 {hosp.name}
                               </h3>
-                              <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5">
+                              <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5 break-words">
                                 {hosp.address} • Ph:{" "}
                                 <span className="font-bold text-slate-900 dark:text-[#ededed]">
                                   {hosp.phone}
@@ -620,12 +620,12 @@ export default function FindHospitalPage() {
                               </p>
                             </div>
 
-                            <div className="flex items-center gap-4 self-end sm:self-center">
-                              <div className="text-right">
-                                <div className="text-[11px] font-mono text-slate-500 dark:text-[#737373] uppercase">
+                            <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pt-2 sm:pt-0 border-t border-slate-100 sm:border-t-0 dark:border-[#1e1e1e]">
+                              <div className="text-left sm:text-right">
+                                <div className="text-[10px] sm:text-[11px] font-mono text-slate-500 dark:text-[#737373] uppercase">
                                   {selectedCategory}
                                 </div>
-                                <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400 font-mono">
+                                <div className="text-lg sm:text-xl font-bold text-emerald-700 dark:text-emerald-400 font-mono leading-tight">
                                   {availCount}{" "}
                                   <span className="text-xs font-normal text-slate-500">
                                     / {catBed ? catBed.totalBeds : 0}
@@ -639,7 +639,7 @@ export default function FindHospitalPage() {
                                   e.stopPropagation();
                                   handleOpenDispatch(hosp);
                                 }}
-                                className="px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer"
+                                className="px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer shrink-0 shadow-sm"
                               >
                                 Dispatch
                               </button>
@@ -647,13 +647,13 @@ export default function FindHospitalPage() {
                           </div>
 
                           {/* Bed Categories breakdown */}
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {hosp.beds.map((b) => (
                               <div
                                 key={b.id}
                                 className="p-2 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm text-xs font-mono"
                               >
-                                <div className="text-slate-500 dark:text-[#737373] uppercase text-[10px]">
+                                <div className="text-slate-500 dark:text-[#737373] uppercase text-[10px] truncate">
                                   {b.name}
                                 </div>
                                 <div className="text-xs font-bold text-slate-900 dark:text-[#ededed] mt-0.5">
@@ -840,18 +840,18 @@ export default function FindHospitalPage() {
                 ></textarea>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-[#222222]">
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-slate-200 dark:border-[#222222]">
                 <button
                   type="button"
                   onClick={() => setDispatchModalHospital(null)}
-                  className="px-4 py-2 text-xs font-semibold uppercase text-slate-600 dark:text-[#a1a1a1] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-semibold uppercase text-slate-600 dark:text-[#a1a1a1] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm cursor-pointer text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
                 >
                   {submitting ? "Transmitting..." : "Send Request to Hospital"}
                 </button>

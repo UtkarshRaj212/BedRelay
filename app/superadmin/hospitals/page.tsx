@@ -462,8 +462,8 @@ export default function SuperAdminHospitalsPage() {
         {/* Filter and Search Bar */}
         <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] p-4 rounded-sm shadow-2xs mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex-1 flex flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[240px]">
+            <div className="flex-1 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
+              <div className="relative flex-1 min-w-[200px]">
                 <input
                   type="text"
                   placeholder="Search by hospital name, city, address, or phone..."
@@ -489,7 +489,7 @@ export default function SuperAdminHospitalsPage() {
               <select
                 value={cityFilter}
                 onChange={(e) => setCityFilter(e.target.value)}
-                className="px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer"
+                className="w-full sm:w-auto px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer"
               >
                 <option value="ALL">All Cities ({hospitalsList.length})</option>
                 {uniqueCities.map((c) => (
@@ -502,7 +502,7 @@ export default function SuperAdminHospitalsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer"
+                className="w-full sm:w-auto px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer"
               >
                 <option value="ALL">All Statuses</option>
                 <option value="ACTIVE">ACTIVE Only</option>
@@ -510,7 +510,7 @@ export default function SuperAdminHospitalsPage() {
               </select>
             </div>
 
-            <div className="text-xs font-mono text-slate-500 dark:text-[#777] self-end md:self-center">
+            <div className="text-xs font-mono text-slate-500 dark:text-[#777] self-end md:self-center shrink-0">
               Showing {filteredHospitals.length} of {hospitalsList.length} hospitals
             </div>
           </div>
@@ -518,7 +518,117 @@ export default function SuperAdminHospitalsPage() {
 
         {/* Hospitals Table */}
         <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
+          {/* Mobile Cards: Hospitals */}
+          <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f]">
+            {filteredHospitals.length === 0 ? (
+              <div className="py-12 px-4 text-center text-slate-500 dark:text-[#666] font-mono">
+                <div className="text-sm font-bold">NO MATCHING HOSPITALS FOUND</div>
+                <div className="text-xs mt-1">Try broadening your search term or city filter.</div>
+              </div>
+            ) : (
+              filteredHospitals.map((hosp) => (
+                <div key={hosp.id} className="p-4 space-y-3 bg-white dark:bg-[#0a0a0a]">
+                  {/* Top row: Status & ID */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`px-2 py-0.5 rounded-xs text-[10px] font-bold font-mono ${
+                        hosp.status === "ACTIVE"
+                          ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/40"
+                          : "bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800/40"
+                      }`}
+                    >
+                      {hosp.status}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-[#777] break-all">{hosp.id}</span>
+                  </div>
+
+                  {/* Hospital Name & Location */}
+                  <div>
+                    <button
+                      onClick={() => setViewingHospital(hosp)}
+                      className="font-bold text-sm text-slate-900 dark:text-[#ededed] hover:text-blue-700 dark:hover:text-blue-400 text-left cursor-pointer transition-colors block"
+                    >
+                      {hosp.name}
+                    </button>
+                    <div className="text-xs text-slate-600 dark:text-[#aaa] font-mono mt-0.5">
+                      {hosp.city}, {hosp.state}
+                      {hosp.phone && <span className="ml-2 text-slate-500">📞 {hosp.phone}</span>}
+                    </div>
+                  </div>
+
+                  {/* Operational Stats: Beds & Staff */}
+                  <div className="bg-slate-50 dark:bg-[#121212] p-3 rounded-xs space-y-2 text-xs font-mono">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-500 dark:text-[#777]">Beds (Vacant / Total)</span>
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <span className="text-emerald-600 dark:text-emerald-400">{hosp.availableBeds}</span>
+                        <span className="text-slate-400">/</span>
+                        <span className="text-slate-700 dark:text-[#bbb]">{hosp.totalBeds}</span>
+                      </div>
+                    </div>
+                    <div className="w-full bg-slate-200 dark:bg-[#222] h-1.5 rounded-xs overflow-hidden">
+                      <div
+                        className="bg-blue-600 h-full rounded-xs"
+                        style={{
+                          width: `${
+                            hosp.totalBeds > 0
+                              ? Math.min(100, Math.round((hosp.occupiedBeds / hosp.totalBeds) * 100))
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center pt-1 border-t border-slate-200/60 dark:border-[#222]">
+                      <span className="text-slate-500 dark:text-[#777]">Staff Personnel</span>
+                      <Link
+                        href={`/superadmin/staff?hospitalId=${hosp.id}`}
+                        className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                      >
+                        👥 {hosp.staffCount} Staff
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* 2-line Action buttons */}
+                  <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-xs">
+                    <button
+                      onClick={() => setViewingHospital(hosp)}
+                      className="py-2 text-center font-semibold uppercase rounded-xs border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#ccc] hover:border-slate-400 transition-all cursor-pointer"
+                    >
+                      Details
+                    </button>
+                    <button
+                      onClick={() => handleOpenEdit(hosp)}
+                      className="py-2 text-center font-semibold uppercase rounded-xs border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#ccc] hover:border-slate-400 transition-all cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleToggleStatus(hosp)}
+                      disabled={updatingId === hosp.id}
+                      className={`py-2 text-center font-bold uppercase rounded-xs border transition-all cursor-pointer ${
+                        hosp.status === "ACTIVE"
+                          ? "border-amber-300 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                          : "border-emerald-300 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                      }`}
+                    >
+                      {updatingId === hosp.id ? "..." : hosp.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                    </button>
+                    <button
+                      onClick={() => setDeletingHospital(hosp)}
+                      disabled={updatingId === hosp.id}
+                      className="py-2 text-center font-bold uppercase rounded-xs border border-red-300 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table: Hospitals */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                 <tr>

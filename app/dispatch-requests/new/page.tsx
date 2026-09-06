@@ -259,23 +259,23 @@ function CreateDispatchContent() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
       {/* System Bar */}
-      <div className="bg-slate-900 text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 flex items-center justify-between font-mono">
-        <div className="flex items-center gap-2">
+      <div className="bg-slate-900 text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 font-mono">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span>CREATE AMBULANCE DISPATCH REQUEST</span>
+          <span className="font-semibold">CREATE DISPATCH REQUEST</span>
         </div>
-        <div className="text-slate-400 text-[11px] font-mono">DISPATCHER CONSOLE</div>
+        <div className="text-slate-400 text-[11px] font-mono shrink-0">DISPATCHER CONSOLE</div>
       </div>
 
       {/* Header */}
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-slate-900 text-white font-bold flex items-center justify-center text-sm font-mono rounded-sm">
+            <div className="w-8 h-8 bg-slate-900 text-white font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
               BR
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-lg text-slate-900 font-mono tracking-tight">
+              <span className="font-bold text-lg text-slate-900 font-mono tracking-tight leading-none">
                 BED<span className="text-blue-700">RELAY</span>
               </span>
               <span className="text-[10px] text-slate-500 font-mono tracking-widest uppercase mt-0.5">
@@ -284,22 +284,22 @@ function CreateDispatchContent() {
             </div>
           </Link>
 
-          <nav className="flex items-center gap-3 font-mono text-xs">
+          <nav className="flex items-center gap-1.5 sm:gap-2 font-mono text-xs overflow-x-auto no-scrollbar py-0.5 max-w-full">
             <Link
               href="/dispatcher"
-              className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 hover:text-slate-900 rounded-sm whitespace-nowrap shrink-0"
             >
               DISPATCHER DASHBOARD
             </Link>
             <Link
               href="/find-beds"
-              className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 hover:text-slate-900 rounded-sm whitespace-nowrap shrink-0"
             >
               FIND HOSPITAL
             </Link>
             <Link
               href="/dispatcher/history"
-              className="px-3 py-1.5 text-slate-600 hover:text-slate-900 rounded-sm"
+              className="px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs text-slate-600 hover:text-slate-900 rounded-sm whitespace-nowrap shrink-0"
             >
               REQUEST HISTORY
             </Link>
@@ -307,11 +307,11 @@ function CreateDispatchContent() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white p-8 border border-slate-200 rounded-sm">
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="bg-white p-4 sm:p-8 border border-slate-200 rounded-sm">
           <div className="border-l-2 border-blue-700 pl-3 mb-6">
             <span className="text-xs font-mono text-blue-700 uppercase tracking-widest block">PRE-ARRIVAL ALERT TRANSMISSION</span>
-            <h1 className="text-2xl font-bold text-slate-900 mt-0.5">Create New Dispatch Request</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">Create New Dispatch Request</h1>
           </div>
 
           {validationError && (
@@ -348,11 +348,11 @@ function CreateDispatchContent() {
 
             {/* Selected Hospital Availability Summary Box */}
             {selectedHospital && (
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-sm">
+              <div className="p-3 sm:p-4 bg-slate-50 border border-slate-200 rounded-sm">
                 <div className="text-xs font-mono text-slate-500 uppercase font-semibold mb-2">
                   Real-Time Availability at {selectedHospital.name}:
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                   {selectedHospital.beds.map((b) => (
                     <div
                       key={b.id}
@@ -362,8 +362,8 @@ function CreateDispatchContent() {
                           : "bg-white border-slate-200"
                       }`}
                     >
-                      <div className="text-[10px] font-mono text-slate-500 uppercase">{b.name}</div>
-                      <div className="text-base font-bold font-mono text-slate-900 mt-0.5">
+                      <div className="text-[10px] font-mono text-slate-500 uppercase truncate">{b.name}</div>
+                      <div className="text-sm sm:text-base font-bold font-mono text-slate-900 mt-0.5">
                         <span className="text-emerald-700">{b.availableBeds}</span> / {b.totalBeds}
                       </div>
                     </div>
@@ -441,11 +441,11 @@ function CreateDispatchContent() {
 
             {/* 04. Current Location Coordinates */}
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
                 <label className="text-xs font-mono text-slate-700 uppercase font-semibold">
                   06. Ambulance GPS Coordinates (India)
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={handleDetectGPS}
@@ -458,21 +458,21 @@ function CreateDispatchContent() {
                   <button
                     type="button"
                     onClick={() => handleCityPresetSelect("Mumbai")}
-                    className="text-[11px] font-mono text-blue-700 hover:underline"
+                    className="text-[11px] font-mono text-blue-700 hover:underline cursor-pointer"
                   >
                     Mumbai
                   </button>
                   <button
                     type="button"
                     onClick={() => handleCityPresetSelect("New Delhi")}
-                    className="text-[11px] font-mono text-blue-700 hover:underline"
+                    className="text-[11px] font-mono text-blue-700 hover:underline cursor-pointer"
                   >
                     Delhi
                   </button>
                   <button
                     type="button"
                     onClick={() => handleCityPresetSelect("Bengaluru")}
-                    className="text-[11px] font-mono text-blue-700 hover:underline"
+                    className="text-[11px] font-mono text-blue-700 hover:underline cursor-pointer"
                   >
                     Bengaluru
                   </button>
@@ -493,11 +493,11 @@ function CreateDispatchContent() {
                     setLat(newLat);
                     setLng(newLng);
                   }}
-                  className="h-[260px] w-full border border-slate-200 rounded-sm overflow-hidden"
+                  className="h-[220px] sm:h-[260px] w-full border border-slate-200 rounded-sm overflow-hidden"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <span className="text-[10px] font-mono text-slate-500 block">Latitude</span>
                   <input
@@ -554,17 +554,17 @@ function CreateDispatchContent() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+            <div className="pt-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2.5 sm:gap-3">
               <Link
                 href="/find-beds"
-                className="px-4 py-2.5 text-xs font-semibold uppercase text-slate-600 hover:text-slate-900 border border-slate-300 rounded-sm"
+                className="w-full sm:w-auto px-4 py-2.5 text-xs font-semibold uppercase text-slate-600 hover:text-slate-900 border border-slate-300 rounded-sm text-center"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 rounded-sm transition-colors disabled:opacity-50"
+                className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
               >
                 {submitting ? "Transmitting to Neon..." : "Submit Dispatch Request"}
               </button>

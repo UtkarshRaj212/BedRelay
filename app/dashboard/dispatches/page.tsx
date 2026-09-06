@@ -204,8 +204,8 @@ export default function HospitalDispatchesPage() {
 
       {/* Main Header & Nav Tabs */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+          <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
               BR
             </div>
@@ -219,34 +219,33 @@ export default function HospitalDispatchesPage() {
             </div>
           </Link>
 
-          <div className="flex items-center gap-6">
-            <nav className="flex items-center gap-2 font-mono text-xs">
+          <div className="w-full sm:w-auto overflow-x-auto no-scrollbar scroll-smooth">
+            <nav className="flex items-center gap-2 font-mono text-xs py-1">
               <Link
                 href="/dashboard"
-                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors whitespace-nowrap shrink-0"
               >
                 OVERVIEW
               </Link>
               <Link
                 href="/dashboard/beds"
-                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors whitespace-nowrap shrink-0"
               >
                 BED MANAGEMENT
               </Link>
               <Link
                 href="/dashboard/dispatches"
-                className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm"
+                className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm whitespace-nowrap shrink-0"
               >
                 DISPATCH REQUESTS
               </Link>
               <Link
                 href="/dashboard/staff"
-                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors whitespace-nowrap shrink-0"
               >
                 STAFF MANAGEMENT
               </Link>
             </nav>
-
           </div>
         </div>
       </header>
@@ -255,14 +254,14 @@ export default function HospitalDispatchesPage() {
         {/* Hospital Header Banner */}
         <div className="bg-white dark:bg-[#0f0f0f] p-6 border border-slate-200 dark:border-[#222222] rounded-sm mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 text-xs font-mono font-semibold rounded-sm">
                 SCOPED AUTHENTICATED HOSPITAL
               </span>
               <span className="px-2 py-0.5 bg-slate-100 dark:bg-[#181818] text-slate-700 dark:text-[#a1a1a1] text-xs font-mono font-semibold border border-slate-300 dark:border-[#2a2a2a] rounded-sm">
                 {hospital?.city}, {hospital?.state || "India"}
               </span>
-              <span className="text-xs text-slate-500 dark:text-[#737373] font-mono">{hospital?.name} • {hospital?.id}</span>
+              <span className="text-xs text-slate-500 dark:text-[#737373] font-mono break-all">{hospital?.name} • {hospital?.id}</span>
             </div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">{hospital?.name || "Loading Hospital..."}</h1>
             <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5">
@@ -272,7 +271,7 @@ export default function HospitalDispatchesPage() {
 
           <button
             onClick={() => fetchDispatches()}
-            className="px-3 py-1.5 text-xs font-mono text-slate-700 dark:text-[#ededed] border border-slate-300 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#141414] rounded-sm transition-colors cursor-pointer"
+            className="px-3 py-1.5 text-xs font-mono text-slate-700 dark:text-[#ededed] border border-slate-300 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#141414] rounded-sm transition-colors cursor-pointer shrink-0"
           >
             Refresh Dispatch Stream
           </button>
@@ -292,14 +291,14 @@ export default function HospitalDispatchesPage() {
         )}
 
         {/* Filter Toolbar */}
-        <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2 font-mono text-xs">
-            <span className="text-slate-500 dark:text-[#737373] uppercase mr-2">Filter Status:</span>
+        <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 font-mono text-xs overflow-x-auto no-scrollbar scroll-smooth w-full sm:w-auto pb-1 sm:pb-0">
+            <span className="text-slate-500 dark:text-[#737373] uppercase mr-1 whitespace-nowrap shrink-0">Filter Status:</span>
             {["ALL", "PENDING", "ACCEPTED", "REJECTED", "COMPLETED", "CANCELLED"].map((st) => (
               <button
                 key={st}
                 onClick={() => setStatusFilter(st)}
-                className={`px-3 py-1.5 rounded-sm transition-colors cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-sm transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   statusFilter === st
                     ? "bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold"
                     : "bg-slate-100 dark:bg-[#181818] text-slate-700 dark:text-[#a1a1a1] hover:bg-slate-200 dark:hover:bg-[#242424]"
@@ -310,15 +309,15 @@ export default function HospitalDispatchesPage() {
             ))}
           </div>
 
-          <div className="text-xs font-mono text-slate-500 dark:text-[#737373]">
+          <div className="text-xs font-mono text-slate-500 dark:text-[#737373] shrink-0">
             SHOWING <span className="font-bold text-slate-900 dark:text-[#ededed]">{filteredDispatches.length}</span> REQUESTS
           </div>
         </div>
 
-        {/* Dispatch Requests Table */}
+        {/* Dispatch Requests Table / Cards */}
         <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-[#222222]">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-[#ededed]">Inbound Ambulance Pre-Arrival Requests</h2>
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-[#222222]">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed]">Inbound Ambulance Pre-Arrival Requests</h2>
             <p className="text-xs text-slate-500 dark:text-[#737373] font-mono mt-0.5">
               Strictly scoped to {hospital?.name || "your facility"}
             </p>
@@ -327,50 +326,21 @@ export default function HospitalDispatchesPage() {
           {loading ? (
             <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">LOADING DISPATCH REQUEST STREAM...</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead className="bg-slate-100 dark:bg-[#141414] text-slate-700 dark:text-[#888888] font-mono text-xs uppercase border-b border-slate-200 dark:border-[#222222]">
-                  <tr>
-                    <th className="py-3.5 px-6 font-semibold">Request ID</th>
-                    <th className="py-3.5 px-6 font-semibold">Ambulance Unit</th>
-                    <th className="py-3.5 px-6 font-semibold">Bed Category</th>
-                    <th className="py-3.5 px-6 font-semibold text-center">Beds Requested</th>
-                    <th className="py-3.5 px-6 font-semibold">Patient Clinical Condition</th>
-                    <th className="py-3.5 px-6 font-semibold text-center">ETA</th>
-                    <th className="py-3.5 px-6 font-semibold">Request Time</th>
-                    <th className="py-3.5 px-6 font-semibold text-center">Status</th>
-                    <th className="py-3.5 px-6 font-semibold text-center">Decision Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-[#1f1f1f] bg-white dark:bg-[#0f0f0f]">
-                  {filteredDispatches.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="py-8 px-6 text-center text-xs font-mono text-slate-500 dark:text-[#737373]">
-                        NO DISPATCH REQUESTS LOGGED FOR THIS FILTER
-                      </td>
-                    </tr>
-                  ) : (
-                    filteredDispatches.map((disp) => (
-                      <tr key={disp.id} className="hover:bg-slate-50 dark:hover:bg-[#141414] transition-colors">
-                        <td className="py-4 px-6 font-mono text-xs text-slate-600 dark:text-[#888888] font-semibold">{disp.id}</td>
-                        <td className="py-4 px-6 font-mono font-bold text-slate-900 dark:text-[#ededed]">{disp.ambulanceUnit}</td>
-                        <td className="py-4 px-6 font-mono text-xs font-semibold">
-                          <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60 rounded-sm">
-                            {disp.bedCategoryCode}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 font-mono text-center font-bold text-slate-900 dark:text-[#ededed]">
-                          {disp.requestedBeds || 1}
-                        </td>
-                        <td className="py-4 px-6 text-slate-800 dark:text-[#a1a1a1] font-medium max-w-xs">{disp.patientCondition}</td>
-                        <td className="py-4 px-6 font-mono text-center font-bold text-slate-900 dark:text-[#ededed]">{disp.etaMinutes}m</td>
-                        <td className="py-4 px-6 font-mono text-xs text-slate-500 dark:text-[#737373]">
-                          <div>{formatDate(disp.createdAt)}</div>
-                          <div className="text-[10px] text-slate-400">{new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                        </td>
-                        <td className="py-4 px-6 text-center font-mono text-xs font-bold">
+            <>
+              {/* Mobile Card List (< md) */}
+              <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f] bg-white dark:bg-[#0f0f0f]">
+                {filteredDispatches.length === 0 ? (
+                  <div className="py-8 px-4 text-center text-xs font-mono text-slate-500 dark:text-[#737373]">
+                    NO DISPATCH REQUESTS LOGGED FOR THIS FILTER
+                  </div>
+                ) : (
+                  filteredDispatches.map((disp) => (
+                    <div key={disp.id} className="p-4 space-y-3 font-sans">
+                      {/* Status & ID */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
                           <span
-                            className={`px-2.5 py-1 rounded-sm border ${
+                            className={`inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-bold border ${
                               disp.status === "ACCEPTED" || disp.status === "COMPLETED"
                                 ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
                                 : disp.status === "REJECTED" || disp.status === "CANCELLED"
@@ -380,38 +350,164 @@ export default function HospitalDispatchesPage() {
                           >
                             {disp.status}
                           </span>
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          {disp.status === "PENDING" ? (
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => handleUpdateStatus(disp.id, "ACCEPTED")}
-                                disabled={updatingId === disp.id}
-                                className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer"
-                              >
-                                Accept
-                              </button>
-                              <button
-                                onClick={() => handleUpdateStatus(disp.id, "REJECTED")}
-                                disabled={updatingId === disp.id}
-                                className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer"
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-xs font-mono text-slate-400 dark:text-[#666]">—</span>
-                          )}
+                          <div className="font-mono text-xs text-slate-600 dark:text-[#888888] mt-1.5 break-all font-semibold">
+                            {disp.id}
+                          </div>
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-400 dark:text-[#666] text-right shrink-0">
+                          <div>{formatDate(disp.createdAt)}</div>
+                          <div>{new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                        </div>
+                      </div>
+
+                      {/* Ambulance Unit */}
+                      <div>
+                        <div className="font-bold text-slate-900 dark:text-[#ededed] text-sm font-mono">
+                          {disp.ambulanceUnit}
+                        </div>
+                      </div>
+
+                      {/* Requirement & ETA */}
+                      <div className="bg-slate-50 dark:bg-[#141414] p-3 rounded-sm border border-slate-200 dark:border-[#222222] space-y-1.5 text-xs font-mono">
+                        <div className="flex justify-between items-baseline gap-2">
+                          <span className="text-slate-500 dark:text-[#777] uppercase text-[11px]">Requirement</span>
+                          <span className="font-semibold text-blue-700 dark:text-blue-400 text-right">
+                            {disp.bedCategoryCode} · {disp.requestedBeds || 1} bed{Number(disp.requestedBeds) > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-baseline gap-2">
+                          <span className="text-slate-500 dark:text-[#777] uppercase text-[11px]">ETA</span>
+                          <span className="font-bold text-slate-900 dark:text-[#ededed] text-right">~{disp.etaMinutes} min</span>
+                        </div>
+                        {disp.patientCondition && (
+                          <div className="pt-1.5 border-t border-slate-200 dark:border-[#222222] text-[11px] text-slate-600 dark:text-[#999] font-sans">
+                            <span className="font-mono text-slate-500 dark:text-[#777]">Condition: </span>
+                            {disp.patientCondition}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Decision Actions */}
+                      {disp.status === "PENDING" && (
+                        <div className="grid grid-cols-2 gap-2 pt-1">
+                          <button
+                            onClick={() => handleUpdateStatus(disp.id, "ACCEPTED")}
+                            disabled={updatingId === disp.id}
+                            className="w-full py-2 px-3 text-xs font-semibold uppercase tracking-wider text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(disp.id, "REJECTED")}
+                            disabled={updatingId === disp.id}
+                            className="w-full py-2 px-3 text-xs font-semibold uppercase tracking-wider text-white bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
+
+                      <div>
+                        <Link
+                          href={`/dispatch-requests/${disp.id}`}
+                          className="w-full inline-flex items-center justify-center px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ededed] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] hover:border-slate-400 bg-slate-50 dark:bg-[#141414] rounded-sm transition-colors"
+                        >
+                          View Details
+                        </Link>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop Table View (>= md) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead className="bg-slate-100 dark:bg-[#141414] text-slate-700 dark:text-[#888888] font-mono text-xs uppercase border-b border-slate-200 dark:border-[#222222]">
+                    <tr>
+                      <th className="py-3.5 px-6 font-semibold">Request ID</th>
+                      <th className="py-3.5 px-6 font-semibold">Ambulance Unit</th>
+                      <th className="py-3.5 px-6 font-semibold">Bed Category</th>
+                      <th className="py-3.5 px-6 font-semibold text-center">Beds Requested</th>
+                      <th className="py-3.5 px-6 font-semibold">Patient Clinical Condition</th>
+                      <th className="py-3.5 px-6 font-semibold text-center">ETA</th>
+                      <th className="py-3.5 px-6 font-semibold">Request Time</th>
+                      <th className="py-3.5 px-6 font-semibold text-center">Status</th>
+                      <th className="py-3.5 px-6 font-semibold text-center">Decision Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-[#1f1f1f] bg-white dark:bg-[#0f0f0f]">
+                    {filteredDispatches.length === 0 ? (
+                      <tr>
+                        <td colSpan={9} className="py-8 px-6 text-center text-xs font-mono text-slate-500 dark:text-[#737373]">
+                          NO DISPATCH REQUESTS LOGGED FOR THIS FILTER
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      filteredDispatches.map((disp) => (
+                        <tr key={disp.id} className="hover:bg-slate-50 dark:hover:bg-[#141414] transition-colors">
+                          <td className="py-4 px-6 font-mono text-xs text-slate-600 dark:text-[#888888] font-semibold">{disp.id}</td>
+                          <td className="py-4 px-6 font-mono font-bold text-slate-900 dark:text-[#ededed]">{disp.ambulanceUnit}</td>
+                          <td className="py-4 px-6 font-mono text-xs font-semibold">
+                            <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60 rounded-sm">
+                              {disp.bedCategoryCode}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 font-mono text-center font-bold text-slate-900 dark:text-[#ededed]">
+                            {disp.requestedBeds || 1}
+                          </td>
+                          <td className="py-4 px-6 text-slate-800 dark:text-[#a1a1a1] font-medium max-w-xs">{disp.patientCondition}</td>
+                          <td className="py-4 px-6 font-mono text-center font-bold text-slate-900 dark:text-[#ededed]">{disp.etaMinutes}m</td>
+                          <td className="py-4 px-6 font-mono text-xs text-slate-500 dark:text-[#737373]">
+                            <div>{formatDate(disp.createdAt)}</div>
+                            <div className="text-[10px] text-slate-400">{new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                          </td>
+                          <td className="py-4 px-6 text-center font-mono text-xs font-bold">
+                            <span
+                              className={`px-2.5 py-1 rounded-sm border ${
+                                disp.status === "ACCEPTED" || disp.status === "COMPLETED"
+                                  ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                                  : disp.status === "REJECTED" || disp.status === "CANCELLED"
+                                  ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
+                                  : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
+                              }`}
+                            >
+                              {disp.status}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            {disp.status === "PENDING" ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={() => handleUpdateStatus(disp.id, "ACCEPTED")}
+                                  disabled={updatingId === disp.id}
+                                  className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-600 dark:hover:bg-emerald-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={() => handleUpdateStatus(disp.id, "REJECTED")}
+                                  disabled={updatingId === disp.id}
+                                  className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-xs font-mono text-slate-400 dark:text-[#666]">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       </main>
     </div>
   );
 }
+

@@ -528,10 +528,10 @@ function SuperAdminStaffContent() {
         </div>
 
         {/* View Switcher Tabs: Memberships vs Invitations */}
-        <div className="flex border-b border-slate-200 dark:border-[#222222] font-mono text-xs uppercase tracking-wider mb-6">
+        <div className="flex border-b border-slate-200 dark:border-[#222222] font-mono text-xs uppercase tracking-wider mb-6 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap">
           <button
             onClick={() => setViewTab("members")}
-            className={`px-4 py-2.5 border-b-2 font-bold transition-all cursor-pointer ${
+            className={`px-4 py-2.5 border-b-2 font-bold transition-all cursor-pointer shrink-0 ${
               viewTab === "members"
                 ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
                 : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed]"
@@ -541,7 +541,7 @@ function SuperAdminStaffContent() {
           </button>
           <button
             onClick={() => setViewTab("invitations")}
-            className={`px-4 py-2.5 border-b-2 font-bold transition-all cursor-pointer ${
+            className={`px-4 py-2.5 border-b-2 font-bold transition-all cursor-pointer shrink-0 ${
               viewTab === "invitations"
                 ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
                 : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed]"
@@ -554,8 +554,8 @@ function SuperAdminStaffContent() {
         {/* Filter and Search Bar */}
         <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] p-4 rounded-sm shadow-2xs mb-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div className="flex-1 flex flex-wrap items-center gap-3">
-              <div className="relative flex-1 min-w-[240px]">
+            <div className="flex-1 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3">
+              <div className="relative flex-1 min-w-[200px]">
                 <input
                   type="text"
                   placeholder={
@@ -585,7 +585,7 @@ function SuperAdminStaffContent() {
               <select
                 value={hospitalFilter}
                 onChange={(e) => setHospitalFilter(e.target.value)}
-                className="px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer max-w-xs truncate"
+                className="w-full sm:w-auto px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer max-w-full sm:max-w-xs truncate"
               >
                 <option value="ALL">All Hospitals ({hospitalsList.length})</option>
                 {hospitalsList.map((h) => (
@@ -598,7 +598,7 @@ function SuperAdminStaffContent() {
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value as any)}
-                className="px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer"
+                className="w-full sm:w-auto px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer"
               >
                 <option value="ALL">All Roles</option>
                 <option value="HOSPITAL_ADMIN">HOSPITAL_ADMIN</option>
@@ -609,7 +609,7 @@ function SuperAdminStaffContent() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer"
+                  className="w-full sm:w-auto px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-slate-900 dark:text-[#ededed] focus:outline-none focus:border-blue-600 cursor-pointer"
                 >
                   <option value="ALL">All Statuses</option>
                   <option value="ACTIVE">ACTIVE</option>
@@ -618,7 +618,7 @@ function SuperAdminStaffContent() {
               )}
             </div>
 
-            <div className="text-xs font-mono text-slate-500 dark:text-[#777] self-end md:self-center">
+            <div className="text-xs font-mono text-slate-500 dark:text-[#777] self-end md:self-center shrink-0">
               {viewTab === "members"
                 ? `Showing ${filteredStaff.length} of ${staffList.length} staff`
                 : `Showing ${filteredInvitations.length} of ${invitationsList.length} invitations`}
@@ -631,7 +631,92 @@ function SuperAdminStaffContent() {
         {/* ============================================================= */}
         {viewTab === "members" && (
           <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm shadow-2xs overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile Cards: Staff Members */}
+            <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f]">
+              {filteredStaff.length === 0 ? (
+                <div className="py-12 px-4 text-center text-slate-500 dark:text-[#666] font-mono">
+                  <div className="text-sm font-bold">NO STAFF MEMBERS MATCH FILTER CRITERIA</div>
+                  <div className="text-xs mt-1">Try resetting the hospital or role filter.</div>
+                </div>
+              ) : (
+                filteredStaff.map((member) => (
+                  <div key={member.membershipId} className="p-4 space-y-3 bg-white dark:bg-[#0a0a0a]">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-bold text-sm text-slate-900 dark:text-[#ededed]">{member.userName}</div>
+                        <div className="text-xs text-slate-500 dark:text-[#777] font-mono break-all">{member.userEmail}</div>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded-xs text-[10px] font-bold font-mono shrink-0 ${
+                          member.status === "ACTIVE"
+                            ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/40"
+                            : "bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800/40"
+                        }`}
+                      >
+                        {member.status}
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-[#121212] p-3 rounded-xs space-y-1.5 text-xs font-mono">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 dark:text-[#777] text-[11px]">Facility</span>
+                        <span className="font-semibold text-slate-800 dark:text-[#ccc] text-right truncate max-w-[200px]">{member.hospitalName}</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 dark:text-[#777] text-[11px]">Role</span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-xs text-[10px] font-bold ${
+                            member.role === "HOSPITAL_ADMIN"
+                              ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/60"
+                              : "bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-700/60"
+                          }`}
+                        >
+                          {member.role}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 dark:text-[#777] text-[11px]">Joined</span>
+                        <span className="text-slate-600 dark:text-[#aaa]">{formatDate(member.joinedAt)}</span>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1 font-mono text-xs">
+                      <button
+                        onClick={() => handleToggleStaffRole(member)}
+                        disabled={updatingId === member.membershipId}
+                        className="flex-1 min-w-[120px] py-2 text-center font-semibold uppercase rounded-xs border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#ccc] hover:border-slate-400 transition-all cursor-pointer"
+                        title={member.role === "HOSPITAL_ADMIN" ? "Demote to Staff" : "Promote to Admin"}
+                      >
+                        {member.role === "HOSPITAL_ADMIN" ? "Demote" : "Make Admin"}
+                      </button>
+                      <button
+                        onClick={() => handleToggleStaffStatus(member)}
+                        disabled={updatingId === member.membershipId}
+                        className={`flex-1 min-w-[120px] py-2 text-center font-semibold uppercase rounded-xs border transition-all cursor-pointer ${
+                          member.status === "ACTIVE"
+                            ? "border-amber-300 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 hover:bg-amber-50"
+                            : "border-emerald-300 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50"
+                        }`}
+                      >
+                        {member.status === "ACTIVE" ? "Suspend" : "Activate"}
+                      </button>
+                      <button
+                        onClick={() => setRevokingMembership(member)}
+                        disabled={updatingId === member.membershipId}
+                        className="w-full py-2 text-center font-bold uppercase rounded-xs border border-red-300 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                        title="Remove hospital membership"
+                      >
+                        Revoke Membership
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table: Staff Members */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>
@@ -735,7 +820,87 @@ function SuperAdminStaffContent() {
         {/* ============================================================= */}
         {viewTab === "invitations" && (
           <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm shadow-2xs overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Mobile Cards: Invitations */}
+            <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f]">
+              {filteredInvitations.length === 0 ? (
+                <div className="py-12 px-4 text-center text-slate-500 dark:text-[#666] font-mono">
+                  <div className="text-sm font-bold">NO INVITATION TOKENS FOUND</div>
+                  <div className="text-xs mt-1">Generate a new invitation code to onboard clinical staff.</div>
+                </div>
+              ) : (
+                filteredInvitations.map((inv) => (
+                  <div key={inv.id} className="p-4 space-y-3 bg-white dark:bg-[#0a0a0a]">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-blue-700 dark:text-blue-400 tracking-wider font-mono">
+                          {inv.code}
+                        </span>
+                        <button
+                          onClick={() => copyToClipboard(inv.code)}
+                          className="px-1.5 py-0.5 text-[10px] rounded-xs border border-slate-200 dark:border-[#333] hover:border-blue-600 text-slate-600 dark:text-[#888] cursor-pointer font-mono"
+                          title="Copy code to clipboard"
+                        >
+                          {copiedCode === inv.code ? "Copied!" : "Copy"}
+                        </button>
+                      </div>
+                      <span
+                        className={`px-2 py-0.5 rounded-sm text-[10px] font-bold font-mono ${
+                          inv.status === "PENDING"
+                            ? "bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700/50"
+                            : inv.status === "ACCEPTED"
+                            ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400"
+                            : "bg-slate-100 dark:bg-[#1a1a1a] text-slate-600 dark:text-[#777]"
+                        }`}
+                      >
+                        {inv.status}
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-[#121212] p-3 rounded-xs space-y-1.5 text-xs font-mono">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 dark:text-[#777] text-[11px]">Hospital</span>
+                        <span className="font-semibold text-slate-800 dark:text-[#ccc] text-right truncate max-w-[200px]">{inv.hospitalName}</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 dark:text-[#777] text-[11px]">Role</span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-xs text-[10px] font-bold ${
+                            inv.role === "HOSPITAL_ADMIN"
+                              ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
+                              : "bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300"
+                          }`}
+                        >
+                          {inv.role}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 dark:text-[#777] text-[11px]">Recipient</span>
+                        <span className="text-slate-600 dark:text-[#bbb] break-all text-right">
+                          {inv.email || <span className="italic text-slate-400">Open to Any User</span>}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500 dark:text-[#777] text-[11px]">Expires</span>
+                        <span className="text-slate-500 dark:text-[#777]">{formatDate(inv.expiresAt)}</span>
+                      </div>
+                    </div>
+
+                    {inv.status === "PENDING" && (
+                      <button
+                        onClick={() => handleRevokeInvitation(inv.id, inv.code)}
+                        disabled={updatingId === inv.id}
+                        className="w-full py-2 text-center font-bold uppercase rounded-xs border border-red-300 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer font-mono text-xs"
+                      >
+                        Revoke Invitation
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop Table: Invitations */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>

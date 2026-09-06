@@ -250,14 +250,14 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* System Status Top Header */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span>LIVE TELEMETRY FEED: ONLINE</span>
-          <span className="text-slate-500 dark:text-[#555]">|</span>
-          <span className="text-slate-300 dark:text-[#a1a1a1]">STAFF: {session.user.email}</span>
+      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse shrink-0"></span>
+          <span className="font-semibold">LIVE TELEMETRY: ONLINE</span>
+          <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
+          <span className="text-slate-300 dark:text-[#a1a1a1] break-all">STAFF: {session.user.email}</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 shrink-0 self-end sm:self-auto">
           <ThemeToggle />
           <button
             onClick={() => authClient.signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/"; } } })}
@@ -270,10 +270,10 @@ export default function DashboardPage() {
 
       {/* Navigation Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
+              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
                 BR
               </div>
               <div className="flex flex-col">
@@ -285,40 +285,49 @@ export default function DashboardPage() {
                 </span>
               </div>
             </Link>
+
+            <button
+              onClick={() => fetchTelemetry()}
+              className="md:hidden px-2.5 py-1 text-xs font-mono text-slate-700 dark:text-[#ededed] border border-slate-300 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#141414] rounded-sm transition-colors flex items-center gap-1.5 shrink-0"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
           </div>
 
-          <div className="flex items-center gap-6">
-            <nav className="flex items-center gap-2 font-mono text-xs">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+            <nav className="flex items-center gap-2 font-mono text-xs overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap py-1 w-full md:w-auto">
               <Link
                 href="/dashboard"
-                className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm"
+                className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm shrink-0"
               >
                 OVERVIEW
               </Link>
               <Link
                 href="/dashboard/beds"
-                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors shrink-0"
               >
                 BED MANAGEMENT
               </Link>
               <Link
                 href="/dashboard/dispatches"
-                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors shrink-0"
               >
                 DISPATCH REQUESTS
               </Link>
               <Link
                 href="/dashboard/staff"
-                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors"
+                className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white rounded-sm transition-colors shrink-0"
               >
                 STAFF MANAGEMENT
               </Link>
             </nav>
 
-
             <button
               onClick={() => fetchTelemetry()}
-              className="px-3 py-1.5 text-xs font-mono text-slate-700 dark:text-[#ededed] border border-slate-300 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#141414] rounded-sm transition-colors flex items-center gap-1.5"
+              className="hidden md:flex px-3 py-1.5 text-xs font-mono text-slate-700 dark:text-[#ededed] border border-slate-300 dark:border-[#2a2a2a] hover:bg-slate-50 dark:hover:bg-[#141414] rounded-sm transition-colors items-center gap-1.5 shrink-0"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -339,32 +348,32 @@ export default function DashboardPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hospital Info & Status Summary Header */}
-        <div className="bg-white dark:bg-[#0f0f0f] p-6 border border-slate-200 dark:border-[#222222] rounded-sm mb-8">
+        <div className="bg-white dark:bg-[#0f0f0f] p-4 sm:p-6 border border-slate-200 dark:border-[#222222] rounded-sm mb-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 text-xs font-mono font-semibold rounded-sm">
+              <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                <span className="px-2 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 text-[11px] font-mono font-semibold rounded-sm">
                   VERIFIED FACILITY
                 </span>
-                <span className="px-2 py-0.5 bg-slate-100 dark:bg-[#181818] text-slate-700 dark:text-[#a1a1a1] text-xs font-mono font-semibold border border-slate-300 dark:border-[#2a2a2a] rounded-sm">
+                <span className="px-2 py-0.5 bg-slate-100 dark:bg-[#181818] text-slate-700 dark:text-[#a1a1a1] text-[11px] font-mono font-semibold border border-slate-300 dark:border-[#2a2a2a] rounded-sm">
                   {hospital?.city || "New Delhi"}, {hospital?.state || "Delhi"}
                 </span>
-                <span className="text-xs text-slate-500 dark:text-[#737373] font-mono">{hospital?.name || "Hospital"} • {hospital?.id}</span>
+                <span className="text-xs text-slate-500 dark:text-[#737373] font-mono break-all">{hospital?.name || "Hospital"} • {hospital?.id}</span>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">
                 {hospital?.name || "Regional Emergency Hospital"}
               </h1>
-              <p className="text-sm text-slate-600 dark:text-[#888888] mt-0.5">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-[#888888] mt-0.5 break-words">
                 {hospital?.address || "Sector 14, Dwarka"} • Tel: {hospital?.phone || "+91 11 2671 0000"}
               </p>
             </div>
 
-            <div className="flex items-center gap-6 pt-4 md:pt-0 border-t md:border-t-0 border-slate-200 dark:border-[#222222]">
-              <div className="text-right">
+            <div className="flex flex-wrap items-center gap-6 pt-4 md:pt-0 border-t md:border-t-0 border-slate-200 dark:border-[#222222]">
+              <div>
                 <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Overall Occupancy</div>
                 <div className="text-2xl font-bold text-slate-900 dark:text-[#ededed] font-mono mt-0.5">{occupancyPercent}%</div>
               </div>
-              <div className="text-right">
+              <div>
                 <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Total Available Beds</div>
                 <div className="text-2xl font-bold text-blue-700 dark:text-blue-400 font-mono mt-0.5">{totalAvailable} / {totalCapacity}</div>
               </div>
@@ -373,11 +382,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Capacity Summary Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white dark:bg-[#0f0f0f] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
             <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Total Tracked Beds</div>
             <div className="text-2xl font-bold text-slate-900 dark:text-[#ededed] font-mono mt-1">{totalCapacity}</div>
-            <div className="text-xs text-slate-500 dark:text-[#737373] mt-1 font-mono">Capacity across 3 units</div>
+            <div className="text-xs text-slate-500 dark:text-[#737373] mt-1 font-mono">Capacity across units</div>
           </div>
 
           <div className="bg-white dark:bg-[#0f0f0f] p-4 border border-slate-200 dark:border-[#222222] rounded-sm border-l-4 border-l-emerald-600">
@@ -401,9 +410,9 @@ export default function DashboardPage() {
 
         {/* Main Bed Availability Table */}
         <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm mb-8 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-[#ededed]">Bed Categories Availability Telemetry</h2>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed]">Bed Categories Availability Telemetry</h2>
               <p className="text-xs text-slate-500 dark:text-[#737373] font-mono mt-0.5">
                 Real-time unit capacity broadcasted to regional ambulance dispatchers
               </p>
@@ -413,64 +422,189 @@ export default function DashboardPage() {
           {loadingData ? (
             <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">FETCHING REAL-TIME BED TELEMETRY...</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm border-collapse">
-                <thead className="bg-slate-100 dark:bg-[#141414] text-slate-700 dark:text-[#888888] font-mono text-xs uppercase border-b border-slate-200 dark:border-[#222222]">
-                  <tr>
-                    <th className="py-3.5 px-6 font-semibold">Category Code</th>
-                    <th className="py-3.5 px-6 font-semibold">Bed Category</th>
-                    <th className="py-3.5 px-6 font-semibold text-right">Total Beds</th>
-                    <th className="py-3.5 px-6 font-semibold text-right">Available Beds</th>
-                    <th className="py-3.5 px-6 font-semibold text-right">Occupied Beds</th>
-                    <th className="py-3.5 px-6 font-semibold">Last Updated</th>
-                    <th className="py-3.5 px-6 font-semibold text-center">Operational Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-[#1f1f1f] bg-white dark:bg-[#0f0f0f]">
-                  {beds.map((bed) => {
-                    return (
-                      <tr key={bed.id} className="hover:bg-slate-50 dark:hover:bg-[#141414] transition-colors">
-                        <td className="py-4 px-6 font-mono font-bold text-slate-900 dark:text-[#ededed]">{bed.categoryCode}</td>
-                        <td className="py-4 px-6 font-semibold text-slate-900 dark:text-[#ededed]">{bed.name}</td>
-                        <td className="py-4 px-6 font-mono text-right text-slate-900 dark:text-[#ededed] font-semibold">{bed.totalBeds}</td>
-                        <td className="py-4 px-6 font-mono text-right font-bold text-emerald-700 dark:text-emerald-400">{bed.availableBeds}</td>
-                        <td className="py-4 px-6 font-mono text-right text-slate-600 dark:text-[#a1a1a1]">{bed.occupiedBeds}</td>
-                        <td className="py-4 px-6 font-mono text-xs text-slate-500 dark:text-[#737373]">
-                          <div>{formatDate(bed.lastUpdated)}</div>
-                          <div className="text-[10px] text-slate-400">{new Date(bed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          <button
-                            onClick={() => handleOpenEdit(bed)}
-                            className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer"
-                          >
-                            Update Availability
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Mobile Cards: Bed Categories */}
+              <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f]">
+                {beds.map((bed) => {
+                  const occPct = bed.totalBeds > 0 ? Math.round((bed.occupiedBeds / bed.totalBeds) * 100) : 0;
+                  return (
+                    <div key={bed.id} className="p-4 space-y-3 bg-white dark:bg-[#0f0f0f]">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-xs bg-slate-100 dark:bg-[#1a1a1a] text-slate-800 dark:text-[#ccc] border border-slate-200 dark:border-[#333]">
+                            {bed.categoryCode}
+                          </span>
+                          <span className="font-semibold text-sm text-slate-900 dark:text-[#ededed]">
+                            {bed.name}
+                          </span>
+                        </div>
+                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-[#aaa]">
+                          {occPct}% Occ.
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-[#141414] p-3 rounded-xs border border-slate-100 dark:border-[#1a1a1a]">
+                        <div className="text-center">
+                          <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-[#737373] block">Available</span>
+                          <span className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">{bed.availableBeds}</span>
+                        </div>
+                        <div className="text-center border-x border-slate-200 dark:border-[#222]">
+                          <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-[#737373] block">Occupied</span>
+                          <span className="text-lg font-bold font-mono text-slate-700 dark:text-[#aaa]">{bed.occupiedBeds}</span>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-[#737373] block">Total</span>
+                          <span className="text-lg font-bold font-mono text-slate-900 dark:text-[#ededed]">{bed.totalBeds}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 dark:text-[#666]">
+                        <span>Last Updated</span>
+                        <span>{formatDate(bed.lastUpdated)} {new Date(bed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+
+                      <button
+                        onClick={() => handleOpenEdit(bed)}
+                        className="w-full py-2.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-xs transition-colors cursor-pointer text-center shadow-xs"
+                      >
+                        Update Availability
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table: Bed Categories */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-sm border-collapse">
+                  <thead className="bg-slate-100 dark:bg-[#141414] text-slate-700 dark:text-[#888888] font-mono text-xs uppercase border-b border-slate-200 dark:border-[#222222]">
+                    <tr>
+                      <th className="py-3.5 px-6 font-semibold">Category Code</th>
+                      <th className="py-3.5 px-6 font-semibold">Bed Category</th>
+                      <th className="py-3.5 px-6 font-semibold text-right">Total Beds</th>
+                      <th className="py-3.5 px-6 font-semibold text-right">Available Beds</th>
+                      <th className="py-3.5 px-6 font-semibold text-right">Occupied Beds</th>
+                      <th className="py-3.5 px-6 font-semibold">Last Updated</th>
+                      <th className="py-3.5 px-6 font-semibold text-center">Operational Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-[#1f1f1f] bg-white dark:bg-[#0f0f0f]">
+                    {beds.map((bed) => {
+                      return (
+                        <tr key={bed.id} className="hover:bg-slate-50 dark:hover:bg-[#141414] transition-colors">
+                          <td className="py-4 px-6 font-mono font-bold text-slate-900 dark:text-[#ededed]">{bed.categoryCode}</td>
+                          <td className="py-4 px-6 font-semibold text-slate-900 dark:text-[#ededed]">{bed.name}</td>
+                          <td className="py-4 px-6 font-mono text-right text-slate-900 dark:text-[#ededed] font-semibold">{bed.totalBeds}</td>
+                          <td className="py-4 px-6 font-mono text-right font-bold text-emerald-700 dark:text-emerald-400">{bed.availableBeds}</td>
+                          <td className="py-4 px-6 font-mono text-right text-slate-600 dark:text-[#a1a1a1]">{bed.occupiedBeds}</td>
+                          <td className="py-4 px-6 font-mono text-xs text-slate-500 dark:text-[#737373]">
+                            <div>{formatDate(bed.lastUpdated)}</div>
+                            <div className="text-[10px] text-slate-400">{new Date(bed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            <button
+                              onClick={() => handleOpenEdit(bed)}
+                              className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer"
+                            >
+                              Update Availability
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 
         {/* Incoming Dispatch Requests Section */}
         <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-slate-200 dark:border-[#222222] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-[#ededed]">Recent Inbound Dispatch Requests</h2>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed]">Recent Inbound Dispatch Requests</h2>
               <p className="text-xs text-slate-500 dark:text-[#737373] font-mono mt-0.5">
                 Pre-arrival notifications transmitted by approaching ambulance units
               </p>
             </div>
-            <span className="px-2 py-1 bg-slate-100 dark:bg-[#181818] text-slate-700 dark:text-[#a1a1a1] text-xs font-mono border border-slate-300 dark:border-[#2a2a2a] rounded-sm">
-              {dispatches.length} DISPATCHES LOGGED
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-1 bg-slate-100 dark:bg-[#181818] text-slate-700 dark:text-[#a1a1a1] text-xs font-mono border border-slate-300 dark:border-[#2a2a2a] rounded-sm">
+                {dispatches.length} DISPATCHES
+              </span>
+              <Link
+                href="/dashboard/dispatches"
+                className="px-2.5 py-1 text-xs font-mono text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                View All →
+              </Link>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Cards: Recent Inbound Dispatches */}
+          <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#222]">
+            {dispatches.length === 0 ? (
+              <div className="py-6 px-4 text-center text-xs font-mono text-slate-500 dark:text-[#737373]">
+                NO INBOUND DISPATCH REQUESTS CURRENTLY LOGGED
+              </div>
+            ) : (
+              dispatches.map((disp) => (
+                <div key={disp.id} className="p-4 space-y-3 bg-white dark:bg-[#0f0f0f]">
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`px-2 py-0.5 text-[10px] font-mono font-bold border rounded-xs uppercase ${
+                        disp.status === "ACCEPTED" || disp.status === "COMPLETED"
+                          ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                          : disp.status === "REJECTED" || disp.status === "CANCELLED"
+                          ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
+                          : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
+                      }`}
+                    >
+                      {disp.status}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-500 dark:text-[#888] break-all">
+                      {disp.id}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-[#121212] p-3 rounded-xs space-y-1.5 text-xs font-mono">
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-slate-500 dark:text-[#777] text-[11px]">Ambulance</span>
+                      <span className="font-bold text-slate-900 dark:text-white text-right">{disp.ambulanceUnit}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-slate-500 dark:text-[#777] text-[11px]">Requirement</span>
+                      <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60 rounded-xs font-semibold">
+                        {disp.bedCategoryCode}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-slate-500 dark:text-[#777] text-[11px]">Condition</span>
+                      <span className="text-slate-700 dark:text-[#ccc] text-right truncate max-w-[180px]">{disp.patientCondition}</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-slate-500 dark:text-[#777] text-[11px]">ETA</span>
+                      <span className="font-bold text-slate-900 dark:text-white">{disp.etaMinutes} mins</span>
+                    </div>
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-slate-500 dark:text-[#777] text-[11px]">Received</span>
+                      <span className="text-slate-500 dark:text-[#777]">{formatDate(disp.createdAt)}</span>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/dispatch-requests/${disp.id}`}
+                    className="block w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-[#1a1a1a] dark:hover:bg-[#252525] text-slate-900 dark:text-[#ededed] font-mono text-xs font-semibold text-center rounded-xs transition-colors"
+                  >
+                    View Details
+                  </Link>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop Table: Recent Inbound Dispatches */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-slate-100 dark:bg-[#141414] text-slate-700 dark:text-[#888888] font-mono text-xs uppercase border-b border-slate-200 dark:border-[#222222]">
                 <tr>
@@ -638,18 +772,18 @@ export default function DashboardPage() {
                 Calculated Occupied: <span className="font-bold text-slate-900 dark:text-[#ededed]">{Math.max(0, (typeof editTotal === "number" ? editTotal : (parseInt(editTotal, 10) || 0)) - (typeof editAvailable === "number" ? editAvailable : (parseInt(editAvailable, 10) || 0)))}</span>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-[#222222]">
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-200 dark:border-[#222222]">
                 <button
                   type="button"
                   onClick={() => setEditingCategory(null)}
-                  className="px-4 py-2 text-xs font-semibold uppercase text-slate-600 dark:text-[#a1a1a1] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold uppercase text-slate-600 dark:text-[#a1a1a1] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm cursor-pointer text-center"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
                 >
                   {updating ? "Publishing..." : "Broadcast Capacity"}
                 </button>

@@ -256,18 +256,18 @@ function HospitalSetupContent() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Top Banner */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-        <div className="flex items-center gap-2">
+      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span>ONBOARDING PORTAL: ACTIVE</span>
-          <span className="text-slate-500 dark:text-[#555]">|</span>
-          <span className="text-slate-300 dark:text-[#a1a1a1]">USER: {session.user.email}</span>
+          <span className="font-semibold">ONBOARDING PORTAL</span>
+          <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
+          <span className="text-slate-300 dark:text-[#a1a1a1] text-[11px] truncate max-w-[200px] sm:max-w-none">{session.user.email}</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 shrink-0">
           <ThemeToggle />
           <button
             onClick={() => authClient.signOut({ fetchOptions: { onSuccess: () => { window.location.href = "/"; } } })}
-            className="text-slate-400 hover:text-white transition-colors underline font-mono text-[11px]"
+            className="text-slate-400 hover:text-white transition-colors underline font-mono text-[11px] cursor-pointer"
           >
             Sign Out
           </button>
@@ -275,10 +275,10 @@ function HospitalSetupContent() {
       </div>
 
       {/* Main Header */}
-      <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-40">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
+            <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
               BR
             </div>
             <div className="flex flex-col">
@@ -294,39 +294,39 @@ function HospitalSetupContent() {
       </header>
 
       {/* Body Container */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-sans">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-sans">
             Hospital Facility Setup
           </h1>
-          <p className="mt-1 text-sm text-slate-600 dark:text-[#a1a1a1]">
+          <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-[#a1a1a1] leading-relaxed">
             Welcome, <span className="font-semibold text-slate-900 dark:text-white">{session.user.name || session.user.email}</span>. Select an onboarding route below to connect your facility to the BedRelay emergency network.
           </p>
         </div>
 
         {/* Tab Switcher */}
-        <div className="grid grid-cols-2 max-w-md border border-slate-200 dark:border-[#222222] rounded-sm p-1 bg-slate-100 dark:bg-[#111111] mb-8 font-mono text-xs font-semibold">
+        <div className="grid grid-cols-2 max-w-md border border-slate-200 dark:border-[#222222] rounded-sm p-1 bg-slate-100 dark:bg-[#111111] mb-6 sm:mb-8 font-mono text-[11px] sm:text-xs font-semibold">
           <button
             type="button"
             onClick={() => setActiveTab("create")}
-            className={`py-2.5 text-center rounded-sm transition-all cursor-pointer ${
+            className={`py-2 sm:py-2.5 text-center rounded-sm transition-all cursor-pointer ${
               activeTab === "create"
                 ? "bg-white dark:bg-[#222222] text-slate-900 dark:text-white shadow-xs font-bold"
                 : "text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            CREATE NEW HOSPITAL
+            CREATE NEW
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("join")}
-            className={`py-2.5 text-center rounded-sm transition-all cursor-pointer ${
+            className={`py-2 sm:py-2.5 text-center rounded-sm transition-all cursor-pointer ${
               activeTab === "join"
                 ? "bg-white dark:bg-[#222222] text-slate-900 dark:text-white shadow-xs font-bold"
                 : "text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white"
             }`}
           >
-            JOIN WITH INVITATION
+            JOIN WITH CODE
           </button>
         </div>
 
@@ -474,11 +474,11 @@ function HospitalSetupContent() {
                         longitude: lng.toString(),
                       })
                     }
-                    className="w-full h-56"
+                    className="w-full h-48 sm:h-56"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
                     <label className="block text-[11px] font-mono text-slate-600 dark:text-[#888888] mb-1">
                       Latitude (°N, India bounds 6.5 - 37.5)
@@ -533,7 +533,7 @@ function HospitalSetupContent() {
 
         {/* Tab 2: Join Existing Hospital */}
         {activeTab === "join" && (
-          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-6 sm:p-8">
+          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-4 sm:p-8">
             <div className="border-b border-slate-200 dark:border-[#1f1f1f] pb-4 mb-6">
               <div className="flex items-center gap-2 font-mono text-xs text-emerald-700 dark:text-emerald-400 font-semibold mb-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span>
@@ -558,7 +558,7 @@ function HospitalSetupContent() {
                 <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1.5">
                   Hospital Invitation Code *
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2 max-w-md">
                   <input
                     type="text"
                     required
@@ -569,13 +569,13 @@ function HospitalSetupContent() {
                       setInviteCode(val);
                       verifyInviteCode(val);
                     }}
-                    className="flex-1 max-w-sm px-4 py-3 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm font-mono text-base font-bold tracking-widest text-slate-900 dark:text-white outline-none uppercase"
+                    className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm font-mono text-base font-bold tracking-widest text-slate-900 dark:text-white outline-none uppercase"
                   />
                   <button
                     type="button"
                     onClick={() => verifyInviteCode(inviteCode)}
                     disabled={previewLoading || !inviteCode}
-                    className="px-4 py-2 border border-slate-300 dark:border-[#333] hover:border-slate-400 dark:hover:border-[#555] bg-slate-50 dark:bg-[#181818] text-xs font-mono rounded-sm transition-colors cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-slate-300 dark:border-[#333] hover:border-slate-400 dark:hover:border-[#555] bg-slate-50 dark:bg-[#181818] text-xs font-mono rounded-sm transition-colors cursor-pointer text-center shrink-0"
                   >
                     {previewLoading ? "Verifying..." : "Verify Code"}
                   </button>
