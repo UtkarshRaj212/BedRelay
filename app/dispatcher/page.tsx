@@ -262,22 +262,6 @@ export default function DispatcherDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
-      {/* System Status Top Bar */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block"></span>
-          <span>AMBULANCE DISPATCH TELEMETRY CONSOLE</span>
-          <span className="text-slate-500 dark:text-[#555]">|</span>
-          <span className="text-slate-400 dark:text-[#888888]">NEAR-REAL-TIME SYNC (5S)</span>
-        </div>
-        <div className="flex items-center gap-3 sm:gap-4 text-slate-400 dark:text-[#888888]">
-          <span className="text-[11px]">LAST UPDATED: {lastSynced || "CONNECTING..."}</span>
-          <span className="text-slate-600 dark:text-[#555]">|</span>
-          <span className="hidden sm:inline text-slate-300 dark:text-[#a1a1a1]">NO AUTH REQUIRED</span>
-          <ThemeToggle />
-        </div>
-      </div>
-
       {/* Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
@@ -305,6 +289,7 @@ export default function DispatcherDashboardPage() {
             <Link href="/dispatcher/history" className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors whitespace-nowrap shrink-0">
               REQUEST HISTORY
             </Link>
+            <ThemeToggle />
           </nav>
         </div>
       </header>
@@ -325,9 +310,9 @@ export default function DispatcherDashboardPage() {
                   REGION / DISPATCH ZONE
                 </span>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">Live Regional Bed Availability Stream</h1>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">Regional Bed Availability</h1>
               <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5">
-                Live capacity auto-refreshes directly from hospital floor telemetry.
+                Capacity updates from hospital floor systems.
               </p>
             </div>
 
@@ -357,7 +342,6 @@ export default function DispatcherDashboardPage() {
                 {ambulanceCoordinates ? (
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 font-mono text-xs font-bold border border-blue-300 dark:border-blue-800/60 rounded-sm">
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
                       GPS: {ambulanceCoordinates.lat.toFixed(4)}, {ambulanceCoordinates.lng.toFixed(4)}
                     </span>
                     <button
@@ -690,7 +674,7 @@ export default function DispatcherDashboardPage() {
 
 
           {loading ? (
-            <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">FETCHING REAL-TIME TELEMETRY...</div>
+            <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">Loading bed availability...</div>
           ) : (
             <div className="divide-y divide-slate-200 dark:divide-[#1f1f1f]">
               {hospitals.map((hosp) => {

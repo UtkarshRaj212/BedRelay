@@ -66,20 +66,17 @@ export function RequestTimeline({ dispatchId, refreshTrigger }: RequestTimelineP
       <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-[#222222]">
         <div>
           <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-blue-700 dark:text-blue-400 block">
-            SHARED AUDIT LOG & TELEMETRY
+            ACTIVITY LOG
           </span>
           <h3 className="text-base font-bold text-slate-900 dark:text-[#ededed]">
             REQUEST ACTIVITY TIMELINE
           </h3>
         </div>
-        <span className="text-[11px] font-mono text-slate-400 dark:text-[#666]">
-          Live Synchronization
-        </span>
       </div>
 
       {loading && activities.length === 0 ? (
         <div className="py-6 text-center text-xs font-mono text-slate-500 dark:text-[#777]">
-          SYNCING ACTIVITY LOG...
+          Loading activity log...
         </div>
       ) : activities.length === 0 ? (
         <div className="py-6 text-center text-xs font-mono text-slate-500 dark:text-[#777]">

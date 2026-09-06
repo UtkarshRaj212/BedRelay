@@ -405,7 +405,7 @@ export default function SuperAdminHospitalsPage() {
               Hospital Management
             </h1>
             <p className="text-xs text-slate-500 dark:text-[#888] mt-1">
-              National hospital registry, live operational status, telemetry bed summaries, and staff allocation.
+              National hospital registry, facility status, bed summaries, and staff allocation.
             </p>
           </div>
 

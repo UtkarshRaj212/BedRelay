@@ -141,22 +141,12 @@ export default function DispatchRequestDetailsPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col transition-colors duration-150">
-        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="h-2 w-2 rounded-full bg-blue-500 inline-block animate-pulse"></span>
-            <span className="font-semibold">LIVE REQUEST TRACKING</span>
-          </div>
-          <ThemeToggle />
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col items-center justify-center font-mono text-sm p-4 transition-colors duration-150">
+        <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md mb-4">
+          BR
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center font-mono text-sm p-4">
-          <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md animate-pulse mb-4">
-            BR
-          </div>
-          <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-[#888888]">
-            <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
-            <span>LOADING DISPATCH REQUEST TELEMETRY...</span>
-          </div>
+        <div className="text-xs text-slate-600 dark:text-[#888888]">
+          Loading request details...
         </div>
       </div>
     );
@@ -164,28 +154,19 @@ export default function DispatchRequestDetailsPage({
 
   if (errorMsg || !dispatch) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col transition-colors duration-150">
-        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="h-2 w-2 rounded-full bg-red-500 inline-block"></span>
-            <span className="font-semibold">DISPATCH TELEMETRY ERROR</span>
-          </div>
-          <ThemeToggle />
-        </div>
-        <div className="flex-1 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0f0f0f] p-8 border border-slate-200 dark:border-[#222222] rounded-sm max-w-md w-full text-center shadow-sm">
-            <div className="text-xs font-mono text-red-700 dark:text-red-400 font-bold uppercase mb-2">ERROR</div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-[#ededed]">{errorMsg || "Request Not Found"}</h1>
-            <p className="mt-2 text-sm text-slate-600 dark:text-[#888888]">
-              The requested dispatch request ID could not be located in the Neon database.
-            </p>
-            <Link
-              href="/dispatcher"
-              className="mt-6 inline-block w-full text-center px-4 py-2.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold text-sm rounded-sm transition-colors"
-            >
-              Return to Dispatcher Dashboard
-            </Link>
-          </div>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col items-center justify-center p-4 transition-colors duration-150">
+        <div className="bg-white dark:bg-[#0f0f0f] p-8 border border-slate-200 dark:border-[#222222] rounded-sm max-w-md w-full text-center shadow-sm">
+          <div className="text-xs font-mono text-red-700 dark:text-red-400 font-bold uppercase mb-2">ERROR</div>
+          <h1 className="text-xl font-bold text-slate-900 dark:text-[#ededed]">{errorMsg || "Request Not Found"}</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-[#888888]">
+            The requested dispatch request ID could not be located in the database.
+          </p>
+          <Link
+            href="/dispatcher"
+            className="mt-6 inline-block w-full text-center px-4 py-2.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold text-sm rounded-sm transition-colors"
+          >
+            Return to Dispatcher Dashboard
+          </Link>
         </div>
       </div>
     );
@@ -193,20 +174,6 @@ export default function DispatchRequestDetailsPage({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
-      {/* Top Status Header */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span className="font-semibold">LIVE REQUEST TRACKING</span>
-          <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
-          <span className="text-slate-300 dark:text-[#888] text-[11px]">AUTO-REFRESH (5S)</span>
-        </div>
-        <div className="flex items-center gap-3 text-slate-400 dark:text-[#888] text-[11px] font-mono shrink-0">
-          <span className="hidden sm:inline">LAST SYNCED: {lastSynced}</span>
-          <ThemeToggle />
-        </div>
-      </div>
-
       {/* Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -243,6 +210,7 @@ export default function DispatchRequestDetailsPage({
             >
               REQUEST HISTORY
             </Link>
+            <ThemeToggle />
           </nav>
         </div>
       </header>
@@ -260,9 +228,6 @@ export default function DispatchRequestDetailsPage({
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <span className="text-[10px] font-mono font-bold tracking-widest uppercase bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#333] px-1.5 py-0.5 rounded-xs text-slate-700 dark:text-[#aaa]">
-                  {["PENDING", "SENT", "ACCEPTED"].includes(dispatch.status.toUpperCase()) ? "ACTIVE REQUEST" : "FINAL STATUS"}
-                </span>
                 <span
                   className={`text-xs font-mono font-bold px-2 py-0.5 rounded-xs border ${
                     dispatch.status === "ACCEPTED"
@@ -278,8 +243,8 @@ export default function DispatchRequestDetailsPage({
                 </span>
 
                 {dispatch.reviewRequired && (
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-xs border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse flex items-center gap-1">
-                    <span>⚠️</span> HOSPITAL REVIEW REQUIRED
+                  <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-xs border bg-amber-50 dark:bg-[#1a1708] text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800/60">
+                    REVIEW REQUIRED
                   </span>
                 )}
               </div>
@@ -341,8 +306,8 @@ export default function DispatchRequestDetailsPage({
           </div>
 
           {dispatch.reviewRequired && dispatch.reviewReason && (
-            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 rounded-xs text-xs font-mono text-amber-900 dark:text-amber-300">
-              <span className="font-bold uppercase block mb-0.5">⚠️ Hospital Review Pending:</span>
+            <div className="mt-3 p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#262626] rounded-xs text-xs font-mono text-slate-700 dark:text-[#ccc]">
+              <span className="font-semibold uppercase block mb-0.5 text-slate-900 dark:text-[#ededed]">Hospital Review Pending:</span>
               {dispatch.reviewReason}
             </div>
           )}
@@ -386,7 +351,7 @@ export default function DispatchRequestDetailsPage({
 
           <div className="flex items-center gap-4 self-start sm:self-auto shrink-0">
             <div className="text-left sm:text-right font-mono">
-              <div className="text-[10px] text-slate-500 dark:text-[#737373] uppercase font-semibold">LIVE STATUS</div>
+              <div className="text-[10px] text-slate-500 dark:text-[#737373] uppercase font-semibold">STATUS</div>
               <span
                 className={`inline-block px-3 py-1 text-sm font-bold border rounded-sm mt-0.5 ${
                   dispatch.status === "ACCEPTED"
@@ -416,7 +381,7 @@ export default function DispatchRequestDetailsPage({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100 dark:border-[#1e1e1e]">
               <div>
                 <span className="text-xs font-mono text-blue-700 dark:text-blue-400 uppercase font-bold block">
-                  LIVE ROUTE TELEMETRY (OPENSTREETMAP)
+                  ROUTE OVERVIEW (OPENSTREETMAP)
                 </span>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-[#ededed] break-words">
                   {dispatch.ambulanceLat !== null && dispatch.ambulanceLng !== null

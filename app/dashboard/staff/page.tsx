@@ -179,7 +179,6 @@ export default function StaffManagementPage() {
   if (isPending || (loading && !hospital && !forbidden && !needsOnboarding)) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] flex items-center justify-center font-mono text-sm">
-        <span className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping mr-3"></span>
         Loading Hospital Staff Management Console...
       </div>
     );
@@ -289,8 +288,7 @@ export default function StaffManagementPage() {
       {/* Top Header */}
       <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span>STAFF GOVERNANCE CONSOLE: ONLINE</span>
+          <span>STAFF MANAGEMENT</span>
           <span className="text-slate-500 dark:text-[#555]">|</span>
           <span className="text-slate-300 dark:text-[#a1a1a1]">ADMIN: {session.user.email}</span>
         </div>
@@ -466,8 +464,7 @@ export default function StaffManagementPage() {
                   </div>
                   <div className="flex justify-between items-center gap-2">
                     <span className="text-slate-500 dark:text-[#777] text-[11px]">Status</span>
-                    <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                       {member.status}
                     </span>
                   </div>
@@ -527,8 +524,7 @@ export default function StaffManagementPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-6 font-mono">
-                      <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                         {member.status}
                       </span>
                     </td>

@@ -67,8 +67,8 @@ export function ActiveDispatchBanner({
                 {activeDispatch.status}
               </span>
               {activeDispatch.reviewRequired && (
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-xs border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse flex items-center gap-1">
-                  <span>⚠️</span> HOSPITAL REVIEW REQUIRED
+                <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-xs border bg-amber-50 dark:bg-[#1a1708] text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800/60">
+                  REVIEW REQUIRED
                 </span>
               )}
               {lastUpdated && (
@@ -142,7 +142,7 @@ export function ActiveDispatchBanner({
                 {activeDispatch.status}
               </span>
               {activeDispatch.reviewRequired && (
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-xs border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
+                <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded-xs border bg-amber-50 dark:bg-[#1a1708] text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800/60">
                   REVIEW REQUIRED
                 </span>
               )}

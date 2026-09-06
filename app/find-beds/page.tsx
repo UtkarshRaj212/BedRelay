@@ -278,22 +278,6 @@ export default function FindHospitalPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
-      {/* Top Bar */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span className="font-semibold">DISPATCH ROUTING & SUITABILITY</span>
-          <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
-          <span className="text-slate-400 dark:text-[#888888] text-[11px] sm:text-xs">SYNC (5S)</span>
-        </div>
-        <div className="flex items-center gap-3 sm:gap-4 text-slate-400 dark:text-[#888888] shrink-0">
-          <span className="text-[11px] hidden sm:inline">UPDATED: {lastSynced || "CONNECTING..."}</span>
-          <span className="hidden sm:inline text-slate-600 dark:text-[#555]">|</span>
-          <span className="hidden md:inline font-mono text-[11px] text-slate-300 dark:text-[#a1a1a1]">DISPATCHER MODE (READ-ONLY)</span>
-          <ThemeToggle />
-        </div>
-      </div>
-
       {/* Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -330,6 +314,7 @@ export default function FindHospitalPage() {
             >
               REQUEST HISTORY
             </Link>
+            <ThemeToggle />
           </nav>
         </div>
       </header>
@@ -452,7 +437,6 @@ export default function FindHospitalPage() {
                 {ambulanceCoordinates ? (
                   <div className="flex items-center gap-2">
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 font-mono text-xs font-bold border border-blue-300 dark:border-blue-800/60 rounded-sm">
-                      <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
                       GPS: {ambulanceCoordinates.lat.toFixed(4)}, {ambulanceCoordinates.lng.toFixed(4)}
                     </span>
                     <button
@@ -545,7 +529,7 @@ export default function FindHospitalPage() {
               <div className="sticky top-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono font-bold uppercase text-slate-700 dark:text-[#a1a1a1]">
-                    LIVE PROXIMITY RADAR (OSM)
+                    PROXIMITY MAP (OSM)
                   </span>
                   <span className="text-[11px] font-mono text-slate-500">
                     Click pin to view details

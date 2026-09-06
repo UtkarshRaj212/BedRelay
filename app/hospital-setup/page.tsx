@@ -198,8 +198,7 @@ function HospitalSetupContent() {
   if (isPending) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-500 dark:text-[#888888] font-mono text-sm">
-          <span className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping"></span>
+        <div className="text-slate-500 dark:text-[#888888] font-mono text-sm">
           Authenticating hospital staff credentials...
         </div>
       </div>
@@ -258,7 +257,6 @@ function HospitalSetupContent() {
       {/* Top Banner */}
       <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
           <span className="font-semibold">ONBOARDING PORTAL</span>
           <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
           <span className="text-slate-300 dark:text-[#a1a1a1] text-[11px] truncate max-w-[200px] sm:max-w-none">{session.user.email}</span>
@@ -535,8 +533,7 @@ function HospitalSetupContent() {
         {activeTab === "join" && (
           <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-4 sm:p-8">
             <div className="border-b border-slate-200 dark:border-[#1f1f1f] pb-4 mb-6">
-              <div className="flex items-center gap-2 font-mono text-xs text-emerald-700 dark:text-emerald-400 font-semibold mb-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-600 inline-block"></span>
+              <div className="font-mono text-xs text-emerald-700 dark:text-emerald-400 font-semibold mb-1">
                 INVITATION-BASED STAFF ONBOARDING
               </div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -631,8 +628,7 @@ function HospitalSetupContent() {
               {/* Facility Preview Box */}
               {previewData && previewData.valid && (
                 <div className="p-5 bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900/50 rounded-sm">
-                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-mono text-xs font-bold mb-3">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  <div className="text-emerald-800 dark:text-emerald-400 font-mono text-xs font-bold mb-3">
                     INVITATION VERIFIED
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
@@ -689,8 +685,7 @@ export default function HospitalSetupPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-500 dark:text-[#888888] font-mono text-sm">
-          <span className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-ping"></span>
+        <div className="text-slate-500 dark:text-[#888888] font-mono text-sm">
           Loading BedRelay Facility Setup...
         </div>
       </div>

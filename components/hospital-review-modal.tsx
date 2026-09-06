@@ -105,11 +105,11 @@ export function HospitalReviewModal({
 
         <div className="space-y-4">
           {/* Reason Alert */}
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 rounded-xs text-xs font-mono">
-            <span className="font-bold text-amber-900 dark:text-amber-300 uppercase block mb-1">
-              ⚠️ Reason Review Required:
+          <div className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-xs text-xs font-mono">
+            <span className="font-semibold text-slate-700 dark:text-[#aaa] uppercase block mb-1">
+              Reason Review Required:
             </span>
-            <p className="text-amber-800 dark:text-amber-300 font-sans">
+            <p className="text-slate-900 dark:text-[#ededed] font-sans">
               {dispatch.reviewReason || "Clinical condition or bed capacity modified while en route."}
             </p>
           </div>

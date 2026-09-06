@@ -45,7 +45,7 @@ export function SwitchHospitalModal({
         <div className="border-b border-slate-200 dark:border-[#222222] pb-3 mb-4 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-mono uppercase tracking-widest text-amber-700 dark:text-amber-400 font-bold block">
-              OPERATIONAL CONTEXT CONFLICT
+              ACTIVE REQUEST CONFLICT
             </span>
             <h2 id="switch-dialog-title" className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed] leading-tight">
               SWITCH RECEIVING HOSPITAL

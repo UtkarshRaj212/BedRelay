@@ -199,8 +199,8 @@ export default function OSMMapView({
             <Popup>
               <div className="p-3 font-sans min-w-[200px]">
                 <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-mono text-[10px] uppercase font-bold tracking-wider">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
-                  {userLocation.isLiveGPS ? "YOUR LIVE LOCATION (GPS)" : "YOUR LOCATION (CITY BASE)"}
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                  {userLocation.isLiveGPS ? "CURRENT LOCATION (GPS)" : "LOCATION (CITY BASE)"}
                 </div>
                 <div className="text-sm font-bold text-slate-900 dark:text-white mt-1">
                   {userLocation.label || "Current Dispatcher Position"}
@@ -224,8 +224,8 @@ export default function OSMMapView({
             <Popup>
               <div className="p-3 font-sans min-w-[200px]">
                 <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-mono text-[10px] uppercase font-bold tracking-wider">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
-                  AMBULANCE TELEMETRY ORIGIN
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                  AMBULANCE ORIGIN
                 </div>
                 <div className="text-sm font-bold text-slate-900 dark:text-white mt-1">
                   {ambulanceLocation.unitId || "EMS Inbound Unit"}

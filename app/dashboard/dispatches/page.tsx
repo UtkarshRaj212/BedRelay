@@ -109,22 +109,12 @@ export default function HospitalDispatchesPage() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col transition-colors duration-150">
-        <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-blue-500 inline-block animate-pulse"></span>
-            <span>BEDRELAY TELEMETRY SYSTEM</span>
-          </div>
-          <ThemeToggle />
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased flex flex-col items-center justify-center font-mono text-sm p-4 transition-colors duration-150">
+        <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md mb-4">
+          BR
         </div>
-        <div className="flex-1 flex flex-col items-center justify-center font-mono text-sm p-4">
-          <div className="w-10 h-10 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shadow-md animate-pulse mb-4">
-            BR
-          </div>
-          <div className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-[#888888]">
-            <span className="h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-ping"></span>
-            <span>VERIFYING AUTHENTICATION SESSION...</span>
-          </div>
+        <div className="text-xs text-slate-600 dark:text-[#888888]">
+          Loading dispatch console...
         </div>
       </div>
     );
@@ -200,8 +190,7 @@ export default function HospitalDispatchesPage() {
       {/* Top Status Header */}
       <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex items-center justify-between font-mono">
         <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span>INBOUND DISPATCH CONTROL CONSOLE</span>
+          <span>INBOUND DISPATCH CONSOLE</span>
           <span className="text-slate-500 dark:text-[#555]">|</span>
           <span className="text-slate-300 dark:text-[#a1a1a1]">STAFF: {session.user.email}</span>
         </div>
@@ -353,13 +342,9 @@ export default function HospitalDispatchesPage() {
                       {/* Status & ID */}
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          {disp.reviewRequired ? (
-                            <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-bold border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
-                              ACCEPTED · REVIEW REQUIRED
-                            </span>
-                          ) : (
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span
-                              className={`inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-bold border ${
+                              className={`inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-medium border ${
                                 disp.status === "ACCEPTED" || disp.status === "COMPLETED"
                                   ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
                                   : disp.status === "REJECTED" || disp.status === "CANCELLED"
@@ -369,7 +354,12 @@ export default function HospitalDispatchesPage() {
                             >
                               {disp.status}
                             </span>
-                          )}
+                            {disp.reviewRequired && (
+                              <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-medium border bg-amber-50 dark:bg-[#1a1708] text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800/60">
+                                REVIEW REQUIRED
+                              </span>
+                            )}
+                          </div>
                           <div className="font-mono text-xs text-slate-600 dark:text-[#888888] mt-1.5 break-all font-semibold">
                             {disp.id}
                           </div>
@@ -442,9 +432,9 @@ export default function HospitalDispatchesPage() {
                         <div className="pt-1">
                           <button
                             onClick={() => setReviewDispatch(disp)}
-                            className="w-full py-2.5 px-3 text-xs font-mono font-bold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer text-center shadow-xs"
+                            className="w-full py-2 px-3 text-xs font-mono font-semibold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 dark:bg-[#1f1f1f] dark:hover:bg-[#282828] border border-slate-700 dark:border-[#3a3a3a] rounded-sm transition-colors cursor-pointer text-center"
                           >
-                            REVIEW UPDATE
+                            Review Update
                           </button>
                         </div>
                       )}
@@ -504,14 +494,10 @@ export default function HospitalDispatchesPage() {
                             <div>{formatDate(disp.createdAt)}</div>
                             <div className="text-[10px] text-slate-400">{new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                           </td>
-                          <td className="py-4 px-6 text-center font-mono text-xs font-bold">
-                            {disp.reviewRequired ? (
-                              <span className="inline-block px-2.5 py-1 rounded-sm border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
-                                ACCEPTED · REVIEW REQUIRED
-                              </span>
-                            ) : (
+                          <td className="py-4 px-6 text-center">
+                            <div className="inline-flex items-center justify-center gap-1.5 flex-wrap">
                               <span
-                                className={`px-2.5 py-1 rounded-sm border ${
+                                className={`px-2.5 py-1 rounded-sm border text-xs font-mono font-medium ${
                                   disp.status === "ACCEPTED" || disp.status === "COMPLETED"
                                     ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
                                     : disp.status === "REJECTED" || disp.status === "CANCELLED"
@@ -521,13 +507,18 @@ export default function HospitalDispatchesPage() {
                               >
                                 {disp.status}
                               </span>
-                            )}
+                              {disp.reviewRequired && (
+                                <span className="px-2 py-1 rounded-sm border bg-amber-50 dark:bg-[#1a1708] text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800/60 text-xs font-mono font-medium">
+                                  REVIEW REQUIRED
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-4 px-6 text-center">
                             {disp.reviewRequired ? (
                               <button
                                 onClick={() => setReviewDispatch(disp)}
-                                className="px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer"
+                                className="px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 dark:bg-[#1f1f1f] dark:hover:bg-[#282828] border border-slate-700 dark:border-[#3a3a3a] rounded-sm transition-colors cursor-pointer"
                               >
                                 Review Update
                               </button>

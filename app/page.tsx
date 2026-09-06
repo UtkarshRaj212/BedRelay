@@ -4,21 +4,6 @@ import { ThemeToggle } from "@/components/theme-toggle";
 export default function Home() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
-      {/* Top System Status Banner */}
-      <div className="bg-slate-900 dark:bg-[#080808] text-slate-100 text-xs py-2 px-4 sm:px-8 border-b border-slate-800 dark:border-[#1f1f1f] flex flex-wrap items-center justify-between gap-2 font-mono">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-          <span>SYSTEM STATUS: OPERATIONAL</span>
-          <span className="text-slate-500 dark:text-[#555] hidden sm:inline">|</span>
-          <span className="text-slate-400 dark:text-[#888888] text-[11px] sm:text-xs">REGIONAL EMS TELEMETRY</span>
-        </div>
-        <div className="flex items-center gap-4 text-slate-400 dark:text-[#888888]">
-          <span className="hidden md:inline">LATENCY: 14ms</span>
-          <span className="hidden md:inline">ENCRYPTED END-TO-END</span>
-          <ThemeToggle />
-        </div>
-      </div>
-
       {/* Navigation Bar */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
@@ -54,6 +39,7 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <ThemeToggle />
             <Link
               href="/dashboard"
               className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ededed] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] hover:border-slate-400 dark:hover:border-[#444] bg-white dark:bg-[#0f0f0f] rounded-sm transition-all"
@@ -110,7 +96,7 @@ export default function Home() {
 
               <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-slate-200 dark:border-[#222222]">
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
-                  <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Live Synchronization</div>
+                  <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Data Synchronization</div>
                   <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">&lt; 02 Seconds</div>
                   <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">From floor update to dispatcher screen</div>
                 </div>
@@ -208,9 +194,6 @@ export default function Home() {
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono font-bold text-xs bg-slate-100 dark:bg-[#1f1f1f] text-slate-900 dark:text-[#ededed] px-2.5 py-1 rounded-sm border border-slate-200 dark:border-[#333]">
                       {cat.code}
-                    </span>
-                    <span className="text-[11px] font-mono text-slate-500 dark:text-[#777] uppercase">
-                      Telemetry Active
                     </span>
                   </div>
                   <div>
