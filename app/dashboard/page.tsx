@@ -20,6 +20,10 @@ interface DispatchRequest {
   id: string;
   ambulanceUnit: string;
   bedCategoryCode: string;
+  requestedBeds?: number;
+  approvedBeds?: number | null;
+  reviewRequired?: boolean;
+  reviewReason?: string | null;
   etaMinutes: number;
   patientCondition: string;
   status: string;
@@ -364,7 +368,7 @@ export default function DashboardPage() {
                 {hospital?.name || "Regional Emergency Hospital"}
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-[#888888] mt-0.5 break-words">
-                {hospital?.address || "Sector 14, Dwarka"} • Tel: {hospital?.phone || "+91 11 2671 0000"}
+                <span>{hospital?.address || "Sector 14, Dwarka"}</span> • <span className="inline-block whitespace-nowrap">Ph.: {hospital?.phone || "+91 11 2671 0000"}</span>
               </p>
             </div>
 
@@ -551,17 +555,23 @@ export default function DashboardPage() {
               dispatches.map((disp) => (
                 <div key={disp.id} className="p-4 space-y-3 bg-white dark:bg-[#0f0f0f]">
                   <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`px-2 py-0.5 text-[10px] font-mono font-bold border rounded-xs uppercase ${
-                        disp.status === "ACCEPTED" || disp.status === "COMPLETED"
-                          ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
-                          : disp.status === "REJECTED" || disp.status === "CANCELLED"
-                          ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
-                          : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
-                      }`}
-                    >
-                      {disp.status}
-                    </span>
+                    {disp.reviewRequired ? (
+                      <span className="px-2 py-0.5 text-[10px] font-mono font-bold border rounded-xs uppercase bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
+                        REVIEW REQUIRED
+                      </span>
+                    ) : (
+                      <span
+                        className={`px-2 py-0.5 text-[10px] font-mono font-bold border rounded-xs uppercase ${
+                          disp.status === "ACCEPTED" || disp.status === "COMPLETED"
+                            ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                            : disp.status === "REJECTED" || disp.status === "CANCELLED"
+                            ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
+                            : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
+                        }`}
+                      >
+                        {disp.status}
+                      </span>
+                    )}
                     <span className="text-[11px] font-mono text-slate-500 dark:text-[#888] break-all">
                       {disp.id}
                     </span>
@@ -637,17 +647,23 @@ export default function DashboardPage() {
                       <td className="py-4 px-6 text-slate-700 dark:text-[#a1a1a1] font-medium">{disp.patientCondition}</td>
                       <td className="py-4 px-6 font-mono text-center font-bold text-slate-900 dark:text-[#ededed]">{disp.etaMinutes} mins</td>
                       <td className="py-4 px-6 text-center">
-                        <span
-                          className={`px-2.5 py-1 text-xs font-mono font-bold border rounded-sm ${
-                            disp.status === "ACCEPTED" || disp.status === "COMPLETED"
-                              ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
-                              : disp.status === "REJECTED" || disp.status === "CANCELLED"
-                              ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
-                              : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
-                          }`}
-                        >
-                          {disp.status}
-                        </span>
+                        {disp.reviewRequired ? (
+                          <span className="px-2.5 py-1 text-xs font-mono font-bold border rounded-sm bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
+                            REVIEW REQUIRED
+                          </span>
+                        ) : (
+                          <span
+                            className={`px-2.5 py-1 text-xs font-mono font-bold border rounded-sm ${
+                              disp.status === "ACCEPTED" || disp.status === "COMPLETED"
+                                ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                                : disp.status === "REJECTED" || disp.status === "CANCELLED"
+                                ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
+                                : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
+                            }`}
+                          >
+                            {disp.status}
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-6 font-mono text-xs text-right text-slate-500 dark:text-[#737373]">
                         <div>{formatDate(disp.createdAt)}</div>

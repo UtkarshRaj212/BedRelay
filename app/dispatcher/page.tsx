@@ -7,6 +7,9 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
 import { DynamicOSMMapView } from "@/components/map/dynamic-map";
+import { useActiveDispatch } from "@/hooks/use-active-dispatch";
+import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
+import { SwitchHospitalModal } from "@/components/switch-hospital-modal";
 
 interface BedCategory {
   id: string;
@@ -65,6 +68,18 @@ export default function DispatcherDashboardPage() {
   const [showMap, setShowMap] = useState(true);
   const [selectedHospitalMapId, setSelectedHospitalMapId] = useState<string | null>(null);
 
+  // Active Dispatch Hook & Switch Modal State
+  const {
+    activeDispatch,
+    lastUpdated: activeLastUpdated,
+    refresh: refreshActive,
+    switchHospital,
+  } = useActiveDispatch();
+
+  const [switchTargetHospital, setSwitchTargetHospital] = useState<HospitalItem | null>(null);
+  const [switching, setSwitching] = useState<boolean>(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+
   const [dispatchModalHospital, setDispatchModalHospital] = useState<HospitalItem | null>(null);
   const [ambulanceUnit, setAmbulanceUnit] = useState("108 EMS Unit-22");
   const [selectedCategory, setSelectedCategory] = useState("ICU");
@@ -75,6 +90,34 @@ export default function DispatcherDashboardPage() {
   const [patientCondition, setPatientCondition] = useState("Severe Acute Cardiac Event");
   const [submitting, setSubmitting] = useState(false);
   const [dispatchMsg, setDispatchMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handleConfirmSwitch = async () => {
+    if (!switchTargetHospital) return;
+    try {
+      setSwitching(true);
+      setSwitchError(null);
+      const res = await switchHospital({
+        targetHospitalId: switchTargetHospital.id,
+        bedCategoryCode: selectedCategory,
+        requestedBeds: typeof requestedBeds === "number" ? requestedBeds : parseInt(requestedBeds, 10) || 1,
+        etaMinutes: typeof etaMinutes === "number" ? etaMinutes : parseInt(etaMinutes, 10) || 15,
+        ambulanceLat: ambulanceCoordinates ? ambulanceCoordinates.lat : null,
+        ambulanceLng: ambulanceCoordinates ? ambulanceCoordinates.lng : null,
+        patientCondition,
+      });
+
+      if (res.success) {
+        setSwitchTargetHospital(null);
+        await fetchLiveData();
+      } else {
+        setSwitchError(res.error || "Failed to switch receiving hospital.");
+      }
+    } catch (err: any) {
+      setSwitchError(err.message || "Failed to switch hospital.");
+    } finally {
+      setSwitching(false);
+    }
+  };
 
   const handleDetectGPS = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
@@ -147,9 +190,14 @@ export default function DispatcherDashboardPage() {
   }, [selectedCity, ambulanceCoordinates]);
 
   const handleOpenDispatchModal = (hospital: HospitalItem) => {
-    setDispatchModalHospital(hospital);
-    setSelectedHospitalMapId(hospital.id);
-    setDispatchMsg(null);
+    if (activeDispatch) {
+      setSwitchTargetHospital(hospital);
+      setSwitchError(null);
+    } else {
+      setDispatchModalHospital(hospital);
+      setSelectedHospitalMapId(hospital.id);
+      setDispatchMsg(null);
+    }
   };
 
   const handleSubmitDispatch = async (e: React.FormEvent) => {
@@ -200,6 +248,7 @@ export default function DispatcherDashboardPage() {
         setDispatchModalHospital(null);
       }, 1500);
 
+      await refreshActive();
       await fetchLiveData();
     } catch (err: any) {
       setDispatchMsg({
@@ -259,6 +308,12 @@ export default function DispatcherDashboardPage() {
           </nav>
         </div>
       </header>
+
+      {/* Persistent Active Dispatch Banner */}
+      <ActiveDispatchBanner
+        activeDispatch={activeDispatch}
+        lastUpdated={activeLastUpdated}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Controls Banner */}
@@ -658,8 +713,16 @@ export default function DispatcherDashboardPage() {
                           )}
                         </div>
                         <h3 className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1">{hosp.name}</h3>
-                        <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5">
-                          {hosp.address} • Contact: {hosp.phone}
+                        <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5 break-words">
+                          <span>{hosp.address}</span>
+                          {hosp.phone && (
+                            <>
+                              <span className="mx-1.5">•</span>
+                              <span className="inline-block whitespace-nowrap">
+                                Ph.: <span className="font-bold text-slate-900 dark:text-[#ededed]">{hosp.phone}</span>
+                              </span>
+                            </>
+                          )}
                         </p>
                       </div>
 
@@ -919,6 +982,20 @@ export default function DispatcherDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Switch Receiving Hospital Modal */}
+      <SwitchHospitalModal
+        isOpen={Boolean(switchTargetHospital)}
+        onClose={() => {
+          setSwitchTargetHospital(null);
+          setSwitchError(null);
+        }}
+        currentDispatch={activeDispatch}
+        targetHospital={switchTargetHospital}
+        onConfirmSwitch={handleConfirmSwitch}
+        isSubmitting={switching}
+        error={switchError}
+      />
     </div>
   );
 }

@@ -98,20 +98,43 @@ export const dispatchRequests = pgTable("dispatch_requests", {
   hospitalId: t.text("hospital_id").notNull().references(() => hospitals.id, { onDelete: "cascade" }),
   dispatcherSessionId: t.text("dispatcher_session_id"),
   ambulanceUnit: t.text("ambulance_unit").notNull(),
+  ambulanceId: t.text("ambulance_id"),
   ambulanceLat: t.doublePrecision("ambulance_lat"),
   ambulanceLng: t.doublePrecision("ambulance_lng"),
   patientRef: t.text("patient_ref"),
+  patientReference: t.text("patient_reference"),
   bedCategoryCode: t.varchar("bed_category_code", { length: 50 }).notNull(),
   requestedBeds: t.integer("requested_beds").notNull().default(1),
+  approvedBeds: t.integer("approved_beds").notNull().default(0),
   etaMinutes: t.integer("eta_minutes").notNull(),
   patientCondition: t.text("patient_condition").notNull(),
   status: t.varchar("status", { length: 50 }).notNull().default("PENDING"),
+  reviewRequired: t.boolean("review_required").notNull().default(false),
+  reviewReason: t.text("review_reason"),
+  rejectionReason: t.text("rejection_reason"),
   createdAt: t.timestamp("created_at", { precision: 6, withTimezone: true }).notNull(),
   updatedAt: t.timestamp("updated_at", { precision: 6, withTimezone: true }).notNull(),
 }, (table) => [
   t.index("dispatch_requests_hospitalId_idx").on(table.hospitalId),
   t.index("dispatch_requests_dispatcherSessionId_idx").on(table.dispatcherSessionId),
-  t.check("dispatch_requests_valid_request", sql`requested_beds >= 1 AND eta_minutes >= 1`),
+  t.check("dispatch_requests_valid_request", sql`requested_beds >= 1 AND eta_minutes >= 1 AND approved_beds >= 0 AND approved_beds <= requested_beds`),
+]);
+
+export const dispatchActivities = pgTable("dispatch_activities", {
+  id: t.text("id").primaryKey(),
+  dispatchId: t.text("dispatch_id").notNull().references(() => dispatchRequests.id, { onDelete: "cascade" }),
+  timestamp: t.timestamp("timestamp", { precision: 6, withTimezone: true }).notNull(),
+  actorType: t.varchar("actor_type", { length: 50 }).notNull(), // 'DISPATCHER' | 'HOSPITAL' | 'SYSTEM'
+  actorName: t.text("actor_name"),
+  action: t.varchar("action", { length: 100 }).notNull(),
+  details: t.text("details"),
+  oldValue: t.text("old_value"),
+  newValue: t.text("new_value"),
+  note: t.text("note"),
+  createdAt: t.timestamp("created_at", { precision: 6, withTimezone: true }).notNull(),
+}, (table) => [
+  t.index("dispatch_activities_dispatchId_idx").on(table.dispatchId),
+  t.index("dispatch_activities_timestamp_idx").on(table.timestamp),
 ]);
 
 export const hospitalMemberships = pgTable("hospital_memberships", {

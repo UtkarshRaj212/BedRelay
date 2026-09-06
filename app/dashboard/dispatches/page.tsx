@@ -5,16 +5,22 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate } from "@/lib/format-date";
+import { HospitalReviewModal } from "@/components/hospital-review-modal";
 
 interface DispatchRequest {
   id: string;
   ambulanceUnit: string;
   bedCategoryCode: string;
   requestedBeds: number;
+  approvedBeds?: number | null;
+  reviewRequired?: boolean;
+  reviewReason?: string | null;
+  rejectionReason?: string | null;
   etaMinutes: number;
   patientCondition: string;
   status: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 interface Hospital {
@@ -34,6 +40,7 @@ export default function HospitalDispatchesPage() {
 
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [reviewDispatch, setReviewDispatch] = useState<DispatchRequest | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const fetchDispatches = async (silent = false) => {
@@ -62,13 +69,20 @@ export default function HospitalDispatchesPage() {
 
   const handleUpdateStatus = async (requestId: string, newStatus: "ACCEPTED" | "REJECTED") => {
     try {
+      let rejectionReason: string | undefined = undefined;
+      if (newStatus === "REJECTED") {
+        const entered = prompt("Enter reason for rejecting this dispatch request:", "ICU capacity unavailable.");
+        if (entered === null) return; // cancelled
+        rejectionReason = entered.trim() || "ICU capacity unavailable.";
+      }
+
       setUpdatingId(requestId);
       setFeedbackMsg(null);
 
       const res = await fetch("/api/hospital/dispatches", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId, status: newStatus }),
+        body: JSON.stringify({ requestId, status: newStatus, rejectionReason }),
       });
 
       const data = await res.json();
@@ -264,8 +278,8 @@ export default function HospitalDispatchesPage() {
               <span className="text-xs text-slate-500 dark:text-[#737373] font-mono break-all">{hospital?.name} • {hospital?.id}</span>
             </div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">{hospital?.name || "Loading Hospital..."}</h1>
-            <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5">
-              {hospital?.address} • Tel: {hospital?.phone} • Review and manage inbound dispatch pre-arrival alerts.
+            <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5 break-words">
+              <span>{hospital?.address}</span> • <span className="inline-block whitespace-nowrap">Ph.: {hospital?.phone}</span> • Review and manage inbound dispatch pre-arrival alerts.
             </p>
           </div>
 
@@ -339,17 +353,23 @@ export default function HospitalDispatchesPage() {
                       {/* Status & ID */}
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-bold border ${
-                              disp.status === "ACCEPTED" || disp.status === "COMPLETED"
-                                ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
-                                : disp.status === "REJECTED" || disp.status === "CANCELLED"
-                                ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
-                                : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
-                            }`}
-                          >
-                            {disp.status}
-                          </span>
+                          {disp.reviewRequired ? (
+                            <span className="inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-bold border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
+                              ACCEPTED · REVIEW REQUIRED
+                            </span>
+                          ) : (
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-sm text-[11px] font-mono font-bold border ${
+                                disp.status === "ACCEPTED" || disp.status === "COMPLETED"
+                                  ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                                  : disp.status === "REJECTED" || disp.status === "CANCELLED"
+                                  ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
+                                  : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
+                              }`}
+                            >
+                              {disp.status}
+                            </span>
+                          )}
                           <div className="font-mono text-xs text-slate-600 dark:text-[#888888] mt-1.5 break-all font-semibold">
                             {disp.id}
                           </div>
@@ -373,12 +393,23 @@ export default function HospitalDispatchesPage() {
                           <span className="text-slate-500 dark:text-[#777] uppercase text-[11px]">Requirement</span>
                           <span className="font-semibold text-blue-700 dark:text-blue-400 text-right">
                             {disp.bedCategoryCode} · {disp.requestedBeds || 1} bed{Number(disp.requestedBeds) > 1 ? "s" : ""}
+                            {disp.approvedBeds !== undefined && disp.approvedBeds !== null && disp.approvedBeds < disp.requestedBeds && (
+                              <span className="text-amber-600 dark:text-amber-400 font-normal ml-1">
+                                ({disp.approvedBeds} appr)
+                              </span>
+                            )}
                           </span>
                         </div>
                         <div className="flex justify-between items-baseline gap-2">
                           <span className="text-slate-500 dark:text-[#777] uppercase text-[11px]">ETA</span>
                           <span className="font-bold text-slate-900 dark:text-[#ededed] text-right">~{disp.etaMinutes} min</span>
                         </div>
+                        {disp.reviewReason && (
+                          <div className="pt-1.5 border-t border-slate-200 dark:border-[#222222] text-[11px] text-amber-800 dark:text-amber-400 font-sans">
+                            <span className="font-mono font-bold text-[10px] uppercase">⚠️ Review Trigger: </span>
+                            {disp.reviewReason}
+                          </div>
+                        )}
                         {disp.patientCondition && (
                           <div className="pt-1.5 border-t border-slate-200 dark:border-[#222222] text-[11px] text-slate-600 dark:text-[#999] font-sans">
                             <span className="font-mono text-slate-500 dark:text-[#777]">Condition: </span>
@@ -403,6 +434,17 @@ export default function HospitalDispatchesPage() {
                             className="w-full py-2 px-3 text-xs font-semibold uppercase tracking-wider text-white bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
                           >
                             Reject
+                          </button>
+                        </div>
+                      )}
+
+                      {disp.reviewRequired && (
+                        <div className="pt-1">
+                          <button
+                            onClick={() => setReviewDispatch(disp)}
+                            className="w-full py-2.5 px-3 text-xs font-mono font-bold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer text-center shadow-xs"
+                          >
+                            REVIEW UPDATE
                           </button>
                         </div>
                       )}
@@ -463,20 +505,33 @@ export default function HospitalDispatchesPage() {
                             <div className="text-[10px] text-slate-400">{new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                           </td>
                           <td className="py-4 px-6 text-center font-mono text-xs font-bold">
-                            <span
-                              className={`px-2.5 py-1 rounded-sm border ${
-                                disp.status === "ACCEPTED" || disp.status === "COMPLETED"
-                                  ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
-                                  : disp.status === "REJECTED" || disp.status === "CANCELLED"
-                                  ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
-                                  : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
-                              }`}
-                            >
-                              {disp.status}
-                            </span>
+                            {disp.reviewRequired ? (
+                              <span className="inline-block px-2.5 py-1 rounded-sm border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse">
+                                ACCEPTED · REVIEW REQUIRED
+                              </span>
+                            ) : (
+                              <span
+                                className={`px-2.5 py-1 rounded-sm border ${
+                                  disp.status === "ACCEPTED" || disp.status === "COMPLETED"
+                                    ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                                    : disp.status === "REJECTED" || disp.status === "CANCELLED"
+                                    ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
+                                    : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
+                                }`}
+                              >
+                                {disp.status}
+                              </span>
+                            )}
                           </td>
                           <td className="py-4 px-6 text-center">
-                            {disp.status === "PENDING" ? (
+                            {disp.reviewRequired ? (
+                              <button
+                                onClick={() => setReviewDispatch(disp)}
+                                className="px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer"
+                              >
+                                Review Update
+                              </button>
+                            ) : disp.status === "PENDING" ? (
                               <div className="flex items-center justify-center gap-2">
                                 <button
                                   onClick={() => handleUpdateStatus(disp.id, "ACCEPTED")}
@@ -507,6 +562,14 @@ export default function HospitalDispatchesPage() {
           )}
         </div>
       </main>
+
+      {/* Hospital Review Update Modal */}
+      <HospitalReviewModal
+        isOpen={Boolean(reviewDispatch)}
+        onClose={() => setReviewDispatch(null)}
+        dispatch={reviewDispatch}
+        onSuccess={() => fetchDispatches(true)}
+      />
     </div>
   );
 }

@@ -552,7 +552,7 @@ export default function SuperAdminHospitalsPage() {
                     </button>
                     <div className="text-xs text-slate-600 dark:text-[#aaa] font-mono mt-0.5">
                       {hosp.city}, {hosp.state}
-                      {hosp.phone && <span className="ml-2 text-slate-500">📞 {hosp.phone}</span>}
+                      {hosp.phone && <span className="ml-2 text-slate-500 inline-block whitespace-nowrap">📞 {hosp.phone}</span>}
                     </div>
                   </div>
 
@@ -670,7 +670,7 @@ export default function SuperAdminHospitalsPage() {
                         </div>
                         <div className="text-[10px] text-slate-400 dark:text-[#666]">
                           {hosp.phone ? (
-                            <span>📞 {hosp.phone}</span>
+                            <span className="inline-block whitespace-nowrap">📞 {hosp.phone}</span>
                           ) : (
                             <span className="italic">No phone listed</span>
                           )}
@@ -811,7 +811,7 @@ export default function SuperAdminHospitalsPage() {
                   <div className="text-[10px] text-slate-500 dark:text-[#777] uppercase">Contact & Status</div>
                   <div className="mt-0.5">
                     {viewingHospital.phone ? (
-                      <span className="font-semibold text-slate-900 dark:text-[#ededed]">
+                      <span className="font-semibold text-slate-900 dark:text-[#ededed] inline-block whitespace-nowrap">
                         📞 {viewingHospital.phone}
                       </span>
                     ) : (

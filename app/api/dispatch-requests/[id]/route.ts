@@ -168,13 +168,12 @@ export async function PATCH(
     }
 
     // Role-based authorization:
-    // Case A: Dispatcher cancelling their own request
+    // Case A: Dispatcher cancelling their own request strictly via server cookie
     const cookieSessionId = req.cookies.get("bedrelay_dispatcher_session_id")?.value;
-    const clientSessionId = bodySessionId || cookieSessionId;
     const isDispatcherOwner =
-      clientSessionId &&
+      Boolean(cookieSessionId &&
       existingDispatch.dispatcherSessionId &&
-      clientSessionId === existingDispatch.dispatcherSessionId;
+      cookieSessionId === existingDispatch.dispatcherSessionId);
 
     const session = await auth.api.getSession({ headers: req.headers });
 

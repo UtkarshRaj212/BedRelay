@@ -7,6 +7,8 @@ import { INDIAN_CITIES, isValidCoordinates } from "@/lib/geo";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
 import { DynamicOSMLocationPicker } from "@/components/map/dynamic-map";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useActiveDispatch } from "@/hooks/use-active-dispatch";
+import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
 
 interface BedCategory {
   id: string;
@@ -51,6 +53,14 @@ function CreateDispatchContent() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [createdRequest, setCreatedRequest] = useState<any | null>(null);
+
+  // Active Dispatch Hook
+  const {
+    activeDispatch,
+    lastUpdated: activeLastUpdated,
+    refresh: refreshActive,
+    switchHospital,
+  } = useActiveDispatch();
 
   const [detectingGps, setDetectingGps] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
@@ -142,30 +152,56 @@ function CreateDispatchContent() {
       setSubmitting(true);
       setValidationError(null);
 
-      const res = await fetch("/api/dispatch-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hospitalId: selectedHospitalId,
-          ambulanceUnit,
-          ambulanceLat: lat,
-          ambulanceLng: lng,
-          patientRef,
+      // If active dispatch already exists, switch receiving hospital atomically
+      if (activeDispatch) {
+        const switchRes = await switchHospital({
+          targetHospitalId: selectedHospitalId,
           bedCategoryCode: bedCategory,
           requestedBeds,
           etaMinutes,
+          ambulanceUnit,
+          ambulanceId: ambulanceUnit,
+          patientRef,
+          patientReference: patientRef,
+          ambulanceLat: lat,
+          ambulanceLng: lng,
           patientCondition,
-          dispatcherSessionId: getDispatcherSessionId(),
-        }),
-      });
+        });
 
-      const data = await res.json();
+        if (!switchRes.success) {
+          throw new Error(switchRes.error || "Failed to switch receiving hospital.");
+        }
 
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to create dispatch request");
+        setCreatedRequest(switchRes.dispatch);
+      } else {
+        const res = await fetch("/api/dispatch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            hospitalId: selectedHospitalId,
+            ambulanceUnit,
+            ambulanceId: ambulanceUnit,
+            ambulanceLat: lat,
+            ambulanceLng: lng,
+            patientRef,
+            patientReference: patientRef,
+            bedCategoryCode: bedCategory,
+            requestedBeds,
+            etaMinutes,
+            patientCondition,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to create dispatch request");
+        }
+
+        setCreatedRequest(data.dispatch);
       }
 
-      setCreatedRequest(data.dispatch);
+      await refreshActive();
     } catch (err: any) {
       setValidationError(err.message || "Failed to create dispatch request.");
     } finally {
@@ -319,12 +355,30 @@ function CreateDispatchContent() {
         </div>
       </header>
 
+      {/* Persistent Active Dispatch Banner */}
+      <ActiveDispatchBanner
+        activeDispatch={activeDispatch}
+        lastUpdated={activeLastUpdated}
+      />
+
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="bg-white dark:bg-[#0a0a0a] p-4 sm:p-8 border border-slate-200 dark:border-[#222222] rounded-sm shadow-xs">
           <div className="border-l-2 border-blue-700 dark:border-blue-500 pl-3 mb-6">
             <span className="text-xs font-mono text-blue-700 dark:text-blue-400 uppercase tracking-widest block">PRE-ARRIVAL ALERT TRANSMISSION</span>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-0.5">Create New Dispatch Request</h1>
           </div>
+
+          {/* Active Dispatch Conflict Notice */}
+          {activeDispatch && (
+            <div className="p-4 mb-6 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800/60 rounded-xs text-xs font-mono">
+              <div className="font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <span>ACTIVE DISPATCH IN PROGRESS: {activeDispatch.id}</span>
+              </div>
+              <p className="text-slate-700 dark:text-[#ccc] leading-relaxed">
+                You already have an active request to <strong>{activeDispatch.hospitalName}</strong> (Status: <strong>{activeDispatch.status}</strong>). Submitting this form will <strong>cancel</strong> your active request and switch the destination facility to <strong>{selectedHospital?.name || "the selected facility"}</strong>.
+              </p>
+            </div>
+          )}
 
           {validationError && (
             <div className="p-4 mb-6 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs font-mono rounded-sm">
@@ -575,10 +629,14 @@ function CreateDispatchContent() {
               </Link>
               <button
                 type="submit"
-                disabled={submitting}
-                className="w-full sm:w-auto px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
+                disabled={submitting || (selectedBedCategory && availableBeds < requestedBeds)}
+                className="w-full sm:w-auto px-6 py-3 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
               >
-                {submitting ? "Transmitting to Neon..." : "Submit Dispatch Request"}
+                {submitting
+                  ? "Transmitting Alert..."
+                  : activeDispatch
+                  ? "Switch Hospital & Transmit Alert"
+                  : "Transmit Dispatch Alert"}
               </button>
             </div>
           </form>

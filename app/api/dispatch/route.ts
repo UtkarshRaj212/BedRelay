@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { dispatchRequests, bedCategories, hospitals } from "@/db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { calculateDistanceKm, isValidCoordinates } from "@/lib/geo";
 import {
   resolveServerDispatcherSession,
@@ -10,105 +10,6 @@ import {
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-export async function GET(req: NextRequest) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const { sessionId: serverSessionId, applyCookie } = resolveServerDispatcherSession(req);
-    const sessionId = searchParams.get("sessionId") || serverSessionId;
-    const ambulanceFilter = searchParams.get("ambulanceUnit") || searchParams.get("ambulanceId");
-    const statusFilter = searchParams.get("status");
-    const categoryFilter = searchParams.get("category");
-    const showAll = searchParams.get("all") === "true";
-
-    // Base query conditions
-    const conditions = [];
-
-    // Filter by session ID unless explicitly requesting all or no session exists
-    if (sessionId && !showAll) {
-      conditions.push(eq(dispatchRequests.dispatcherSessionId, sessionId));
-    }
-
-    if (ambulanceFilter && ambulanceFilter.trim()) {
-      conditions.push(eq(dispatchRequests.ambulanceUnit, ambulanceFilter.trim()));
-    }
-
-    if (statusFilter && statusFilter !== "ALL") {
-      conditions.push(eq(dispatchRequests.status, statusFilter.toUpperCase()));
-    }
-
-    if (categoryFilter && categoryFilter !== "ALL") {
-      conditions.push(eq(dispatchRequests.bedCategoryCode, categoryFilter.toUpperCase()));
-    }
-
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-    const rawDispatches = await db
-      .select()
-      .from(dispatchRequests)
-      .where(whereClause)
-      .orderBy(desc(dispatchRequests.createdAt))
-      .limit(100);
-
-    // Fetch all hospitals to enrich dispatch records
-    const allHospitals = await db.select().from(hospitals);
-    const hospitalMap = new Map(allHospitals.map((h) => [h.id, h]));
-
-    const enrichedDispatches = rawDispatches.map((disp) => {
-      const hosp = hospitalMap.get(disp.hospitalId);
-
-      let distanceKm: number | null = null;
-      if (
-        disp.ambulanceLat !== null &&
-        disp.ambulanceLng !== null &&
-        hosp?.latitude &&
-        hosp?.longitude
-      ) {
-        distanceKm = calculateDistanceKm(
-          disp.ambulanceLat,
-          disp.ambulanceLng,
-          hosp.latitude,
-          hosp.longitude
-        );
-      }
-
-      return {
-        ...disp,
-        ambulanceId: disp.ambulanceId || disp.ambulanceUnit,
-        patientReference: disp.patientReference || disp.patientRef,
-        hospitalName: hosp?.name || "Unknown Hospital",
-        hospitalAddress: hosp?.address || "",
-        hospitalCity: hosp?.city || "",
-        hospitalState: hosp?.state || "",
-        hospitalPhone: hosp?.phone || "",
-        distanceKm,
-      };
-    });
-
-    const response = NextResponse.json(
-      {
-        success: true,
-        dispatches: enrichedDispatches,
-        count: enrichedDispatches.length,
-        sessionId: sessionId || null,
-      },
-      {
-        headers: {
-          "Cache-Control": "no-store, max-age=0, must-revalidate",
-        },
-      }
-    );
-
-    applyCookie(response);
-    return response;
-  } catch (error: any) {
-    console.error("Failed to fetch dispatch requests:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error", message: error.message },
-      { status: 500 }
-    );
-  }
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -174,12 +75,12 @@ export async function POST(req: NextRequest) {
 
     if (targetHospital.status !== "ACTIVE") {
       return NextResponse.json(
-        { error: "Selected hospital facility is currently inactive or deactivated by EMS administration." },
+        { error: "Selected hospital facility is currently inactive or deactivated." },
         { status: 400 }
       );
     }
 
-    // Verify bed availability in real database
+    // Verify bed availability
     const [targetCategory] = await db
       .select()
       .from(bedCategories)
@@ -194,7 +95,7 @@ export async function POST(req: NextRequest) {
     if (!targetCategory || targetCategory.availableBeds < numRequested) {
       return NextResponse.json(
         {
-          error: `Insufficient available beds in ${bedCategoryCode}. Requested: ${numRequested}, Currently Available: ${
+          error: `Insufficient available beds in ${bedCategoryCode}. Requested: ${numRequested}, Available: ${
             targetCategory ? targetCategory.availableBeds : 0
           }`,
         },
@@ -202,21 +103,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let validAmbulanceLat: number | null = null;
-    let validAmbulanceLng: number | null = null;
+    let validLat: number | null = null;
+    let validLng: number | null = null;
 
     if (ambulanceLat !== undefined && ambulanceLat !== null && ambulanceLng !== undefined && ambulanceLng !== null) {
       const numLat = Number(ambulanceLat);
       const numLng = Number(ambulanceLng);
       if (isValidCoordinates(numLat, numLng)) {
-        validAmbulanceLat = numLat;
-        validAmbulanceLng = numLng;
+        validLat = numLat;
+        validLng = numLng;
       }
     }
 
     let distanceKm: number | null = null;
-    if (validAmbulanceLat !== null && validAmbulanceLng !== null && targetHospital.latitude && targetHospital.longitude) {
-      distanceKm = calculateDistanceKm(validAmbulanceLat, validAmbulanceLng, targetHospital.latitude, targetHospital.longitude);
+    if (validLat !== null && validLng !== null && targetHospital.latitude && targetHospital.longitude) {
+      distanceKm = calculateDistanceKm(validLat, validLng, targetHospital.latitude, targetHospital.longitude);
     }
 
     const now = new Date();
@@ -231,8 +132,8 @@ export async function POST(req: NextRequest) {
         dispatcherSessionId: sessionId, // strictly server-side verified
         ambulanceUnit: finalAmbulanceUnit,
         ambulanceId: finalAmbulanceId || finalAmbulanceUnit,
-        ambulanceLat: validAmbulanceLat,
-        ambulanceLng: validAmbulanceLng,
+        ambulanceLat: validLat,
+        ambulanceLng: validLng,
         patientRef: finalPatRef,
         patientReference: finalPatientReference || finalPatRef,
         bedCategoryCode: bedCategoryCode.toUpperCase(),
@@ -245,18 +146,26 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
+    const { logDispatchActivity } = await import("@/lib/activity-logger");
+    await logDispatchActivity({
+      dispatchId: createdDispatch.id,
+      actorType: "DISPATCHER",
+      action: "REQUEST_CREATED",
+      details: `Pre-arrival alert transmitted to ${targetHospital.name}. Required: ${numRequested} ${bedCategoryCode.toUpperCase()} bed(s). ETA: ${eta}m.`,
+      newValue: "PENDING",
+    });
+
     const response = NextResponse.json(
       {
         success: true,
         distanceKm,
         dispatch: {
           ...createdDispatch,
-          ambulanceId: createdDispatch.ambulanceId || createdDispatch.ambulanceUnit,
-          patientReference: createdDispatch.patientReference || createdDispatch.patientRef,
           distanceKm,
           hospitalName: targetHospital.name,
           hospitalAddress: targetHospital.address,
           hospitalCity: targetHospital.city,
+          hospitalState: targetHospital.state,
           hospitalPhone: targetHospital.phone,
           hospitalLat: targetHospital.latitude,
           hospitalLng: targetHospital.longitude,
@@ -264,6 +173,7 @@ export async function POST(req: NextRequest) {
         sessionId,
       },
       {
+        status: 201,
         headers: {
           "Cache-Control": "no-store, max-age=0, must-revalidate",
         },

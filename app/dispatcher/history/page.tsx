@@ -5,6 +5,8 @@ import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
+import { useActiveDispatch } from "@/hooks/use-active-dispatch";
+import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
 
 interface DispatchHistoryItem {
   id: string;
@@ -30,6 +32,12 @@ export default function DispatcherHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [lastSynced, setLastSynced] = useState<string>("");
   const [sessionId, setSessionId] = useState<string>("");
+
+  // Active Dispatch Hook
+  const {
+    activeDispatch,
+    lastUpdated: activeLastUpdated,
+  } = useActiveDispatch();
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -159,6 +167,12 @@ export default function DispatcherHistoryPage() {
           </nav>
         </div>
       </header>
+
+      {/* Persistent Active Dispatch Banner */}
+      <ActiveDispatchBanner
+        activeDispatch={activeDispatch}
+        lastUpdated={activeLastUpdated}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Banner & Overview Stats */}

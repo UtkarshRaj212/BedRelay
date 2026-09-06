@@ -7,6 +7,11 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDateTime } from "@/lib/format-date";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
 import { DynamicOSMMapView } from "@/components/map/dynamic-map";
+import { useActiveDispatch } from "@/hooks/use-active-dispatch";
+import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
+import { SwitchHospitalModal } from "@/components/switch-hospital-modal";
+import { RejectedDispatchBanner } from "@/components/rejected-dispatch-banner";
+import { ModifyRequestModal } from "@/components/modify-request-modal";
 
 interface BedCategory {
   id: string;
@@ -75,7 +80,21 @@ export default function FindHospitalPage() {
     }
   }, []);
 
-  // Dispatch Request Modal State
+  // Active Dispatch Hook & Switch Modal State
+  const {
+    activeDispatch,
+    lastRejectedDispatch,
+    lastUpdated: activeLastUpdated,
+    refresh: refreshActive,
+    switchHospital,
+    dismissRejectedDispatch,
+  } = useActiveDispatch();
+
+  const [isModifyModalOpen, setIsModifyModalOpen] = useState<boolean>(false);
+  const [switchTargetHospital, setSwitchTargetHospital] = useState<HospitalResult | null>(null);
+  const [switching, setSwitching] = useState<boolean>(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
+
   const [dispatchModalHospital, setDispatchModalHospital] = useState<HospitalResult | null>(null);
   const [ambulanceUnit, setAmbulanceUnit] = useState<string>("108 EMS Unit-101");
   const [etaMinutes, setEtaMinutes] = useState<string | number>(12);
@@ -83,6 +102,34 @@ export default function FindHospitalPage() {
   const [patientCondition, setPatientCondition] = useState<string>("Acute Respiratory Distress");
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [dispatchMsg, setDispatchMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handleConfirmSwitch = async () => {
+    if (!switchTargetHospital) return;
+    try {
+      setSwitching(true);
+      setSwitchError(null);
+      const res = await switchHospital({
+        targetHospitalId: switchTargetHospital.id,
+        bedCategoryCode: selectedCategory,
+        requestedBeds: activeMinBedsNumber,
+        etaMinutes: 15,
+        ambulanceLat: ambulanceCoordinates ? ambulanceCoordinates.lat : null,
+        ambulanceLng: ambulanceCoordinates ? ambulanceCoordinates.lng : null,
+        patientCondition: "Emergency Dispatch Transfer",
+      });
+
+      if (res.success) {
+        setSwitchTargetHospital(null);
+        await fetchSuitableHospitals(true);
+      } else {
+        setSwitchError(res.error || "Failed to switch receiving hospital.");
+      }
+    } catch (err: any) {
+      setSwitchError(err.message || "Failed to switch hospital.");
+    } finally {
+      setSwitching(false);
+    }
+  };
 
   const activeMinBedsNumber =
     minBeds !== "" && !isNaN(Number(minBeds)) && Number(minBeds) >= 1
@@ -217,6 +264,7 @@ export default function FindHospitalPage() {
         setDispatchModalHospital(null);
       }, 1500);
 
+      await refreshActive();
       await fetchSuitableHospitals();
     } catch (err: any) {
       setDispatchMsg({
@@ -285,6 +333,25 @@ export default function FindHospitalPage() {
           </nav>
         </div>
       </header>
+
+      {/* Persistent Rejected Dispatch Alert Banner */}
+      <RejectedDispatchBanner
+        rejectedDispatch={lastRejectedDispatch}
+        onDismiss={() => {
+          if (lastRejectedDispatch) dismissRejectedDispatch(lastRejectedDispatch.id);
+        }}
+      />
+
+      {/* Persistent Active Dispatch Banner */}
+      <ActiveDispatchBanner
+        activeDispatch={activeDispatch}
+        lastUpdated={activeLastUpdated}
+        onModifyClick={() => setIsModifyModalOpen(true)}
+        onSwitchClick={() => {
+          const el = document.getElementById("hospital-results-section");
+          el?.scrollIntoView({ behavior: "smooth" });
+        }}
+      />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Location & Capacity Requirement Filter Form */}
@@ -613,14 +680,19 @@ export default function FindHospitalPage() {
                                 {hosp.name}
                               </h3>
                               <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5 break-words">
-                                {hosp.address} • Ph:{" "}
-                                <span className="font-bold text-slate-900 dark:text-[#ededed]">
-                                  {hosp.phone}
-                                </span>
+                                <span>{hosp.address}</span>
+                                {hosp.phone && (
+                                  <>
+                                    <span className="mx-1.5 text-slate-400 dark:text-[#555]">•</span>
+                                    <span className="inline-block whitespace-nowrap">
+                                      Ph.: <span className="font-bold text-slate-900 dark:text-[#ededed]">{hosp.phone}</span>
+                                    </span>
+                                  </>
+                                )}
                               </p>
                             </div>
 
-                            <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pt-2 sm:pt-0 border-t border-slate-100 sm:border-t-0 dark:border-[#1e1e1e]">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between sm:justify-end gap-2 sm:gap-3 pt-2 sm:pt-0 border-t border-slate-100 sm:border-t-0 dark:border-[#1e1e1e]">
                               <div className="text-left sm:text-right">
                                 <div className="text-[10px] sm:text-[11px] font-mono text-slate-500 dark:text-[#737373] uppercase">
                                   {selectedCategory}
@@ -633,16 +705,63 @@ export default function FindHospitalPage() {
                                 </div>
                               </div>
 
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleOpenDispatch(hosp);
-                                }}
-                                className="px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-colors cursor-pointer shrink-0 shadow-sm"
-                              >
-                                Dispatch
-                              </button>
+                              <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+                                {activeDispatch && activeDispatch.hospitalId === hosp.id ? (
+                                  <>
+                                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 font-mono text-[10px] font-bold border border-blue-300 dark:border-blue-800 rounded-xs">
+                                      CURRENT REQUEST
+                                    </span>
+                                    <Link
+                                      href={`/dispatch-requests/${activeDispatch.id}`}
+                                      className="flex-1 sm:flex-none px-2.5 py-2 text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ccc] bg-slate-100 hover:bg-slate-200 dark:bg-[#1f1f1f] dark:hover:bg-[#2a2a2a] border border-slate-300 dark:border-[#333] rounded-xs transition-colors text-center"
+                                    >
+                                      VIEW REQUEST
+                                    </Link>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsModifyModalOpen(true);
+                                      }}
+                                      className="flex-1 sm:flex-none px-3 py-2 text-[11px] font-mono font-bold uppercase tracking-wider rounded-xs transition-colors cursor-pointer text-center shadow-xs bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                                    >
+                                      MODIFY REQUEST
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedHospitalMapId(hosp.id);
+                                      }}
+                                      className="flex-1 sm:flex-none px-2.5 py-2 text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ccc] bg-slate-100 hover:bg-slate-200 dark:bg-[#1f1f1f] dark:hover:bg-[#2a2a2a] border border-slate-300 dark:border-[#333] rounded-xs transition-colors cursor-pointer text-center"
+                                    >
+                                      VIEW HOSPITAL
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (activeDispatch) {
+                                          setSwitchTargetHospital(hosp);
+                                        } else {
+                                          handleOpenDispatch(hosp);
+                                        }
+                                      }}
+                                      className={`flex-1 sm:flex-none px-3 py-2 text-[11px] font-mono font-semibold uppercase tracking-wider rounded-xs transition-colors cursor-pointer text-center shadow-xs ${
+                                        activeDispatch
+                                          ? "bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-slate-950 dark:text-black font-bold border border-amber-600 dark:border-amber-500"
+                                          : "text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700"
+                                      }`}
+                                    >
+                                      {activeDispatch ? "SWITCH TO THIS HOSPITAL" : "SEND REQUEST"}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           </div>
 
@@ -860,6 +979,31 @@ export default function FindHospitalPage() {
           </div>
         </div>
       )}
+
+      {/* Switch Receiving Hospital Modal */}
+      <SwitchHospitalModal
+        isOpen={Boolean(switchTargetHospital)}
+        onClose={() => {
+          setSwitchTargetHospital(null);
+          setSwitchError(null);
+        }}
+        currentDispatch={activeDispatch}
+        targetHospital={switchTargetHospital}
+        onConfirmSwitch={handleConfirmSwitch}
+        isSubmitting={switching}
+        error={switchError}
+      />
+
+      {/* Modify Active Dispatch Modal */}
+      <ModifyRequestModal
+        isOpen={isModifyModalOpen}
+        onClose={() => setIsModifyModalOpen(false)}
+        dispatch={activeDispatch}
+        onSuccess={() => {
+          refreshActive();
+          fetchSuitableHospitals(true);
+        }}
+      />
     </div>
   );
 }

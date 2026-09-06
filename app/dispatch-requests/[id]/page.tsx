@@ -5,17 +5,27 @@ import Link from "next/link";
 import { formatDateTime } from "@/lib/format-date";
 import { formatDistanceKm } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useActiveDispatch } from "@/hooks/use-active-dispatch";
+import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
 import { DynamicOSMMapView } from "@/components/map/dynamic-map";
+import { RequestTimeline } from "@/components/request-timeline";
+import { ModifyRequestModal } from "@/components/modify-request-modal";
 
 interface DispatchDetails {
   id: string;
   hospitalId: string;
+  hospitalName?: string;
   ambulanceUnit: string;
   ambulanceLat: number | null;
   ambulanceLng: number | null;
   patientRef: string | null;
+  patientReference?: string | null;
   bedCategoryCode: string;
   requestedBeds: number;
+  approvedBeds?: number | null;
+  reviewRequired?: boolean;
+  reviewReason?: string | null;
+  rejectionReason?: string | null;
   etaMinutes: number;
   patientCondition: string;
   status: string;
@@ -50,6 +60,21 @@ export default function DispatchRequestDetailsPage({
 
   const [cancelling, setCancelling] = useState(false);
   const [cancelFeedback, setCancelFeedback] = useState<string | null>(null);
+  const [isModifyOpen, setIsModifyOpen] = useState(false);
+
+  // Auto-open modify modal if URL has ?modify=true
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("modify=true")) {
+      setIsModifyOpen(true);
+    }
+  }, []);
+
+  // Active Dispatch Hook
+  const {
+    activeDispatch,
+    lastUpdated: activeLastUpdated,
+    refresh: refreshActive,
+  } = useActiveDispatch();
 
   const fetchDetails = async () => {
     try {
@@ -80,8 +105,13 @@ export default function DispatchRequestDetailsPage({
   }, [id]);
 
   const handleCancelRequest = async () => {
-    if (!dispatch || dispatch.status !== "PENDING") return;
-    if (!confirm("Are you sure you want to cancel this pending dispatch request?")) return;
+    if (!dispatch) return;
+    const isAccepted = dispatch.status.toUpperCase() === "ACCEPTED";
+    const promptMsg = isAccepted
+      ? "CRITICAL: This dispatch request has already been ACCEPTED by the receiving hospital. Cancelling will immediately forfeit the reserved bed. Are you sure you want to cancel?"
+      : "Are you sure you want to cancel this active dispatch request?";
+
+    if (!confirm(promptMsg)) return;
 
     try {
       setCancelling(true);
@@ -101,6 +131,7 @@ export default function DispatchRequestDetailsPage({
 
       setCancelFeedback("Dispatch request cancelled successfully.");
       await fetchDetails();
+      await refreshActive();
     } catch (err: any) {
       setCancelFeedback(err.message || "Failed to cancel request.");
     } finally {
@@ -216,7 +247,126 @@ export default function DispatchRequestDetailsPage({
         </div>
       </header>
 
+      {/* Persistent Active Dispatch Banner */}
+      <ActiveDispatchBanner
+        activeDispatch={activeDispatch}
+        lastUpdated={activeLastUpdated}
+        onModifyClick={() => setIsModifyOpen(true)}
+      />
+
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* Dedicated Operational Action Section (Requirement 7) */}
+        <div className="bg-white dark:bg-[#0f0f0f] border-2 border-slate-300 dark:border-[#2a2a2a] p-4 sm:p-6 rounded-xs mb-6 font-sans shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <span className="text-[10px] font-mono font-bold tracking-widest uppercase bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#333] px-1.5 py-0.5 rounded-xs text-slate-700 dark:text-[#aaa]">
+                  {["PENDING", "SENT", "ACCEPTED"].includes(dispatch.status.toUpperCase()) ? "ACTIVE REQUEST" : "FINAL STATUS"}
+                </span>
+                <span
+                  className={`text-xs font-mono font-bold px-2 py-0.5 rounded-xs border ${
+                    dispatch.status === "ACCEPTED"
+                      ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                      : dispatch.status === "REJECTED"
+                      ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
+                      : dispatch.status === "CANCELLED"
+                      ? "bg-slate-200 dark:bg-[#1f1f1f] text-slate-800 dark:text-[#aaa] border-slate-400 dark:border-[#333]"
+                      : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
+                  }`}
+                >
+                  {dispatch.status}
+                </span>
+
+                {dispatch.reviewRequired && (
+                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-xs border bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800 animate-pulse flex items-center gap-1">
+                    <span>⚠️</span> HOSPITAL REVIEW REQUIRED
+                  </span>
+                )}
+              </div>
+
+              <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-[#ededed] break-words">
+                {hospital?.name || "Target Receiving Facility"}
+              </h2>
+              {hospital?.address && (
+                <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5 break-words">
+                  {hospital.address}{hospital.city ? `, ${hospital.city}` : ""}
+                </p>
+              )}
+
+              <div className="text-xs font-mono text-slate-700 dark:text-[#bbb] mt-2 flex flex-wrap items-center gap-2">
+                <span className="font-bold text-blue-700 dark:text-blue-400">{dispatch.bedCategoryCode}</span>
+                <span>·</span>
+                <span>
+                  {dispatch.requestedBeds} {dispatch.requestedBeds === 1 ? "bed" : "beds"}
+                  {dispatch.approvedBeds !== undefined && dispatch.approvedBeds !== null && dispatch.approvedBeds < dispatch.requestedBeds && (
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold ml-1.5">
+                      ({dispatch.approvedBeds} approved · {dispatch.requestedBeds - dispatch.approvedBeds} pending review)
+                    </span>
+                  )}
+                </span>
+                {distanceKm !== null && (
+                  <>
+                    <span>·</span>
+                    <span>Distance: {formatDistanceKm(distanceKm)}</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {["PENDING", "SENT", "ACCEPTED"].includes(dispatch.status.toUpperCase()) && (
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t border-slate-100 sm:border-t-0 dark:border-[#1e1e1e]">
+                <button
+                  type="button"
+                  onClick={() => setIsModifyOpen(true)}
+                  className="flex-1 sm:flex-none px-4 py-2.5 text-center text-xs font-mono font-bold uppercase tracking-wider bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-xs transition-colors cursor-pointer"
+                >
+                  MODIFY REQUEST
+                </button>
+                <Link
+                  href="/find-beds?switch=true"
+                  className="flex-1 sm:flex-none px-4 py-2.5 text-center text-xs font-mono font-bold uppercase tracking-wider bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-slate-950 dark:text-black border border-amber-600 dark:border-amber-500 rounded-xs transition-colors"
+                >
+                  SWITCH HOSPITAL
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleCancelRequest}
+                  disabled={cancelling}
+                  className="flex-1 sm:flex-none px-4 py-2.5 text-center text-xs font-mono font-bold uppercase tracking-wider bg-white dark:bg-[#1a1a1a] hover:bg-red-50 dark:hover:bg-red-950/40 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-900/60 rounded-xs transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  {cancelling ? "CANCELLING..." : "CANCEL REQUEST"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {dispatch.reviewRequired && dispatch.reviewReason && (
+            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 rounded-xs text-xs font-mono text-amber-900 dark:text-amber-300">
+              <span className="font-bold uppercase block mb-0.5">⚠️ Hospital Review Pending:</span>
+              {dispatch.reviewReason}
+            </div>
+          )}
+
+          {dispatch.status === "REJECTED" && dispatch.rejectionReason && (
+            <div className="mt-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-300 dark:border-red-800/60 rounded-xs text-xs font-mono text-red-900 dark:text-red-300">
+              <span className="font-bold uppercase block mb-0.5">Rejection Reason:</span>
+              {dispatch.rejectionReason}
+            </div>
+          )}
+
+          {dispatch.status === "ACCEPTED" && (
+            <div className="mt-3 p-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800/60 rounded-xs text-[11px] font-mono text-emerald-900 dark:text-emerald-300">
+              Bed capacity confirmed and reserved by hospital. Switching or cancelling will release this reservation.
+            </div>
+          )}
+
+          {!["PENDING", "SENT", "ACCEPTED"].includes(dispatch.status.toUpperCase()) && (
+            <div className="mt-2 text-xs font-mono text-slate-500 dark:text-[#777]">
+              Status locked ({dispatch.status}). No active actions available.
+            </div>
+          )}
+        </div>
+
         {/* Main Status & Header Banner */}
         <div className="bg-white dark:bg-[#0f0f0f] p-4 sm:p-6 border border-slate-200 dark:border-[#222222] rounded-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="min-w-0">
@@ -400,7 +550,9 @@ export default function DispatchRequestDetailsPage({
 
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1">
                 <span className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase shrink-0">Contact Phone:</span>
-                <span className="font-bold font-mono text-slate-900 dark:text-[#ededed]">{hospital?.phone}</span>
+                <span className="inline-block whitespace-nowrap font-bold font-mono text-slate-900 dark:text-[#ededed]">
+                  Ph.: {hospital?.phone}
+                </span>
               </div>
 
               {distanceKm !== null && (
@@ -429,7 +581,14 @@ export default function DispatchRequestDetailsPage({
 
               <div className="flex justify-between items-center gap-2">
                 <span className="text-xs text-slate-500 dark:text-[#737373] uppercase shrink-0">Beds Requested:</span>
-                <span className="font-bold text-slate-900 dark:text-[#ededed]">{dispatch.requestedBeds} Bed(s)</span>
+                <span className="font-bold text-slate-900 dark:text-[#ededed]">
+                  {dispatch.requestedBeds} Bed(s)
+                  {dispatch.approvedBeds !== undefined && dispatch.approvedBeds !== null && dispatch.approvedBeds < dispatch.requestedBeds && (
+                    <span className="text-amber-600 dark:text-amber-400 font-normal ml-1.5 text-xs">
+                      ({dispatch.approvedBeds} approved, {dispatch.requestedBeds - dispatch.approvedBeds} pending review)
+                    </span>
+                  )}
+                </span>
               </div>
 
               <div className="flex justify-between items-center gap-2">
@@ -475,7 +634,33 @@ export default function DispatchRequestDetailsPage({
             </div>
           </div>
         </div>
+
+        {/* Shared Activity & Telemetry Audit Timeline (Requirement 7 & 8) */}
+        <div className="mb-8">
+          <RequestTimeline dispatchId={dispatch.id} refreshTrigger={dispatch.updatedAt} />
+        </div>
       </main>
+
+      {/* Modify Active Dispatch Modal */}
+      <ModifyRequestModal
+        isOpen={isModifyOpen}
+        onClose={() => setIsModifyOpen(false)}
+        dispatch={{
+          ...dispatch,
+          hospitalName: hospital?.name || "Hospital",
+          hospitalAddress: hospital?.address || "",
+          hospitalCity: hospital?.city || "",
+          hospitalState: hospital?.state || "",
+          hospitalPhone: hospital?.phone || "",
+          hospitalLat: hospital?.latitude || null,
+          hospitalLng: hospital?.longitude || null,
+          distanceKm,
+        } as any}
+        onSuccess={() => {
+          fetchDetails();
+          refreshActive();
+        }}
+      />
     </div>
   );
 }
