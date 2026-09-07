@@ -4,7 +4,7 @@ import { useEffect, useState, use, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/format-date";
-import { formatDistanceKm } from "@/lib/geo";
+import { formatDistanceKm, buildGoogleMapsDirectionsUrl } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useActiveDispatch } from "@/hooks/use-active-dispatch";
 import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
@@ -319,6 +319,26 @@ export default function DispatchRequestTrackingPage({
                 >
                   {cancelling ? "CANCELLING..." : "CANCEL REQUEST"}
                 </button>
+                {hospital?.latitude && hospital?.longitude && (
+                  <a
+                    href={buildGoogleMapsDirectionsUrl({
+                      lat: hospital.latitude,
+                      lng: hospital.longitude,
+                      name: hospital.name,
+                      address: hospital.address,
+                      city: hospital.city,
+                    })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-none px-4 py-2.5 text-center text-xs font-mono font-bold uppercase tracking-wider bg-white dark:bg-[#181818] hover:bg-blue-50 dark:hover:bg-[#202020] text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-900/60 rounded-xs transition-colors inline-flex items-center justify-center gap-1.5 shadow-2xs"
+                    title="Open driving directions in Google Maps (new tab)"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    <span>GET DIRECTIONS ↗</span>
+                  </a>
+                )}
               </div>
             )}
           </div>

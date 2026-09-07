@@ -67,7 +67,7 @@ export default function Home() {
               </div>
 
               <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-[#ededed] font-sans leading-tight">
-                Real-Time Bed Availability & Pre-Arrival Coordination
+                Real-Time Bed Availability & <br />Pre-Arrival Coordination
               </h1>
 
               <p className="mt-6 text-base sm:text-lg text-slate-600 dark:text-[#a1a1a1] leading-relaxed font-normal max-w-2xl">

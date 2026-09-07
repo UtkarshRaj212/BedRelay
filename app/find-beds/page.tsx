@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { INDIAN_CITIES, calculateDistanceKm, formatDistanceKm, isValidCoordinates } from "@/lib/geo";
+import { INDIAN_CITIES, calculateDistanceKm, formatDistanceKm, isValidCoordinates, buildGoogleMapsDirectionsUrl, findNearestCity } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDateTime } from "@/lib/format-date";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
@@ -53,18 +53,21 @@ export default function FindHospitalPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [lastSynced, setLastSynced] = useState<string>("");
 
-  // Ambulance GPS State
+  // Ambulance GPS State & Geolocation Lifecycle
+  type LocationStatus = "detecting" | "granted" | "denied" | "unavailable" | "timeout" | "manual" | "idle";
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>("detecting");
   const [ambulanceCoordinates, setAmbulanceCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [detectingGps, setDetectingGps] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [manualLat, setManualLat] = useState("13.0827");
-  const [manualLng, setManualLng] = useState("80.2707");
+  const [manualLat, setManualLat] = useState("28.6139");
+  const [manualLng, setManualLng] = useState("77.2090");
   const [showManualCoords, setShowManualCoords] = useState(false);
   const [selectedHospitalMapId, setSelectedHospitalMapId] = useState<string | null>(null);
 
   // Auto-detect user geolocation on initial page load
   useEffect(() => {
     if (typeof window !== "undefined" && navigator.geolocation) {
+      setLocationStatus("detecting");
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const coords = {
@@ -74,12 +77,35 @@ export default function FindHospitalPage() {
           setAmbulanceCoordinates(coords);
           setManualLat(coords.lat.toString());
           setManualLng(coords.lng.toString());
+          setLocationStatus("granted");
+          setGpsError(null);
+
+          // Proactively sync city dropdown if near a registered city, without restricting search coordinates
+          const nearest = findNearestCity(coords.lat, coords.lng);
+          if (nearest) {
+            setSelectedCity(nearest.name);
+          }
         },
-        () => {
-          // Graceful fallback to city center coordinates
+        (err) => {
+          if (err.code === err.PERMISSION_DENIED) {
+            setLocationStatus("denied");
+            setGpsError("Location permission denied. Please enable GPS or enter coordinates manually.");
+          } else if (err.code === err.POSITION_UNAVAILABLE) {
+            setLocationStatus("unavailable");
+            setGpsError("Ambulance GPS position unavailable. Please enter coordinates manually.");
+          } else if (err.code === err.TIMEOUT) {
+            setLocationStatus("timeout");
+            setGpsError("Ambulance GPS acquisition timed out. Please enter coordinates manually.");
+          } else {
+            setLocationStatus("unavailable");
+            setGpsError(`GPS Error: ${err.message}. Please enter coordinates manually.`);
+          }
         },
-        { enableHighAccuracy: true, timeout: 6000 }
+        { enableHighAccuracy: true, timeout: 8000 }
       );
+    } else {
+      setLocationStatus("unavailable");
+      setGpsError("Geolocation is not supported by your browser environment.");
     }
   }, []);
 
@@ -163,10 +189,12 @@ export default function FindHospitalPage() {
 
   const handleDetectGPS = () => {
     if (typeof window === "undefined" || !navigator.geolocation) {
+      setLocationStatus("unavailable");
       setGpsError("Geolocation is not supported by your browser environment.");
       return;
     }
     setDetectingGps(true);
+    setLocationStatus("detecting");
     setGpsError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -177,11 +205,26 @@ export default function FindHospitalPage() {
         setAmbulanceCoordinates(coords);
         setManualLat(coords.lat.toString());
         setManualLng(coords.lng.toString());
+        setLocationStatus("granted");
         setDetectingGps(false);
+        setGpsError(null);
+        const nearest = findNearestCity(coords.lat, coords.lng);
+        if (nearest) {
+          setSelectedCity(nearest.name);
+        }
       },
       (err) => {
-        setGpsError(`GPS Access Denied (${err.message}). Enter manual coordinates below.`);
         setDetectingGps(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationStatus("denied");
+          setGpsError("Location permission denied. Please allow location access or enter manual coordinates below.");
+        } else if (err.code === err.TIMEOUT) {
+          setLocationStatus("timeout");
+          setGpsError("Ambulance GPS acquisition timed out. Please enter coordinates below.");
+        } else {
+          setLocationStatus("unavailable");
+          setGpsError(`GPS unavailable (${err.message}). Please enter manual coordinates below.`);
+        }
         setShowManualCoords(true);
       },
       { enableHighAccuracy: true, timeout: 8000 }
@@ -194,7 +237,12 @@ export default function FindHospitalPage() {
     const lng = parseFloat(manualLng);
     if (isValidCoordinates(lat, lng)) {
       setAmbulanceCoordinates({ lat, lng });
+      setLocationStatus("manual");
       setGpsError(null);
+      const nearest = findNearestCity(lat, lng);
+      if (nearest) {
+        setSelectedCity(nearest.name);
+      }
     } else {
       setGpsError("Invalid coordinates. Latitude (-90 to 90), Longitude (-180 to 180).");
     }
@@ -202,6 +250,7 @@ export default function FindHospitalPage() {
 
   const handleClearGPS = () => {
     setAmbulanceCoordinates(null);
+    setLocationStatus("manual");
     setGpsError(null);
   };
 
@@ -210,11 +259,12 @@ export default function FindHospitalPage() {
     isFetchingRef.current = true;
     try {
       if (!silent) setLoading(true);
-      let url = `/api/hospitals/search?city=${encodeURIComponent(
-        selectedCity
-      )}&category=${selectedCategory}&minBeds=${activeMinBedsNumber}`;
+      let url = `/api/hospitals/search?category=${selectedCategory}&minBeds=${activeMinBedsNumber}`;
       if (ambulanceCoordinates) {
+        // Exact coordinates take absolute precedence for proximity calculation
         url += `&lat=${ambulanceCoordinates.lat}&lng=${ambulanceCoordinates.lng}`;
+      } else {
+        url += `&city=${encodeURIComponent(selectedCity)}`;
       }
       const res = await fetch(url, { cache: "no-store" });
       if (res.ok) {
@@ -244,6 +294,8 @@ export default function FindHospitalPage() {
     }
   }, [selectedCity, selectedCategory, minBeds, ambulanceCoordinates, dispatchModalHospital, switchTargetHospital, isModifyModalOpen]);
 
+  const activeCityData =
+    INDIAN_CITIES.find((c) => c.name.toLowerCase() === selectedCity.toLowerCase()) || INDIAN_CITIES[0];
   const suitableHospitals = hospitals.filter((h) => h.isSuitable);
   const unsuitableHospitals = hospitals.filter((h) => !h.isSuitable);
 
@@ -468,14 +520,25 @@ export default function FindHospitalPage() {
           {/* Ambulance GPS Telemetry & Manual Coordinate Fallback */}
           <div className="mt-6 pt-4 border-t border-slate-200 dark:border-[#222222]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-mono font-bold uppercase text-slate-700 dark:text-[#a1a1a1]">
                   Ambulance Telemetry Origin:
                 </span>
-                {ambulanceCoordinates ? (
+                {locationStatus === "detecting" ? (
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 font-mono text-xs font-bold border border-amber-300 dark:border-amber-800/60 rounded-sm animate-pulse">
+                    ● ACQUIRING GPS...
+                  </span>
+                ) : ambulanceCoordinates ? (
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 font-mono text-xs font-bold border border-blue-300 dark:border-blue-800/60 rounded-sm">
-                      GPS: {ambulanceCoordinates.lat.toFixed(4)}, {ambulanceCoordinates.lng.toFixed(4)}
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 font-mono text-xs font-bold border rounded-sm ${
+                        locationStatus === "granted"
+                          ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                          : "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border-blue-300 dark:border-blue-800/60"
+                      }`}
+                    >
+                      ● {locationStatus === "granted" ? "LIVE GPS" : "MANUAL COORDS"}:{" "}
+                      {ambulanceCoordinates.lat.toFixed(4)}, {ambulanceCoordinates.lng.toFixed(4)}
                     </span>
                     <button
                       type="button"
@@ -487,7 +550,7 @@ export default function FindHospitalPage() {
                   </div>
                 ) : (
                   <span className="text-xs font-mono text-slate-500 italic">
-                    Using city base location ({selectedCity})
+                    No GPS signal active. Filtered by selected city: {selectedCity}
                   </span>
                 )}
               </div>
@@ -575,27 +638,23 @@ export default function FindHospitalPage() {
                 </div>
                 <div className="h-[340px] sm:h-[420px] lg:h-[560px] border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden shadow-sm">
                   {(() => {
-                    const activeCityData = INDIAN_CITIES.find(
-                      (c) => c.name.toLowerCase() === selectedCity.toLowerCase()
-                    );
+                    const activeCityData =
+                      INDIAN_CITIES.find(
+                        (c) => c.name.toLowerCase() === selectedCity.toLowerCase()
+                      ) || INDIAN_CITIES[0];
                     const currentUserLocation = ambulanceCoordinates
                       ? {
                           lat: ambulanceCoordinates.lat,
                           lng: ambulanceCoordinates.lng,
-                          label: ambulanceUnit || "Ambulance / User Location",
-                          isLiveGPS: true,
-                        }
-                      : activeCityData
-                      ? {
-                          lat: activeCityData.lat,
-                          lng: activeCityData.lng,
-                          label: `Your Location (City Base: ${activeCityData.name})`,
-                          isLiveGPS: false,
+                          label: ambulanceUnit
+                            ? `${ambulanceUnit} (${locationStatus === "granted" ? "Live GPS" : "Manual Coords"})`
+                            : `Ambulance Origin (${ambulanceCoordinates.lat.toFixed(4)}, ${ambulanceCoordinates.lng.toFixed(4)})`,
+                          isLiveGPS: locationStatus === "granted",
                         }
                       : {
-                          lat: 13.0827,
-                          lng: 80.2707,
-                          label: "Your Location (Chennai Base)",
+                          lat: activeCityData.lat,
+                          lng: activeCityData.lng,
+                          label: `Dispatcher Base (${activeCityData.name})`,
                           isLiveGPS: false,
                         };
 
@@ -728,6 +787,26 @@ export default function FindHospitalPage() {
                               </div>
 
                               <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+                                {hosp.latitude !== null && hosp.longitude !== null && (
+                                  <a
+                                    href={buildGoogleMapsDirectionsUrl({
+                                      lat: hosp.latitude,
+                                      lng: hosp.longitude,
+                                      name: hosp.name,
+                                      address: hosp.address,
+                                      city: hosp.city,
+                                    })}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex-1 sm:flex-none px-2.5 py-2 text-[11px] font-mono font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-900/60 rounded-xs transition-colors text-center inline-flex items-center justify-center gap-1 cursor-pointer"
+                                    title="Open driving directions in Google Maps"
+                                  >
+                                    <span>GET DIRECTIONS</span>
+                                    <span className="text-[10px]">↗</span>
+                                  </a>
+                                )}
+
                                 {activeDispatch && activeDispatch.hospitalId === hosp.id ? (
                                   <>
                                     <span className="px-2 py-1 bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 font-mono text-[10px] font-bold border border-blue-300 dark:border-blue-800 rounded-xs">
@@ -845,6 +924,24 @@ export default function FindHospitalPage() {
                                 • {formatDistanceKm(hosp.distanceKm)}
                               </span>
                             )}
+                            {hosp.latitude !== null && hosp.longitude !== null && (
+                              <a
+                                href={buildGoogleMapsDirectionsUrl({
+                                  lat: hosp.latitude,
+                                  lng: hosp.longitude,
+                                  name: hosp.name,
+                                  address: hosp.address,
+                                  city: hosp.city,
+                                })}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-[11px] font-mono text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-0.5 ml-1"
+                                title="Open driving directions in Google Maps"
+                              >
+                                Directions ↗
+                              </a>
+                            )}
                           </div>
                           <div className="text-[11px] font-mono text-slate-500 dark:text-[#737373]">
                             Need {activeMinBedsNumber}
@@ -891,10 +988,10 @@ export default function FindHospitalPage() {
               {/* Telemetry & Proximity Route Summary */}
               <div className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm space-y-1.5 font-mono text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 uppercase">Ambulance GPS Origin:</span>
+                  <span className="text-slate-500 uppercase">Ambulance Origin:</span>
                   <span className="font-semibold text-slate-800 dark:text-[#ededed]">
                     {ambulanceCoordinates
-                      ? `${ambulanceCoordinates.lat.toFixed(4)}, ${ambulanceCoordinates.lng.toFixed(4)}`
+                      ? `${ambulanceCoordinates.lat.toFixed(4)}, ${ambulanceCoordinates.lng.toFixed(4)} (${locationStatus === "granted" ? "Live GPS" : "Manual"})`
                       : `City Center (${selectedCity})`}
                   </span>
                 </div>
@@ -904,6 +1001,26 @@ export default function FindHospitalPage() {
                     <span className="font-bold text-blue-900 dark:text-blue-300">
                       {formatDistanceKm(dispatchModalHospital.distanceKm)}
                     </span>
+                  </div>
+                )}
+                {dispatchModalHospital.latitude !== null && dispatchModalHospital.longitude !== null && (
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-[#222222]">
+                    <span className="text-slate-500 uppercase">Turn-by-Turn Navigation:</span>
+                    <a
+                      href={buildGoogleMapsDirectionsUrl({
+                        lat: dispatchModalHospital.latitude,
+                        lng: dispatchModalHospital.longitude,
+                        name: dispatchModalHospital.name,
+                        address: dispatchModalHospital.address,
+                        city: dispatchModalHospital.city,
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>Google Maps Directions</span>
+                      <span>↗</span>
+                    </a>
                   </div>
                 )}
               </div>

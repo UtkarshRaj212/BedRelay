@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatDistanceKm } from "@/lib/geo";
+import { formatDistanceKm, buildGoogleMapsDirectionsUrl } from "@/lib/geo";
 import { ActiveDispatch } from "@/hooks/use-active-dispatch";
 
 interface ActiveDispatchBannerProps {
@@ -48,6 +48,15 @@ export function ActiveDispatchBanner({
   const distanceText =
     activeDispatch.distanceKm !== null
       ? formatDistanceKm(activeDispatch.distanceKm)
+      : null;
+
+  const directionsUrl =
+    activeDispatch.hospitalLat && activeDispatch.hospitalLng
+      ? buildGoogleMapsDirectionsUrl({
+          lat: activeDispatch.hospitalLat,
+          lng: activeDispatch.hospitalLng,
+          name: activeDispatch.hospitalName,
+        })
       : null;
 
   return (
@@ -128,6 +137,20 @@ export function ActiveDispatchBanner({
             >
               SWITCH HOSPITAL
             </button>
+            {directionsUrl && (
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider bg-white dark:bg-[#181818] hover:bg-slate-50 dark:hover:bg-[#222222] text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-900/60 rounded-xs transition-colors inline-flex items-center gap-1.5 shrink-0"
+                title="Open driving directions in Google Maps (new tab)"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                <span>GET DIRECTIONS ↗</span>
+              </a>
+            )}
           </div>
         </div>
 
@@ -204,6 +227,20 @@ export function ActiveDispatchBanner({
             >
               SWITCH HOSPITAL
             </button>
+            {directionsUrl && (
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full text-center py-2 px-3 text-xs font-mono font-bold uppercase tracking-wider bg-white dark:bg-[#181818] hover:bg-slate-50 dark:hover:bg-[#222222] text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-900/60 rounded-xs transition-colors inline-flex items-center justify-center gap-1.5"
+                title="Open driving directions in Google Maps (new tab)"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                <span>GET DIRECTIONS ↗</span>
+              </a>
+            )}
           </div>
 
           {lastUpdated && (

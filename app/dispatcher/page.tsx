@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { INDIAN_CITIES, isValidCoordinates, formatDistanceKm } from "@/lib/geo";
+import { INDIAN_CITIES, isValidCoordinates, formatDistanceKm, buildGoogleMapsDirectionsUrl, findNearestCity } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
@@ -185,10 +185,9 @@ export default function DispatcherDashboardPage() {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
     try {
-      let url = `/api/hospitals/search?city=${encodeURIComponent(selectedCity)}`;
-      if (ambulanceCoordinates) {
-        url += `&lat=${ambulanceCoordinates.lat}&lng=${ambulanceCoordinates.lng}`;
-      }
+      let url = ambulanceCoordinates
+        ? `/api/hospitals/search?lat=${ambulanceCoordinates.lat}&lng=${ambulanceCoordinates.lng}`
+        : `/api/hospitals/search?city=${encodeURIComponent(selectedCity)}`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -504,18 +503,13 @@ export default function DispatcherDashboardPage() {
                 center={
                   ambulanceCoordinates
                     ? [ambulanceCoordinates.lat, ambulanceCoordinates.lng]
-                    : INDIAN_CITIES.find(
-                        (c) => c.name.toLowerCase() === selectedCity.toLowerCase()
-                      )
-                    ? [
-                        INDIAN_CITIES.find(
-                          (c) => c.name.toLowerCase() === selectedCity.toLowerCase()
-                        )!.lat,
-                        INDIAN_CITIES.find(
-                          (c) => c.name.toLowerCase() === selectedCity.toLowerCase()
-                        )!.lng,
-                      ]
-                    : [13.0827, 80.2707]
+                    : (() => {
+                        const c =
+                          INDIAN_CITIES.find(
+                            (city) => city.name.toLowerCase() === selectedCity.toLowerCase()
+                          ) || INDIAN_CITIES[0];
+                        return [c.lat, c.lng];
+                      })()
                 }
                 selectedHospitalId={selectedHospitalMapId}
                 onSelectHospital={(pin) => setSelectedHospitalMapId(pin.id)}
@@ -745,7 +739,25 @@ export default function DispatcherDashboardPage() {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        {hosp.latitude !== null && hosp.longitude !== null && (
+                          <a
+                            href={buildGoogleMapsDirectionsUrl({
+                              lat: hosp.latitude,
+                              lng: hosp.longitude,
+                              name: hosp.name,
+                              address: hosp.address,
+                              city: hosp.city,
+                            })}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-2 text-xs font-mono font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-900/60 rounded-sm transition-colors cursor-pointer inline-flex items-center gap-1"
+                            title="Open driving directions in Google Maps"
+                          >
+                            <span>DIRECTIONS</span>
+                            <span>↗</span>
+                          </a>
+                        )}
                         <button
                           onClick={() => handleOpenDispatchModal(hosp)}
                           className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white bg-slate-900 hover:bg-slate-800 dark:bg-[#ededed] dark:text-black dark:hover:bg-white rounded-sm transition-colors cursor-pointer"
@@ -860,6 +872,26 @@ export default function DispatcherDashboardPage() {
                     <span className="font-bold text-blue-900 dark:text-blue-300">
                       {formatDistanceKm(dispatchModalHospital.distanceKm)}
                     </span>
+                  </div>
+                )}
+                {dispatchModalHospital.latitude !== null && dispatchModalHospital.longitude !== null && (
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-200 dark:border-[#222222]">
+                    <span className="text-slate-500 uppercase">Turn-by-Turn Navigation:</span>
+                    <a
+                      href={buildGoogleMapsDirectionsUrl({
+                        lat: dispatchModalHospital.latitude,
+                        lng: dispatchModalHospital.longitude,
+                        name: dispatchModalHospital.name,
+                        address: dispatchModalHospital.address,
+                        city: dispatchModalHospital.city,
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>Google Maps Directions</span>
+                      <span>↗</span>
+                    </a>
                   </div>
                 )}
               </div>

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import { createAmbulanceIcon, createHospitalIcon, createUserLocationIcon, HospitalMarkerStatus } from "./osm-icons";
-import { formatDistanceKm } from "@/lib/geo";
+import { formatDistanceKm, buildGoogleMapsDirectionsUrl } from "@/lib/geo";
 
 export interface HospitalMapPin {
   id: string;
@@ -317,6 +317,31 @@ export default function OSMMapView({
                       Initiate Dispatch Alert →
                     </button>
                   )}
+
+                  {(() => {
+                    const directionsUrl = buildGoogleMapsDirectionsUrl({
+                      lat: hosp.latitude,
+                      lng: hosp.longitude,
+                      name: hosp.name,
+                      address: hosp.address,
+                      city: hosp.city,
+                    });
+
+                    if (!directionsUrl) return null;
+                    return (
+                      <a
+                        href={directionsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 flex items-center justify-center gap-1.5 w-full py-1.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-[#1a1a1a] dark:hover:bg-[#252525] text-slate-800 dark:text-[#ededed] font-mono text-xs font-bold rounded-sm border border-slate-300 dark:border-[#333] transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        <span>GET DIRECTIONS ↗</span>
+                      </a>
+                    );
+                  })()}
                 </div>
               </Popup>
             </Marker>

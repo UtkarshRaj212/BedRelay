@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
 
     let originLat: number | null = null;
     let originLng: number | null = null;
+    let hasExactCoordinates = false;
 
     if (rawLat !== null && rawLng !== null) {
       const parsedLat = parseFloat(rawLat);
@@ -48,11 +49,13 @@ export async function GET(req: NextRequest) {
       }
       originLat = parsedLat;
       originLng = parsedLng;
+      hasExactCoordinates = true;
     }
 
     const cleanCity = cityParam ? cityParam.split(",")[0].trim().toLowerCase() : null;
 
-    if (originLat === null && originLng === null && cleanCity) {
+    // Fall back to city preset center ONLY if exact GPS coordinates were not provided
+    if (!hasExactCoordinates && cleanCity) {
       const cityPreset = INDIAN_CITIES.find(
         (c) => c.name.toLowerCase() === cleanCity
       );
@@ -66,23 +69,26 @@ export async function GET(req: NextRequest) {
     const enriched = allHospitals.map((hosp) => {
       const hospBeds = allBeds.filter((b) => b.hospitalId === hosp.id);
 
-      // Compute distance from origin
+      // Compute distance from origin using Haversine
       let distanceKm: number | null = null;
       if (originLat !== null && originLng !== null && hosp.latitude && hosp.longitude) {
         distanceKm = calculateDistanceKm(originLat, originLng, hosp.latitude, hosp.longitude);
       }
 
-      // Check if hospital is in the selected city by name match
-      const isDirectCityMatch =
-        cleanCity && hosp.city
-          ? hosp.city.toLowerCase() === cleanCity ||
-            cleanCity === hosp.city.toLowerCase()
+      // If exact coordinates are provided, locality is determined STRICTLY by coordinate proximity.
+      // We do NOT allow a mismatched city parameter (e.g. default 'chennai') to falsely mark far-away hospitals as local.
+      let isLocal = false;
+      if (hasExactCoordinates) {
+        isLocal = distanceKm !== null && distanceKm <= LOCAL_DISPATCH_RADIUS_KM;
+      } else if (cleanCity) {
+        const isDirectCityMatch = hosp.city
+          ? hosp.city.toLowerCase() === cleanCity || cleanCity === hosp.city.toLowerCase()
           : false;
-
-      // Hospital is "local" if city name matches or it's within dispatch radius
-      const isLocal = cleanCity
-        ? isDirectCityMatch || (distanceKm !== null && distanceKm <= LOCAL_DISPATCH_RADIUS_KM)
-        : true; // No city filter => all hospitals are considered
+        isLocal = isDirectCityMatch || (distanceKm !== null && distanceKm <= LOCAL_DISPATCH_RADIUS_KM);
+      } else {
+        // No coordinates and no city filter => all facilities considered
+        isLocal = true;
+      }
 
       // Compute bed availability for the requested category
       let targetCategoryBeds = 0;
@@ -124,9 +130,14 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    // ONLY return hospitals that are local to the selected city.
-    // Out-of-city hospitals are completely excluded from the response.
-    const localHospitals = enriched.filter((h) => h.isLocal);
+    // Return hospitals that are in the local dispatch radius
+    let localHospitals = enriched.filter((h) => h.isLocal);
+
+    // If exact coordinates were specified but no facility is within 50km,
+    // gracefully provide the nearest available facilities within 150km.
+    if (hasExactCoordinates && localHospitals.length === 0) {
+      localHospitals = enriched.filter((h) => h.distanceKm !== null && h.distanceKm <= 150);
+    }
 
     // Sort: suitable first, then by distance, then by available capacity
     localHospitals.sort((a, b) => {
