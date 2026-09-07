@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { dispatchRequests, hospitals, bedCategories } from "@/db/schema";
 import { eq, and, inArray, desc } from "drizzle-orm";
 import { calculateDistanceKm } from "@/lib/geo";
+import { logDispatchActivity } from "@/lib/activity-logger";
 import crypto from "crypto";
 
 export const DISPATCHER_COOKIE_NAME = "bedrelay_dispatcher_session_id";
@@ -16,6 +17,61 @@ export interface ServerDispatcherIdentity {
   sessionId: string;
   isNew: boolean;
   applyCookie: (res: NextResponse) => void;
+}
+
+/**
+ * Automatically completes active dispatch requests whose elapsed time has reached
+ * completion threshold = ETA × 3.
+ * Only completes requests in ACTIVE_STATUSES (PENDING, SENT, ACCEPTED).
+ * Does NOT complete REJECTED, CANCELLED, or already COMPLETED requests.
+ * Records an audit entry in dispatchActivities.
+ */
+export async function checkAndAutoCompleteExpiredDispatches(): Promise<string[]> {
+  const now = new Date();
+
+  // Find all candidate active requests
+  const activeList = await db
+    .select()
+    .from(dispatchRequests)
+    .where(inArray(dispatchRequests.status, [...ACTIVE_STATUSES]));
+
+  const completedIds: string[] = [];
+
+  for (const record of activeList) {
+    const eta = Math.max(1, record.etaMinutes || 15);
+    const thresholdMinutes = eta * 3;
+    const createdAtMs = new Date(record.createdAt).getTime();
+    const elapsedMinutes = (now.getTime() - createdAtMs) / (60 * 1000);
+
+    if (elapsedMinutes >= thresholdMinutes) {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(dispatchRequests)
+          .set({
+            status: "COMPLETED",
+            updatedAt: now,
+          })
+          .where(eq(dispatchRequests.id, record.id));
+
+        await logDispatchActivity(
+          {
+            dispatchId: record.id,
+            actorType: "SYSTEM",
+            action: "AUTO_COMPLETED",
+            details: `Dispatch request automatically completed based on elapsed ETA (${eta}m × 3 = ${thresholdMinutes}m threshold reached).`,
+            oldValue: record.status,
+            newValue: "COMPLETED",
+            note: `ETA ${eta}m threshold (${thresholdMinutes}m) reached`,
+          },
+          tx
+        );
+      });
+
+      completedIds.push(record.id);
+    }
+  }
+
+  return completedIds;
 }
 
 /**
@@ -67,6 +123,9 @@ export function resolveServerDispatcherSession(req: NextRequest): ServerDispatch
 export async function getActiveDispatchForSession(sessionId: string) {
   if (!sessionId) return null;
 
+  // First run server-side auto completion check
+  await checkAndAutoCompleteExpiredDispatches();
+
   const [activeRecord] = await db
     .select()
     .from(dispatchRequests)
@@ -81,12 +140,19 @@ export async function getActiveDispatchForSession(sessionId: string) {
 
   if (!activeRecord) return null;
 
-  // Enrich with hospital details
-  const [hospital] = await db
-    .select()
-    .from(hospitals)
-    .where(eq(hospitals.id, activeRecord.hospitalId))
-    .limit(1);
+  // Enrich with hospital details and bed capacity
+  const [hospital, hospitalBeds] = await Promise.all([
+    db
+      .select()
+      .from(hospitals)
+      .where(eq(hospitals.id, activeRecord.hospitalId))
+      .limit(1)
+      .then((rows) => rows[0] || null),
+    db
+      .select()
+      .from(bedCategories)
+      .where(eq(bedCategories.hospitalId, activeRecord.hospitalId)),
+  ]);
 
   let distanceKm: number | null = null;
   if (
@@ -115,6 +181,13 @@ export async function getActiveDispatchForSession(sessionId: string) {
     hospitalLat: hospital?.latitude || null,
     hospitalLng: hospital?.longitude || null,
     distanceKm,
+    hospitalBeds: hospitalBeds.map((b) => ({
+      categoryCode: b.categoryCode,
+      name: b.name,
+      availableBeds: b.availableBeds,
+      totalBeds: b.totalBeds,
+      occupiedBeds: b.occupiedBeds,
+    })),
   };
 }
 
@@ -169,8 +242,9 @@ export async function switchReceivingHospitalTx({
       throw new Error("No active dispatch request found to switch.");
     }
 
-    // 2. If current active request was ACCEPTED, release reserved beds
-    if (currentActive.status.toUpperCase() === "ACCEPTED") {
+    // 2. If current active request was ACCEPTED, release allocated beds
+    if (currentActive.status.toUpperCase() === "ACCEPTED" && (currentActive.approvedBeds || 0) > 0) {
+      const bedsToRelease = currentActive.approvedBeds;
       const [oldCategory] = await tx
         .select()
         .from(bedCategories)
@@ -189,11 +263,11 @@ export async function switchReceivingHospitalTx({
           .set({
             availableBeds: Math.min(
               oldCategory.totalBeds,
-              oldCategory.availableBeds + currentActive.requestedBeds
+              oldCategory.availableBeds + bedsToRelease
             ),
             occupiedBeds: Math.max(
               0,
-              oldCategory.occupiedBeds - currentActive.requestedBeds
+              oldCategory.occupiedBeds - bedsToRelease
             ),
             lastUpdated: now,
             updatedAt: now,
@@ -226,13 +300,27 @@ export async function switchReceivingHospitalTx({
     }
 
     const finalCategoryCode = (bedCategoryCode || currentActive.bedCategoryCode).toUpperCase();
-    const finalRequestedBeds = Math.max(1, requestedBeds || currentActive.requestedBeds);
-    const finalEta = Math.max(1, etaMinutes || currentActive.etaMinutes);
+    const finalRequestedBeds = Math.max(
+      1,
+      requestedBeds !== undefined && requestedBeds !== null && !isNaN(Number(requestedBeds))
+        ? Number(requestedBeds)
+        : currentActive.requestedBeds
+    );
+    const finalEta = Math.max(
+      1,
+      etaMinutes !== undefined && etaMinutes !== null && !isNaN(Number(etaMinutes))
+        ? Number(etaMinutes)
+        : currentActive.etaMinutes
+    );
+    const finalCondition = (
+      patientCondition && typeof patientCondition === "string" && patientCondition.trim() !== ""
+        ? patientCondition
+        : currentActive.patientCondition
+    ).trim();
     const finalAmbulanceUnit = (ambulanceUnit || ambulanceId || currentActive.ambulanceUnit).trim();
     const finalAmbulanceId = (ambulanceId || ambulanceUnit || currentActive.ambulanceId || currentActive.ambulanceUnit).trim();
     const finalPatientRef = (patientRef || patientReference || currentActive.patientRef || "").trim();
     const finalPatientReference = (patientReference || patientRef || currentActive.patientReference || currentActive.patientRef || "").trim();
-    const finalCondition = (patientCondition || currentActive.patientCondition).trim();
 
     // Verify bed availability in target hospital
     const [targetCat] = await tx
@@ -284,6 +372,7 @@ export async function switchReceivingHospitalTx({
         patientReference: finalPatientReference || finalPatientRef || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
         bedCategoryCode: finalCategoryCode,
         requestedBeds: finalRequestedBeds,
+        approvedBeds: 0,
         etaMinutes: finalEta,
         patientCondition: finalCondition,
         status: "PENDING",
@@ -291,6 +380,30 @@ export async function switchReceivingHospitalTx({
         updatedAt: now,
       })
       .returning();
+
+    // Log audit entries
+    await logDispatchActivity(
+      {
+        dispatchId: currentActive.id,
+        actorType: "DISPATCHER",
+        action: "HOSPITAL_SWITCHED",
+        details: `Receiving hospital switched to ${targetHospital.name}. Previous request cancelled.`,
+        oldValue: currentActive.hospitalId,
+        newValue: targetHospitalId,
+      },
+      tx
+    );
+
+    await logDispatchActivity(
+      {
+        dispatchId: newDispatchId,
+        actorType: "DISPATCHER",
+        action: "REQUEST_CREATED",
+        details: `Pre-arrival alert transmitted to ${targetHospital.name}. Required: ${finalRequestedBeds} ${finalCategoryCode} bed(s). ETA: ${finalEta}m. (Switched from ${currentActive.id})`,
+        newValue: `Hospital: ${targetHospital.name} | Category: ${finalCategoryCode} | Beds: ${finalRequestedBeds} | ETA: ${finalEta}m`,
+      },
+      tx
+    );
 
     return {
       cancelledDispatchId: currentActive.id,

@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { getDispatcherSessionId } from "@/lib/dispatcher-session";
 import { useActiveDispatch } from "@/hooks/use-active-dispatch";
 import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
+import { ModifyRequestModal } from "@/components/modify-request-modal";
 
 interface DispatchHistoryItem {
   id: string;
@@ -28,15 +30,19 @@ interface DispatchHistoryItem {
 }
 
 export default function DispatcherHistoryPage() {
+  const router = useRouter();
   const [dispatches, setDispatches] = useState<DispatchHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastSynced, setLastSynced] = useState<string>("");
   const [sessionId, setSessionId] = useState<string>("");
+  const [isModifyOpen, setIsModifyOpen] = useState(false);
+  const isFetchingRef = useRef(false);
 
   // Active Dispatch Hook
   const {
     activeDispatch,
     lastUpdated: activeLastUpdated,
+    refresh: refreshActive,
   } = useActiveDispatch();
 
   // Filters
@@ -51,6 +57,8 @@ export default function DispatcherHistoryPage() {
   }, []);
 
   const fetchHistory = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       const currentSession = sessionId || getDispatcherSessionId();
       const params = new URLSearchParams();
@@ -69,14 +77,15 @@ export default function DispatcherHistoryPage() {
     } catch (err) {
       console.error("Failed to fetch dispatcher request history:", err);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchHistory();
-    // Non-intrusive 5s near-real-time polling
-    const interval = setInterval(fetchHistory, 5000);
+    // 1-second synchronization
+    const interval = setInterval(fetchHistory, 1000);
     return () => clearInterval(interval);
   }, [sessionId, showAllSessions]);
 
@@ -153,6 +162,8 @@ export default function DispatcherHistoryPage() {
       <ActiveDispatchBanner
         activeDispatch={activeDispatch}
         lastUpdated={activeLastUpdated}
+        onModifyClick={() => setIsModifyOpen(true)}
+        onSwitchClick={() => router.push("/find-beds?switch=true")}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -519,6 +530,20 @@ export default function DispatcherHistoryPage() {
           </div>
         </div>
       </main>
+
+      {/* Modify Request Modal */}
+      {activeDispatch && (
+        <ModifyRequestModal
+          isOpen={isModifyOpen}
+          onClose={() => setIsModifyOpen(false)}
+          dispatch={activeDispatch}
+          hospitalBeds={activeDispatch.hospitalBeds}
+          onSuccess={async () => {
+            await refreshActive();
+            await fetchHistory();
+          }}
+        />
+      )}
     </div>
   );
 }

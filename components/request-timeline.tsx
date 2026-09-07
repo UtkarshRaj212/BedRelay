@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { formatDateTime } from "@/lib/format-date";
 
 export interface ActivityItem {
@@ -27,7 +27,11 @@ export function RequestTimeline({ dispatchId, refreshTrigger }: RequestTimelineP
   const [isArchived, setIsArchived] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isFetchingRef = useRef(false);
+
   const fetchTimeline = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       const res = await fetch(`/api/dispatch-requests/${dispatchId}/timeline`, {
         cache: "no-store",
@@ -41,6 +45,7 @@ export function RequestTimeline({ dispatchId, refreshTrigger }: RequestTimelineP
     } catch (err: any) {
       setError("Failed to load request timeline.");
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   };
@@ -48,7 +53,7 @@ export function RequestTimeline({ dispatchId, refreshTrigger }: RequestTimelineP
   useEffect(() => {
     if (dispatchId) {
       fetchTimeline();
-      const interval = setInterval(fetchTimeline, 5000);
+      const interval = setInterval(fetchTimeline, 1000);
       return () => clearInterval(interval);
     }
   }, [dispatchId, refreshTrigger]);

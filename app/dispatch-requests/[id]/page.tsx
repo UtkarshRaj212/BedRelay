@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatDateTime } from "@/lib/format-date";
 import { formatDistanceKm } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -18,8 +19,7 @@ interface DispatchDetails {
   ambulanceUnit: string;
   ambulanceLat: number | null;
   ambulanceLng: number | null;
-  patientRef: string | null;
-  patientReference?: string | null;
+  patientRef?: string;
   bedCategoryCode: string;
   requestedBeds: number;
   approvedBeds?: number | null;
@@ -30,7 +30,7 @@ interface DispatchDetails {
   patientCondition: string;
   status: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 interface HospitalDetails {
@@ -44,15 +44,16 @@ interface HospitalDetails {
   longitude: number | null;
 }
 
-export default function DispatchRequestDetailsPage({
+export default function DispatchRequestTrackingPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
 
   const [dispatch, setDispatch] = useState<DispatchDetails | null>(null);
-  const [hospital, setHospital] = useState<HospitalDetails | null>(null);
+  const [hospital, setHospital] = useState<any>(null);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -61,6 +62,7 @@ export default function DispatchRequestDetailsPage({
   const [cancelling, setCancelling] = useState(false);
   const [cancelFeedback, setCancelFeedback] = useState<string | null>(null);
   const [isModifyOpen, setIsModifyOpen] = useState(false);
+  const isFetchingRef = useRef(false);
 
   // Auto-open modify modal if URL has ?modify=true
   useEffect(() => {
@@ -74,11 +76,13 @@ export default function DispatchRequestDetailsPage({
     activeDispatch,
     lastUpdated: activeLastUpdated,
     refresh: refreshActive,
-  } = useActiveDispatch();
+  } = useActiveDispatch(1000);
 
   const fetchDetails = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
-      const res = await fetch(`/api/dispatch-requests/${id}`);
+      const res = await fetch(`/api/dispatch-requests/${id}`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setDispatch(data.dispatch);
@@ -94,13 +98,14 @@ export default function DispatchRequestDetailsPage({
       console.error("Failed to fetch request details:", err);
       setErrorMsg("Network error loading request details.");
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchDetails();
-    const interval = setInterval(fetchDetails, 5000); // Auto-refresh status every 5 seconds
+    const interval = setInterval(fetchDetails, 1000); // Auto-refresh status every 1 second
     return () => clearInterval(interval);
   }, [id]);
 
@@ -220,6 +225,7 @@ export default function DispatchRequestDetailsPage({
         activeDispatch={activeDispatch}
         lastUpdated={activeLastUpdated}
         onModifyClick={() => setIsModifyOpen(true)}
+        onSwitchClick={() => router.push("/find-beds?switch=true")}
       />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
@@ -612,18 +618,19 @@ export default function DispatchRequestDetailsPage({
         onClose={() => setIsModifyOpen(false)}
         dispatch={{
           ...dispatch,
-          hospitalName: hospital?.name || "Hospital",
-          hospitalAddress: hospital?.address || "",
-          hospitalCity: hospital?.city || "",
-          hospitalState: hospital?.state || "",
-          hospitalPhone: hospital?.phone || "",
-          hospitalLat: hospital?.latitude || null,
-          hospitalLng: hospital?.longitude || null,
+          hospitalName: hospital?.name || activeDispatch?.hospitalName || "Hospital",
+          hospitalAddress: hospital?.address || activeDispatch?.hospitalAddress || "",
+          hospitalCity: hospital?.city || activeDispatch?.hospitalCity || "",
+          hospitalState: hospital?.state || activeDispatch?.hospitalState || "",
+          hospitalPhone: hospital?.phone || activeDispatch?.hospitalPhone || "",
+          hospitalLat: hospital?.latitude || activeDispatch?.hospitalLat || null,
+          hospitalLng: hospital?.longitude || activeDispatch?.hospitalLng || null,
           distanceKm,
+          hospitalBeds: activeDispatch?.hospitalBeds || [],
         } as any}
-        onSuccess={() => {
-          fetchDetails();
-          refreshActive();
+        onSuccess={async (updatedDispatch) => {
+          setDispatch(updatedDispatch);
+          await Promise.all([fetchDetails(), refreshActive()]);
         }}
       />
     </div>

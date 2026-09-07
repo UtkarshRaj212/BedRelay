@@ -3,6 +3,7 @@ import { getAuthenticatedHospital } from "@/lib/auth-server";
 import { db } from "@/db";
 import { dispatchRequests, bedCategories, hospitals } from "@/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import { checkAndAutoCompleteExpiredDispatches } from "@/lib/dispatcher-server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,6 +13,9 @@ export async function GET(req: NextRequest) {
     const { errorResponse, hospital } = await getAuthenticatedHospital(req);
     if (errorResponse) return errorResponse;
     if (!hospital) return NextResponse.json({ error: "Hospital onboarding required" }, { status: 403 });
+
+    // Run auto-completion check server-side
+    await checkAndAutoCompleteExpiredDispatches();
 
     // Fetch dispatch requests scoped ONLY to the authenticated hospital
     const dispatches = await db

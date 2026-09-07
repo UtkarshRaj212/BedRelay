@@ -3,11 +3,14 @@ import { assertSuperAdmin, recordAuditLog } from "@/lib/auth-server";
 import { db } from "@/db";
 import { dispatchRequests, hospitals } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { checkAndAutoCompleteExpiredDispatches } from "@/lib/dispatcher-server";
 
 export async function GET(req: NextRequest) {
   try {
     const { errorResponse } = await assertSuperAdmin(req);
     if (errorResponse) return errorResponse;
+
+    await checkAndAutoCompleteExpiredDispatches();
 
     const { searchParams } = new URL(req.url);
     const hospitalId = searchParams.get("hospitalId");

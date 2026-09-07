@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { INDIAN_CITIES, calculateDistanceKm, formatDistanceKm, isValidCoordinates } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDateTime } from "@/lib/format-date";
@@ -41,10 +42,12 @@ interface HospitalResult {
 }
 
 export default function FindHospitalPage() {
+  const router = useRouter();
   const [selectedCity, setSelectedCity] = useState<string>("Chennai");
   const [selectedCategory, setSelectedCategory] = useState<string>("ICU");
   const [minBeds, setMinBeds] = useState<string | number>(1);
   const prevMinBedsRef = useRef<number>(1);
+  const isFetchingRef = useRef<boolean>(false);
 
   const [hospitals, setHospitals] = useState<HospitalResult[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -88,7 +91,7 @@ export default function FindHospitalPage() {
     refresh: refreshActive,
     switchHospital,
     dismissRejectedDispatch,
-  } = useActiveDispatch();
+  } = useActiveDispatch(1000);
 
   const [isModifyModalOpen, setIsModifyModalOpen] = useState<boolean>(false);
   const [switchTargetHospital, setSwitchTargetHospital] = useState<HospitalResult | null>(null);
@@ -103,24 +106,46 @@ export default function FindHospitalPage() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [dispatchMsg, setDispatchMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Sync category and beds when landing on ?switch=true (Requirement 5 & 6)
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("switch=true") && activeDispatch) {
+      setSelectedCategory(activeDispatch.bedCategoryCode);
+      setMinBeds(activeDispatch.requestedBeds);
+      prevMinBedsRef.current = activeDispatch.requestedBeds;
+      setTimeout(() => {
+        const el = document.getElementById("hospital-results-section");
+        el?.scrollIntoView({ behavior: "smooth" });
+      }, 300);
+    }
+  }, [activeDispatch]);
+
   const handleConfirmSwitch = async () => {
     if (!switchTargetHospital) return;
     try {
       setSwitching(true);
       setSwitchError(null);
+      // Send real latest values from activeDispatch (Requirement 5 & 6)
       const res = await switchHospital({
         targetHospitalId: switchTargetHospital.id,
-        bedCategoryCode: selectedCategory,
-        requestedBeds: activeMinBedsNumber,
-        etaMinutes: 15,
+        bedCategoryCode: activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory,
+        requestedBeds: activeDispatch ? activeDispatch.requestedBeds : activeMinBedsNumber,
+        etaMinutes: activeDispatch ? activeDispatch.etaMinutes : 15,
         ambulanceLat: ambulanceCoordinates ? ambulanceCoordinates.lat : null,
         ambulanceLng: ambulanceCoordinates ? ambulanceCoordinates.lng : null,
-        patientCondition: "Emergency Dispatch Transfer",
+        patientCondition: activeDispatch ? activeDispatch.patientCondition : "Emergency Dispatch Transfer",
+        ambulanceUnit: activeDispatch?.ambulanceUnit,
+        ambulanceId: activeDispatch?.ambulanceId,
+        patientRef: activeDispatch?.patientRef,
+        patientReference: activeDispatch?.patientReference,
       });
 
       if (res.success) {
         setSwitchTargetHospital(null);
-        await fetchSuitableHospitals(true);
+        if (res.dispatch?.id) {
+          router.push(`/dispatch-requests/${res.dispatch.id}`);
+        } else {
+          await fetchSuitableHospitals(true);
+        }
       } else {
         setSwitchError(res.error || "Failed to switch receiving hospital.");
       }
@@ -181,6 +206,8 @@ export default function FindHospitalPage() {
   };
 
   const fetchSuitableHospitals = async (silent = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       if (!silent) setLoading(true);
       let url = `/api/hospitals/search?city=${encodeURIComponent(
@@ -189,7 +216,7 @@ export default function FindHospitalPage() {
       if (ambulanceCoordinates) {
         url += `&lat=${ambulanceCoordinates.lat}&lng=${ambulanceCoordinates.lng}`;
       }
-      const res = await fetch(url);
+      const res = await fetch(url, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setHospitals(data.hospitals || []);
@@ -198,6 +225,7 @@ export default function FindHospitalPage() {
     } catch (err) {
       console.error("Failed to fetch suitable hospitals:", err);
     } finally {
+      isFetchingRef.current = false;
       if (!silent) setLoading(false);
     }
   };
@@ -206,7 +234,7 @@ export default function FindHospitalPage() {
     // Only search if not in middle of empty backspace state
     if (minBeds !== "") {
       fetchSuitableHospitals();
-      const interval = setInterval(() => fetchSuitableHospitals(true), 5000);
+      const interval = setInterval(() => fetchSuitableHospitals(true), 1000);
       return () => clearInterval(interval);
     }
   }, [selectedCity, selectedCategory, minBeds, ambulanceCoordinates]);
@@ -333,6 +361,11 @@ export default function FindHospitalPage() {
         lastUpdated={activeLastUpdated}
         onModifyClick={() => setIsModifyModalOpen(true)}
         onSwitchClick={() => {
+          if (activeDispatch) {
+            setSelectedCategory(activeDispatch.bedCategoryCode);
+            setMinBeds(activeDispatch.requestedBeds);
+            prevMinBedsRef.current = activeDispatch.requestedBeds;
+          }
           const el = document.getElementById("hospital-results-section");
           el?.scrollIntoView({ behavior: "smooth" });
         }}

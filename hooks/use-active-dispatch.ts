@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { formatDateTime } from "@/lib/format-date";
 
 export interface ActiveDispatch {
@@ -29,6 +29,13 @@ export interface ActiveDispatch {
   patientCondition: string;
   status: "PENDING" | "SENT" | "ACCEPTED" | "REJECTED" | "COMPLETED" | "CANCELLED" | string;
   distanceKm: number | null;
+  hospitalBeds?: {
+    categoryCode: string;
+    name: string;
+    availableBeds: number;
+    totalBeds: number;
+    occupiedBeds: number;
+  }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -41,14 +48,17 @@ export interface RejectedDispatch {
   rejectedAt: string;
 }
 
-export function useActiveDispatch(pollIntervalMs = 4000) {
+export function useActiveDispatch(pollIntervalMs = 1000) {
   const [activeDispatch, setActiveDispatch] = useState<ActiveDispatch | null>(null);
   const [lastRejectedDispatch, setLastRejectedDispatch] = useState<RejectedDispatch | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [lastUpdated, setLastUpdated] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef<boolean>(false);
 
   const fetchActive = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       const res = await fetch("/api/dispatch/active", {
         cache: "no-store",
@@ -77,6 +87,7 @@ export function useActiveDispatch(pollIntervalMs = 4000) {
     } catch (err: any) {
       setError(err.message || "Network error syncing active dispatch.");
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   }, []);

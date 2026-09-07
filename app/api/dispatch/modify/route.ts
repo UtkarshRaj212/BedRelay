@@ -49,6 +49,27 @@ export async function PATCH(req: NextRequest) {
 
     const now = new Date();
 
+    // Field normalization & empty-field fallback (Requirement 2)
+    const parsedEta =
+      etaMinutes !== undefined && etaMinutes !== null && etaMinutes !== "" && !isNaN(Number(etaMinutes))
+        ? Math.max(1, Number(etaMinutes))
+        : current.etaMinutes;
+
+    const parsedBeds =
+      requestedBeds !== undefined && requestedBeds !== null && requestedBeds !== "" && !isNaN(Number(requestedBeds))
+        ? Math.max(1, Number(requestedBeds))
+        : current.requestedBeds;
+
+    const trimmedCondition =
+      patientCondition !== undefined && patientCondition !== null && String(patientCondition).trim() !== ""
+        ? String(patientCondition).trim()
+        : current.patientCondition;
+
+    const upperCategory =
+      bedCategoryCode !== undefined && bedCategoryCode !== null && String(bedCategoryCode).trim() !== ""
+        ? String(bedCategoryCode).trim().toUpperCase()
+        : current.bedCategoryCode.toUpperCase();
+
     const result = await db.transaction(async (tx) => {
       let nextEta = current.etaMinutes;
       let nextCondition = current.patientCondition;
@@ -59,124 +80,109 @@ export async function PATCH(req: NextRequest) {
       const reviewReasons: string[] = [];
 
       const isAccepted = current.status.toUpperCase() === "ACCEPTED";
+      const isCategoryChanged = upperCategory !== current.bedCategoryCode.toUpperCase();
 
-      // 1. ETA Update
-      if (etaMinutes !== undefined && !isNaN(Number(etaMinutes))) {
-        const parsedEta = Math.max(1, Number(etaMinutes));
-        if (parsedEta !== current.etaMinutes) {
-          nextEta = parsedEta;
-          await logDispatchActivity(
-            {
-              dispatchId: current.id,
-              actorType: "DISPATCHER",
-              action: "ETA_UPDATED",
-              details: `ETA duration updated from ${current.etaMinutes}m to ${parsedEta}m`,
-              oldValue: `${current.etaMinutes}m`,
-              newValue: `${parsedEta}m`,
-            },
-            tx
-          );
-        }
+      // 1. Validate Target Bed Category & Real Hospital Availability (Requirement 3)
+      const [targetCat] = await tx
+        .select()
+        .from(bedCategories)
+        .where(
+          and(
+            eq(bedCategories.hospitalId, current.hospitalId),
+            eq(bedCategories.categoryCode, upperCategory)
+          )
+        )
+        .for("update")
+        .limit(1);
+
+      if (!targetCat) {
+        throw new Error(`Bed category '${upperCategory}' does not exist for this hospital facility.`);
       }
 
-      // 2. Patient Condition Update
-      if (patientCondition && typeof patientCondition === "string") {
-        const trimmedCondition = patientCondition.trim();
-        if (trimmedCondition !== current.patientCondition) {
-          const evalResult = evaluateConditionChange(current.patientCondition, trimmedCondition);
-          nextCondition = trimmedCondition;
+      // Calculate max allowed beds for this category
+      // If category didn't change and request was accepted, previously approved beds can be re-allocated
+      const maxAllowedBeds = (!isCategoryChanged && isAccepted)
+        ? targetCat.availableBeds + (current.approvedBeds || 0)
+        : targetCat.availableBeds;
 
-          if (evalResult.isMaterialChange) {
-            if (isAccepted) {
-              nextReviewRequired = true;
-              reviewReasons.push(evalResult.reason || "Patient condition changed materially.");
-            }
-            await logDispatchActivity(
-              {
-                dispatchId: current.id,
-                actorType: "DISPATCHER",
-                action: "CONDITION_CHANGED",
-                details: `Patient condition updated: ${current.patientCondition} → ${trimmedCondition}`,
-                oldValue: current.patientCondition,
-                newValue: trimmedCondition,
-                note: isAccepted ? "Hospital review required" : undefined,
-              },
-              tx
-            );
-          } else {
-            await logDispatchActivity(
-              {
-                dispatchId: current.id,
-                actorType: "DISPATCHER",
-                action: "CONDITION_UPDATED",
-                details: `Patient condition note updated: ${trimmedCondition}`,
-                oldValue: current.patientCondition,
-                newValue: trimmedCondition,
-              },
-              tx
-            );
+      if (parsedBeds > maxAllowedBeds) {
+        throw new Error(
+          `Requested bed count (${parsedBeds}) exceeds maximum available capacity (${maxAllowedBeds}) for ${upperCategory}.`
+        );
+      }
+
+      // 2. Bed Category Change (Requirement 4)
+      if (isCategoryChanged) {
+        nextCategory = upperCategory;
+        nextRequestedBeds = parsedBeds;
+
+        // If previously accepted, release previously approved beds back to the old category
+        if (isAccepted && (current.approvedBeds || 0) > 0) {
+          const [oldCat] = await tx
+            .select()
+            .from(bedCategories)
+            .where(
+              and(
+                eq(bedCategories.hospitalId, current.hospitalId),
+                eq(bedCategories.categoryCode, current.bedCategoryCode.toUpperCase())
+              )
+            )
+            .for("update")
+            .limit(1);
+
+          if (oldCat) {
+            await tx
+              .update(bedCategories)
+              .set({
+                availableBeds: Math.min(oldCat.totalBeds, oldCat.availableBeds + current.approvedBeds),
+                occupiedBeds: Math.max(0, oldCat.occupiedBeds - current.approvedBeds),
+                lastUpdated: now,
+                updatedAt: now,
+              })
+              .where(eq(bedCategories.id, oldCat.id));
           }
         }
-      }
 
-      // 3. Bed Category Change
-      if (bedCategoryCode && typeof bedCategoryCode === "string") {
-        const upperCategory = bedCategoryCode.trim().toUpperCase();
-        if (upperCategory !== current.bedCategoryCode.toUpperCase()) {
-          nextCategory = upperCategory;
-          if (isAccepted) {
-            nextReviewRequired = true;
-            reviewReasons.push(`Bed category changed from ${current.bedCategoryCode} to ${upperCategory}`);
-          }
-          await logDispatchActivity(
-            {
-              dispatchId: current.id,
-              actorType: "DISPATCHER",
-              action: "CATEGORY_CHANGED",
-              details: `Required bed category changed from ${current.bedCategoryCode} to ${upperCategory}`,
-              oldValue: current.bedCategoryCode,
-              newValue: upperCategory,
-              note: isAccepted ? "Hospital review required" : undefined,
-            },
-            tx
+        // Category changed: approved beds reset to 0 for new category (pending hospital review)
+        nextApprovedBeds = 0;
+        if (isAccepted) {
+          nextReviewRequired = true;
+          reviewReasons.push(
+            `Bed category changed from ${current.bedCategoryCode} to ${upperCategory} (${parsedBeds} beds pending review)`
           );
         }
-      }
 
-      // 4. Bed Count Logic (Requirement 4)
-      if (requestedBeds !== undefined && !isNaN(Number(requestedBeds))) {
-        const parsedBeds = Math.max(1, Number(requestedBeds));
+        await logDispatchActivity(
+          {
+            dispatchId: current.id,
+            actorType: "DISPATCHER",
+            action: "CATEGORY_CHANGED",
+            details: `Required bed category changed from ${current.bedCategoryCode} to ${upperCategory} (Requested: ${parsedBeds}, Approved: 0)`,
+            oldValue: `${current.bedCategoryCode} (approved: ${current.approvedBeds})`,
+            newValue: `${upperCategory} (approved: 0)`,
+            note: isAccepted ? "Hospital review required" : undefined,
+          },
+          tx
+        );
+      } else {
+        // Same category: handle bed count changes (Requirement 4)
         if (parsedBeds !== current.requestedBeds) {
           if (isAccepted) {
             if (parsedBeds < current.approvedBeds) {
-              // Reduction: immediately reduce approved beds and release bed capacity
+              // Reduction: immediately reduce approved beds and release capacity
               const diff = current.approvedBeds - parsedBeds;
               nextApprovedBeds = parsedBeds;
               nextRequestedBeds = parsedBeds;
 
-              const [cat] = await tx
-                .select()
-                .from(bedCategories)
-                .where(
-                  and(
-                    eq(bedCategories.hospitalId, current.hospitalId),
-                    eq(bedCategories.categoryCode, current.bedCategoryCode.toUpperCase())
-                  )
-                )
-                .for("update")
-                .limit(1);
-
-              if (cat) {
-                await tx
-                  .update(bedCategories)
-                  .set({
-                    availableBeds: Math.min(cat.totalBeds, cat.availableBeds + diff),
-                    occupiedBeds: Math.max(0, cat.occupiedBeds - diff),
-                    lastUpdated: now,
-                    updatedAt: now,
-                  })
-                  .where(eq(bedCategories.id, cat.id));
-              }
+              await tx
+                .update(bedCategories)
+                .set({
+                  availableBeds: Math.min(targetCat.totalBeds, targetCat.availableBeds + diff),
+                  occupiedBeds: Math.max(0, targetCat.occupiedBeds - diff),
+                  lastUpdated: now,
+                  updatedAt: now,
+                })
+                .where(eq(bedCategories.id, targetCat.id));
 
               await logDispatchActivity(
                 {
@@ -190,7 +196,7 @@ export async function PATCH(req: NextRequest) {
                 tx
               );
             } else if (parsedBeds > current.approvedBeds) {
-              // Increase: approved beds remain the same, additional beds marked pending
+              // Increase: approved beds stay the same, additional beds marked pending
               const additionalPending = parsedBeds - current.approvedBeds;
               nextRequestedBeds = parsedBeds;
               nextReviewRequired = true;
@@ -210,8 +216,9 @@ export async function PATCH(req: NextRequest) {
               );
             }
           } else {
-            // PENDING state
+            // PENDING state: update requested beds
             nextRequestedBeds = parsedBeds;
+            nextApprovedBeds = 0;
             await logDispatchActivity(
               {
                 dispatchId: current.id,
@@ -224,6 +231,64 @@ export async function PATCH(req: NextRequest) {
               tx
             );
           }
+        }
+      }
+
+      // Enforce server-side invariant: approvedBeds must never exceed requestedBeds
+      if (nextApprovedBeds > nextRequestedBeds) {
+        nextApprovedBeds = nextRequestedBeds;
+      }
+
+      // 3. ETA Update
+      if (parsedEta !== current.etaMinutes) {
+        nextEta = parsedEta;
+        await logDispatchActivity(
+          {
+            dispatchId: current.id,
+            actorType: "DISPATCHER",
+            action: "ETA_UPDATED",
+            details: `ETA duration updated from ${current.etaMinutes}m to ${parsedEta}m`,
+            oldValue: `${current.etaMinutes}m`,
+            newValue: `${parsedEta}m`,
+          },
+          tx
+        );
+      }
+
+      // 4. Patient Condition Update
+      if (trimmedCondition !== current.patientCondition) {
+        const evalResult = evaluateConditionChange(current.patientCondition, trimmedCondition);
+        nextCondition = trimmedCondition;
+
+        if (evalResult.isMaterialChange) {
+          if (isAccepted) {
+            nextReviewRequired = true;
+            reviewReasons.push(evalResult.reason || "Patient condition changed materially.");
+          }
+          await logDispatchActivity(
+            {
+              dispatchId: current.id,
+              actorType: "DISPATCHER",
+              action: "CONDITION_CHANGED",
+              details: `Patient condition updated: ${current.patientCondition} → ${trimmedCondition}`,
+              oldValue: current.patientCondition,
+              newValue: trimmedCondition,
+              note: isAccepted ? "Hospital review required" : undefined,
+            },
+            tx
+          );
+        } else {
+          await logDispatchActivity(
+            {
+              dispatchId: current.id,
+              actorType: "DISPATCHER",
+              action: "CONDITION_UPDATED",
+              details: `Patient condition note updated: ${trimmedCondition}`,
+              oldValue: current.patientCondition,
+              newValue: trimmedCondition,
+            },
+            tx
+          );
         }
       }
 
@@ -262,6 +327,26 @@ export async function PATCH(req: NextRequest) {
       const combinedReviewReason = reviewReasons.length > 0
         ? reviewReasons.join("; ")
         : current.reviewReason;
+
+      await logDispatchActivity(
+        {
+          dispatchId: current.id,
+          actorType: "DISPATCHER",
+          action: "REQUEST_MODIFIED",
+          details: `Dispatch request modified: beds=${nextRequestedBeds} (${nextCategory}), ETA=${nextEta}m.`,
+          oldValue: JSON.stringify({
+            beds: current.requestedBeds,
+            category: current.bedCategoryCode,
+            eta: current.etaMinutes,
+          }),
+          newValue: JSON.stringify({
+            beds: nextRequestedBeds,
+            category: nextCategory,
+            eta: nextEta,
+          }),
+        },
+        tx
+      );
 
       const [updated] = await tx
         .update(dispatchRequests)

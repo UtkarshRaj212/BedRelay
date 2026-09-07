@@ -7,6 +7,13 @@ interface ModifyRequestModalProps {
   isOpen: boolean;
   onClose: () => void;
   dispatch: ActiveDispatch | null;
+  hospitalBeds?: {
+    categoryCode: string;
+    name: string;
+    availableBeds: number;
+    totalBeds: number;
+    occupiedBeds: number;
+  }[];
   onSuccess: (updatedDispatch: any) => void;
 }
 
@@ -22,13 +29,15 @@ export function ModifyRequestModal({
   isOpen,
   onClose,
   dispatch,
+  hospitalBeds: propHospitalBeds,
   onSuccess,
 }: ModifyRequestModalProps) {
   if (!isOpen || !dispatch) return null;
 
-  const [etaMinutes, setEtaMinutes] = useState<number>(dispatch.etaMinutes || 15);
+  // Form input states stored as strings to permit normal editing/clearing (Requirement 2)
+  const [etaMinutes, setEtaMinutes] = useState<string>(String(dispatch.etaMinutes || 15));
   const [patientCondition, setPatientCondition] = useState<string>(dispatch.patientCondition || "");
-  const [requestedBeds, setRequestedBeds] = useState<number>(dispatch.requestedBeds || 1);
+  const [requestedBeds, setRequestedBeds] = useState<string>(String(dispatch.requestedBeds || 1));
   const [bedCategoryCode, setBedCategoryCode] = useState<string>(dispatch.bedCategoryCode || "ICU");
   const [patientRef, setPatientRef] = useState<string>(dispatch.patientRef || dispatch.patientReference || "");
   const [ambulanceUnit, setAmbulanceUnit] = useState<string>(dispatch.ambulanceUnit || dispatch.ambulanceId || "");
@@ -38,24 +47,52 @@ export function ModifyRequestModal({
 
   const approvedCount = dispatch.approvedBeds || 0;
   const isAccepted = dispatch.status.toUpperCase() === "ACCEPTED";
+  const isCategoryChanged = bedCategoryCode.toUpperCase() !== (dispatch.bedCategoryCode || "").toUpperCase();
+
+  // Dynamic hospital bed availability from Neon (Requirement 3)
+  const hospitalBeds = propHospitalBeds || (dispatch as any).hospitalBeds || [];
+  const currentCategoryBeds = hospitalBeds.find(
+    (b: any) => b.categoryCode?.toUpperCase() === bedCategoryCode.toUpperCase()
+  );
+
+  // Maximum beds available in hospital for the selected category
+  const maxAvailableBeds = currentCategoryBeds
+    ? !isCategoryChanged && isAccepted
+      ? currentCategoryBeds.availableBeds + approvedCount
+      : currentCategoryBeds.availableBeds
+    : 10;
 
   // Calculations for bed preview
+  const parsedPreviewBeds =
+    requestedBeds.trim() === "" || isNaN(Number(requestedBeds))
+      ? dispatch.requestedBeds || 1
+      : Math.max(1, parseInt(requestedBeds, 10));
+
   let approvedPreview = approvedCount;
   let additionalPending = 0;
   if (isAccepted) {
-    if (requestedBeds < approvedCount) {
-      approvedPreview = requestedBeds;
+    if (isCategoryChanged) {
+      // Category changed: approved count resets to 0 (Requirement 4)
+      approvedPreview = 0;
+      additionalPending = parsedPreviewBeds;
+    } else if (parsedPreviewBeds < approvedCount) {
+      approvedPreview = parsedPreviewBeds;
       additionalPending = 0;
     } else {
       approvedPreview = approvedCount;
-      additionalPending = Math.max(0, requestedBeds - approvedCount);
+      additionalPending = Math.max(0, parsedPreviewBeds - approvedCount);
     }
   }
 
   // Calculate arrival times for preview
+  const parsedPreviewEta =
+    etaMinutes.trim() === "" || isNaN(Number(etaMinutes))
+      ? dispatch.etaMinutes || 15
+      : Math.max(1, parseInt(etaMinutes, 10));
+
   const now = new Date();
   const currentArrival = new Date(now.getTime() + (dispatch.etaMinutes || 15) * 60 * 1000);
-  const newArrival = new Date(now.getTime() + (etaMinutes || 15) * 60 * 1000);
+  const newArrival = new Date(now.getTime() + parsedPreviewEta * 60 * 1000);
 
   const formatTime = (d: Date) =>
     d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
@@ -66,18 +103,45 @@ export function ModifyRequestModal({
       setSubmitting(true);
       setError(null);
 
+      // Validate only final submitted value & restore previous stored value if empty (Requirement 2)
+      const finalEta =
+        etaMinutes.trim() === "" || isNaN(Number(etaMinutes))
+          ? dispatch.etaMinutes || 15
+          : Math.max(1, parseInt(etaMinutes, 10));
+
+      const finalBeds =
+        requestedBeds.trim() === "" || isNaN(Number(requestedBeds))
+          ? dispatch.requestedBeds || 1
+          : Math.max(1, parseInt(requestedBeds, 10));
+
+      const finalCondition =
+        patientCondition.trim() === "" ? dispatch.patientCondition : patientCondition.trim();
+
+      const finalPatientRef =
+        patientRef.trim() === "" ? (dispatch.patientRef || dispatch.patientReference || "") : patientRef.trim();
+
+      const finalAmbulanceUnit =
+        ambulanceUnit.trim() === "" ? (dispatch.ambulanceUnit || dispatch.ambulanceId || "") : ambulanceUnit.trim();
+
+      // Enforce bed count limit against real hospital capacity (Requirement 3)
+      if (finalBeds > maxAvailableBeds) {
+        throw new Error(
+          `Requested bed count (${finalBeds}) exceeds available hospital capacity (${maxAvailableBeds}) for ${bedCategoryCode}.`
+        );
+      }
+
       const res = await fetch("/api/dispatch/modify", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          etaMinutes: Number(etaMinutes),
-          patientCondition: patientCondition.trim(),
-          requestedBeds: Number(requestedBeds),
+          etaMinutes: finalEta,
+          patientCondition: finalCondition,
+          requestedBeds: finalBeds,
           bedCategoryCode,
-          patientRef: patientRef.trim(),
-          patientReference: patientRef.trim(),
-          ambulanceUnit: ambulanceUnit.trim(),
-          ambulanceId: ambulanceUnit.trim(),
+          patientRef: finalPatientRef,
+          patientReference: finalPatientRef,
+          ambulanceUnit: finalAmbulanceUnit,
+          ambulanceId: finalAmbulanceUnit,
         }),
       });
 
@@ -190,25 +254,30 @@ export function ModifyRequestModal({
                 min="1"
                 max="300"
                 value={etaMinutes}
-                onChange={(e) => setEtaMinutes(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none"
-                required
+                onChange={(e) => setEtaMinutes(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none font-mono"
+                placeholder={String(dispatch.etaMinutes || 15)}
               />
             </div>
 
             {/* Requested Beds */}
             <div>
-              <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
-                Requested Beds Count
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa]">
+                  Requested Beds Count
+                </label>
+                <span className="text-[10px] font-mono text-slate-500 dark:text-[#777]">
+                  Max: {maxAvailableBeds}
+                </span>
+              </div>
               <input
                 type="number"
                 min="1"
-                max="10"
+                max={maxAvailableBeds}
                 value={requestedBeds}
-                onChange={(e) => setRequestedBeds(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none"
-                required
+                onChange={(e) => setRequestedBeds(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none font-mono"
+                placeholder={String(dispatch.requestedBeds || 1)}
               />
             </div>
           </div>

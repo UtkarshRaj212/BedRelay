@@ -57,10 +57,14 @@ export default function DashboardPage() {
   const [updating, setUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
+  const isFetchingRef = useRef(false);
+
   const fetchTelemetry = async (silent = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       if (!silent) setLoadingData(true);
-      const res = await fetch("/api/hospital");
+      const res = await fetch("/api/hospital", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         if (data.needsOnboarding) {
@@ -73,6 +77,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
     } finally {
+      isFetchingRef.current = false;
       if (!silent) setLoadingData(false);
     }
   };
@@ -84,7 +89,7 @@ export default function DashboardPage() {
         if (!editingCategory) {
           fetchTelemetry(true);
         }
-      }, 5000);
+      }, 1000);
       return () => clearInterval(interval);
     }
   }, [session, editingCategory]);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { INDIAN_CITIES, isValidCoordinates, formatDistanceKm } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate, formatDateTime } from "@/lib/format-date";
@@ -10,6 +11,7 @@ import { DynamicOSMMapView } from "@/components/map/dynamic-map";
 import { useActiveDispatch } from "@/hooks/use-active-dispatch";
 import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
 import { SwitchHospitalModal } from "@/components/switch-hospital-modal";
+import { ModifyRequestModal } from "@/components/modify-request-modal";
 
 interface BedCategory {
   id: string;
@@ -52,11 +54,14 @@ interface DispatchItem {
 }
 
 export default function DispatcherDashboardPage() {
+  const router = useRouter();
   const [hospitals, setHospitals] = useState<HospitalItem[]>([]);
   const [activeDispatches, setActiveDispatches] = useState<DispatchItem[]>([]);
   const [selectedCity, setSelectedCity] = useState<string>("Chennai");
   const [loading, setLoading] = useState(true);
   const [lastSynced, setLastSynced] = useState<string>("");
+  const [isModifyOpen, setIsModifyOpen] = useState(false);
+  const isFetchingRef = useRef(false);
 
   // Ambulance GPS & Map State
   const [ambulanceCoordinates, setAmbulanceCoordinates] = useState<{ lat: number; lng: number } | null>(null);
@@ -164,6 +169,8 @@ export default function DispatcherDashboardPage() {
   };
 
   const fetchLiveData = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       let url = `/api/hospitals/search?city=${encodeURIComponent(selectedCity)}`;
       if (ambulanceCoordinates) {
@@ -179,13 +186,14 @@ export default function DispatcherDashboardPage() {
     } catch (err) {
       console.error("Failed to fetch live telemetry:", err);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchLiveData();
-    const interval = setInterval(fetchLiveData, 5000); // Near-real-time refresh every 5 seconds
+    const interval = setInterval(fetchLiveData, 1000); // 1-second synchronization
     return () => clearInterval(interval);
   }, [selectedCity, ambulanceCoordinates]);
 
@@ -298,6 +306,8 @@ export default function DispatcherDashboardPage() {
       <ActiveDispatchBanner
         activeDispatch={activeDispatch}
         lastUpdated={activeLastUpdated}
+        onModifyClick={() => setIsModifyOpen(true)}
+        onSwitchClick={() => router.push("/find-beds?switch=true")}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -980,6 +990,20 @@ export default function DispatcherDashboardPage() {
         isSubmitting={switching}
         error={switchError}
       />
+
+      {/* Modify Request Modal */}
+      {activeDispatch && (
+        <ModifyRequestModal
+          isOpen={isModifyOpen}
+          onClose={() => setIsModifyOpen(false)}
+          dispatch={activeDispatch}
+          hospitalBeds={activeDispatch.hospitalBeds}
+          onSuccess={async () => {
+            await refreshActive();
+            await fetchLiveData();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -195,11 +195,17 @@ export default function SuperAdminPage() {
     availableBeds: 0,
   });
 
+  const isFetchingRef = useRef(false);
+
   // Fetch all administrative telemetry & tables from Neon Postgres
-  const fetchAllData = async () => {
+  const fetchAllData = async (isBackground = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
-      setRefreshing(true);
-      setActionMessage(null);
+      if (!isBackground) {
+        setRefreshing(true);
+        setActionMessage(null);
+      }
 
       const [statsRes, hospRes, staffRes, bedsRes, dispRes] = await Promise.all([
         fetch("/api/superadmin/stats"),
@@ -246,8 +252,11 @@ export default function SuperAdminPage() {
     } catch (err) {
       console.error("Failed to load SuperAdmin telemetry:", err);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
-      setRefreshing(false);
+      if (!isBackground) {
+        setRefreshing(false);
+      }
     }
   };
 
@@ -255,6 +264,10 @@ export default function SuperAdminPage() {
     if (!sessionLoading) {
       if (session?.user) {
         fetchAllData();
+        const interval = setInterval(() => {
+          fetchAllData(true);
+        }, 1000);
+        return () => clearInterval(interval);
       } else {
         setLoading(false);
       }
@@ -860,7 +873,7 @@ export default function SuperAdminPage() {
           <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
             <ThemeToggle />
             <button
-              onClick={fetchAllData}
+              onClick={() => fetchAllData(false)}
               disabled={refreshing}
               className="px-3.5 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ededed] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] hover:border-slate-400 dark:hover:border-[#444] bg-white dark:bg-[#0f0f0f] rounded-sm transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >

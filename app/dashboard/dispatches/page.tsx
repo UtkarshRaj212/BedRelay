@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -42,11 +42,16 @@ export default function HospitalDispatchesPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [reviewDispatch, setReviewDispatch] = useState<DispatchRequest | null>(null);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const isFetchingRef = useRef(false);
 
   const fetchDispatches = async (silent = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       if (!silent) setLoading(true);
-      const res = await fetch("/api/hospital/dispatches");
+      const res = await fetch("/api/hospital/dispatches", {
+        cache: "no-store",
+      });
       if (res.ok) {
         const data = await res.json();
         setHospital(data.hospital);
@@ -55,6 +60,7 @@ export default function HospitalDispatchesPage() {
     } catch (err) {
       console.error("Failed to load dispatch requests:", err);
     } finally {
+      isFetchingRef.current = false;
       if (!silent) setLoading(false);
     }
   };
@@ -62,7 +68,7 @@ export default function HospitalDispatchesPage() {
   useEffect(() => {
     if (session) {
       fetchDispatches();
-      const interval = setInterval(() => fetchDispatches(true), 5000);
+      const interval = setInterval(() => fetchDispatches(true), 1000);
       return () => clearInterval(interval);
     }
   }, [session]);

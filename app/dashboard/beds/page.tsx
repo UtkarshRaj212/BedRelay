@@ -41,10 +41,14 @@ export default function BedManagementPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  const isFetchingRef = useRef(false);
+
   const fetchBeds = async (silent = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       if (!silent) setLoading(true);
-      const res = await fetch("/api/hospital/beds");
+      const res = await fetch("/api/hospital/beds", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         setHospital(data.hospital);
@@ -53,6 +57,7 @@ export default function BedManagementPage() {
     } catch (err) {
       console.error("Failed to load hospital beds:", err);
     } finally {
+      isFetchingRef.current = false;
       if (!silent) setLoading(false);
     }
   };
@@ -64,7 +69,7 @@ export default function BedManagementPage() {
         if (!editingCategory) {
           fetchBeds(true);
         }
-      }, 5000);
+      }, 1000);
       return () => clearInterval(interval);
     }
   }, [session, editingCategory]);

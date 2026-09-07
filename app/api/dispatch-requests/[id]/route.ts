@@ -4,6 +4,7 @@ import { dispatchRequests, hospitals, bedCategories, hospitalMemberships, user }
 import { calculateDistanceKm } from "@/lib/geo";
 import { eq, and, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { checkAndAutoCompleteExpiredDispatches } from "@/lib/dispatcher-server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -17,6 +18,9 @@ export async function GET(
     if (!id || typeof id !== "string") {
       return NextResponse.json({ error: "Dispatch request ID is required" }, { status: 400 });
     }
+
+    // Run auto-completion check server-side
+    await checkAndAutoCompleteExpiredDispatches();
 
     const [dispatch] = await db
       .select()
