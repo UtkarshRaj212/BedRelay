@@ -71,7 +71,7 @@ export default function Home() {
               </h1>
 
               <p className="mt-6 text-base sm:text-lg text-slate-600 dark:text-[#a1a1a1] leading-relaxed font-normal max-w-2xl">
-                BedRelay is a real-time ambulance-to-hospital bed availability and pre-arrival coordination platform. Hospitals maintain current bed capacity across intensive care, ventilator support, and general wards. Ambulance dispatchers locate suitable facilities based on geographic proximity, bed category, and required volume, transmitting verified pre-arrival dispatch alerts.
+                BedRelay is a real-time ambulance-to-hospital bed availability and pre-arrival coordination platform. Hospitals maintain current bed capacity across intensive care, ventilator support, neonatal, pediatric (PICU), and general wards. Ambulance dispatchers locate suitable facilities based on geographic proximity, bed category, and required volume, transmitting verified pre-arrival dispatch alerts.
               </p>
 
               {/* Action Hierarchy: Primary = FIND AVAILABLE BEDS, Secondary = HOSPITAL STAFF SIGN IN */}
@@ -102,8 +102,8 @@ export default function Home() {
                 </div>
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Tracked Categories</div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">ICU / General / Ventilator / NICU</div>
-                  <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">Intensive, general, ventilator, and neonatal capacity</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">ICU / General / Ventilator / NICU / PICU</div>
+                  <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">Intensive, general, ventilator, neonatal, and pediatric critical capacity</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Dispatch Coordination</div>
@@ -192,6 +192,12 @@ export default function Home() {
                   scope: "Neonatal critical care, premature infant stabilization",
                   metric: "Total / Available / Occupied",
                 },
+                {
+                  code: "PICU-05",
+                  name: "Pediatric Intensive Care (PICU)",
+                  scope: "Critically ill infants, children, and adolescents specialized care",
+                  metric: "Total / Available / Occupied",
+                },
               ].map((cat) => (
                 <div
                   key={cat.code}
@@ -252,6 +258,12 @@ export default function Home() {
                     <td className="py-4 px-4 text-slate-600 dark:text-[#888888]">Neonatal critical care, premature infant stabilization</td>
                     <td className="py-4 px-4 text-slate-600 dark:text-[#888888] font-mono text-xs">Total / Available / Occupied</td>
                   </tr>
+                  <tr>
+                    <td className="py-4 px-4 font-mono font-semibold text-slate-900 dark:text-[#ededed]">PICU-05</td>
+                    <td className="py-4 px-4 font-semibold text-slate-900 dark:text-[#ededed]">Pediatric Intensive Care (PICU)</td>
+                    <td className="py-4 px-4 text-slate-600 dark:text-[#888888]">Critically ill infants, children, and adolescents specialized care</td>
+                    <td className="py-4 px-4 text-slate-600 dark:text-[#888888] font-mono text-xs">Total / Available / Occupied</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -285,7 +297,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-[#ededed]">Find Suitable Hospital</h3>
                 <p className="mt-2 text-sm text-slate-600 dark:text-[#888888] leading-relaxed">
-                  Ambulance staff filter nearby hospitals by required bed category (ICU, Ventilator, General) and capacity.
+                  Ambulance staff filter nearby hospitals by required bed category (ICU, Ventilator, General, NICU, PICU) and capacity.
                 </p>
               </div>
 
