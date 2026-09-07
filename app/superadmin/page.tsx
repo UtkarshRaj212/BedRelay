@@ -6,6 +6,7 @@ import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate, formatDateTime } from "@/lib/format-date";
 import { AuditPayloadModal, AuditPayloadItem } from "@/components/audit-payload-modal";
+import { SuperAdminDispatchModal } from "@/components/superadmin-dispatch-modal";
 
 interface SuperAdminStats {
   hospitals: {
@@ -86,12 +87,23 @@ interface DispatchItem {
   hospitalName: string;
   hospitalCity: string | null;
   hospitalState: string | null;
+  hospitalAddress?: string | null;
+  hospitalPhone?: string | null;
+  hospitalLatitude?: number | null;
+  hospitalLongitude?: number | null;
   ambulanceUnit: string;
+  ambulanceId?: string | null;
   ambulanceLat: number | null;
   ambulanceLng: number | null;
   patientRef: string | null;
+  patientReference?: string | null;
   bedCategoryCode: string;
   requestedBeds: number;
+  approvedBeds?: number | null;
+  reviewRequired?: boolean;
+  reviewReason?: string | null;
+  rejectionReason?: string | null;
+  dispatcherSessionId?: string | null;
   etaMinutes: number;
   patientCondition: string;
   status: string;
@@ -133,6 +145,7 @@ export default function SuperAdminPage() {
   const [staffList, setStaffList] = useState<StaffItem[]>([]);
   const [bedsList, setBedsList] = useState<BedItem[]>([]);
   const [dispatchesList, setDispatchesList] = useState<DispatchItem[]>([]);
+  const [selectedDispatchDetailsId, setSelectedDispatchDetailsId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "hospitals" | "staff" | "beds" | "dispatches" | "audit">("overview");
   const [refreshing, setRefreshing] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -992,63 +1005,57 @@ export default function SuperAdminPage() {
         <div className="flex border-b border-slate-200 dark:border-[#222222] font-mono text-xs uppercase tracking-wider overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap mb-6">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-              activeTab === "overview"
-                ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
-                : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
-            }`}
+            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer shrink-0 ${activeTab === "overview"
+              ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
+              : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
+              }`}
           >
-            System Overview
+            SYSTEM OVERVIEW
           </button>
           <Link
             href="/superadmin/hospitals"
-            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === "hospitals"
-                ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
-                : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
-            }`}
+            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "hospitals"
+              ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
+              : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
+              }`}
           >
             Hospitals ({hospitalsList.length})
           </Link>
           <Link
             href="/superadmin/staff"
-            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === "staff"
-                ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
-                : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
-            }`}
+            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "staff"
+              ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
+              : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
+              }`}
           >
             Staff & Memberships ({staffList.length})
           </Link>
           <button
             onClick={() => setActiveTab("beds")}
-            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === "beds"
-                ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
-                : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
-            }`}
+            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "beds"
+              ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
+              : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
+              }`}
           >
-            Bed Records ({bedsList.length})
+            BED RECORDS ({bedsList.length})
           </button>
           <button
             onClick={() => setActiveTab("dispatches")}
-            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === "dispatches"
-                ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
-                : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
-            }`}
+            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "dispatches"
+              ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
+              : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
+              }`}
           >
-            Dispatches ({dispatchesList.length})
+            DISPATCHES ({dispatchesList.length})
           </button>
           <button
             onClick={() => setActiveTab("audit")}
-            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${
-              activeTab === "audit"
-                ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
-                : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
-            }`}
+            className={`px-5 py-3 border-b-2 font-bold transition-all whitespace-nowrap cursor-pointer ${activeTab === "audit"
+              ? "border-blue-700 dark:border-blue-400 text-blue-700 dark:text-blue-400 bg-white dark:bg-[#0f0f0f]"
+              : "border-transparent text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-[#ededed] hover:border-slate-300 dark:hover:border-[#333]"
+              }`}
           >
-            Audit Logs ({auditLogs.length})
+            AUDIT LOGS ({auditLogs.length})
           </button>
         </div>
 
@@ -1220,11 +1227,10 @@ export default function SuperAdminPage() {
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${
-                            hosp.status === "ACTIVE"
-                              ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/40"
-                              : "bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800/40"
-                          }`}
+                          className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${hosp.status === "ACTIVE"
+                            ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/40"
+                            : "bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-800/40"
+                            }`}
                         >
                           {hosp.status}
                         </span>
@@ -1239,11 +1245,10 @@ export default function SuperAdminPage() {
                         <button
                           onClick={() => handleToggleHospitalStatus(hosp)}
                           disabled={updatingId === hosp.id}
-                          className={`px-2 py-1 text-[11px] font-mono font-bold uppercase rounded-sm border transition-all cursor-pointer ${
-                            hosp.status === "ACTIVE"
-                              ? "border-amber-300 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                              : "border-emerald-300 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                          }`}
+                          className={`px-2 py-1 text-[11px] font-mono font-bold uppercase rounded-sm border transition-all cursor-pointer ${hosp.status === "ACTIVE"
+                            ? "border-amber-300 dark:border-amber-900/40 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                            : "border-emerald-300 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                            }`}
                         >
                           {updatingId === hosp.id ? "..." : hosp.status === "ACTIVE" ? "Deactivate" : "Activate"}
                         </button>
@@ -1332,22 +1337,20 @@ export default function SuperAdminPage() {
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${
-                            member.role === "HOSPITAL_ADMIN"
-                              ? "bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700/60"
-                              : "bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700/60"
-                          }`}
+                          className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${member.role === "HOSPITAL_ADMIN"
+                            ? "bg-yellow-100 dark:bg-yellow-950/60 text-yellow-700 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700/60"
+                            : "bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-300 dark:border-sky-700/60"
+                            }`}
                         >
                           {member.role}
                         </span>
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${
-                            member.status === "ACTIVE"
-                              ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400"
-                              : "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400"
-                          }`}
+                          className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${member.status === "ACTIVE"
+                            ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400"
+                            : "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400"
+                            }`}
                         >
                           {member.status}
                         </span>
@@ -1613,17 +1616,16 @@ export default function SuperAdminPage() {
                   <div key={disp.id} className="p-4 space-y-3 bg-white dark:bg-[#0a0a0a]">
                     <div className="flex items-center justify-between gap-2">
                       <span
-                        className={`px-2 py-0.5 rounded-xs text-[10px] font-bold font-mono ${
-                          disp.status === "PENDING"
-                            ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/40"
-                            : disp.status === "ACCEPTED"
+                        className={`px-2 py-0.5 rounded-xs text-[10px] font-bold font-mono ${disp.status === "PENDING"
+                          ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/40"
+                          : disp.status === "ACCEPTED"
                             ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/40"
                             : disp.status === "COMPLETED"
-                            ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-800/40"
-                            : disp.status === "EXPIRED"
-                            ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border border-slate-300 dark:border-[#333]"
-                            : "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border border-red-300 dark:border-red-800/40"
-                        }`}
+                              ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-800/40"
+                              : disp.status === "EXPIRED"
+                                ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border border-slate-300 dark:border-[#333]"
+                                : "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border border-red-300 dark:border-red-800/40"
+                          }`}
                       >
                         {disp.status}
                       </span>
@@ -1664,7 +1666,7 @@ export default function SuperAdminPage() {
                         <button
                           onClick={() => handleUpdateDispatchStatus(disp.id, "ACCEPTED")}
                           disabled={updatingId === disp.id}
-                          className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-emerald-300 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all cursor-pointer"
+                          className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-emerald-300 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all cursor-pointer whitespace-nowrap"
                         >
                           Accept
                         </button>
@@ -1673,7 +1675,7 @@ export default function SuperAdminPage() {
                         <button
                           onClick={() => handleUpdateDispatchStatus(disp.id, "COMPLETED")}
                           disabled={updatingId === disp.id}
-                          className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-blue-300 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all cursor-pointer"
+                          className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-blue-300 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all cursor-pointer whitespace-nowrap"
                         >
                           Complete
                         </button>
@@ -1682,7 +1684,7 @@ export default function SuperAdminPage() {
                         <button
                           onClick={() => handleUpdateDispatchStatus(disp.id, "CANCELLED")}
                           disabled={updatingId === disp.id}
-                          className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-slate-300 dark:border-[#2a2a2a] text-slate-600 dark:text-[#aaa] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] transition-all cursor-pointer"
+                          className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-slate-300 dark:border-[#2a2a2a] text-slate-600 dark:text-[#aaa] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] transition-all cursor-pointer whitespace-nowrap"
                         >
                           Cancel
                         </button>
@@ -1690,9 +1692,15 @@ export default function SuperAdminPage() {
                       <button
                         onClick={() => handleDeleteDispatch(disp.id)}
                         disabled={updatingId === disp.id}
-                        className="w-full py-2 text-center font-bold uppercase rounded-xs border border-red-300 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                        className="flex-1 min-w-[100px] py-2 text-center font-bold uppercase rounded-xs border border-red-300 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer whitespace-nowrap"
                       >
                         Purge
+                      </button>
+                      <button
+                        onClick={() => setSelectedDispatchDetailsId(disp.id)}
+                        className="w-full py-2 text-center font-bold uppercase rounded-xs border border-blue-400 dark:border-blue-600/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        View Details
                       </button>
                     </div>
                   </div>
@@ -1742,56 +1750,63 @@ export default function SuperAdminPage() {
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${
-                            disp.status === "PENDING"
-                              ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/40"
-                              : disp.status === "ACCEPTED"
+                          className={`px-2 py-0.5 rounded-sm text-[10px] font-bold ${disp.status === "PENDING"
+                            ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-800/40"
+                            : disp.status === "ACCEPTED"
                               ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/40"
                               : disp.status === "COMPLETED"
-                              ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-800/40"
-                              : disp.status === "EXPIRED"
-                              ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border border-slate-300 dark:border-[#333]"
-                              : "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border border-red-300 dark:border-red-800/40"
-                          }`}
+                                ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-800/40"
+                                : disp.status === "EXPIRED"
+                                  ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border border-slate-300 dark:border-[#333]"
+                                  : "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border border-red-300 dark:border-red-800/40"
+                            }`}
                         >
                           {disp.status}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-                        {disp.status === "PENDING" && (
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          {disp.status === "PENDING" && (
+                            <button
+                              onClick={() => handleUpdateDispatchStatus(disp.id, "ACCEPTED")}
+                              disabled={updatingId === disp.id}
+                              className="px-2 py-1 text-[10px] font-mono font-bold uppercase rounded-sm border border-emerald-300 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all cursor-pointer whitespace-nowrap"
+                            >
+                              Accept
+                            </button>
+                          )}
+                          {disp.status === "ACCEPTED" && (
+                            <button
+                              onClick={() => handleUpdateDispatchStatus(disp.id, "COMPLETED")}
+                              disabled={updatingId === disp.id}
+                              className="px-2 py-1 text-[10px] font-mono font-bold uppercase rounded-sm border border-blue-300 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all cursor-pointer whitespace-nowrap"
+                            >
+                              Complete
+                            </button>
+                          )}
+                          {disp.status !== "CANCELLED" && disp.status !== "COMPLETED" && (
+                            <button
+                              onClick={() => handleUpdateDispatchStatus(disp.id, "CANCELLED")}
+                              disabled={updatingId === disp.id}
+                              className="px-2 py-1 text-[10px] font-mono font-bold uppercase rounded-sm border border-slate-300 dark:border-[#2a2a2a] text-slate-600 dark:text-[#aaa] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] transition-all cursor-pointer whitespace-nowrap"
+                            >
+                              Cancel
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleUpdateDispatchStatus(disp.id, "ACCEPTED")}
+                            onClick={() => handleDeleteDispatch(disp.id)}
                             disabled={updatingId === disp.id}
-                            className="px-2 py-1 text-[10px] font-mono font-bold uppercase rounded-sm border border-emerald-300 dark:border-emerald-900/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 transition-all cursor-pointer"
+                            className="px-2 py-1 text-[10px] font-mono font-bold uppercase rounded-sm border border-red-300 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer whitespace-nowrap"
                           >
-                            Accept
+                            Purge
                           </button>
-                        )}
-                        {disp.status === "ACCEPTED" && (
                           <button
-                            onClick={() => handleUpdateDispatchStatus(disp.id, "COMPLETED")}
-                            disabled={updatingId === disp.id}
-                            className="px-2 py-1 text-[10px] font-mono font-bold uppercase rounded-sm border border-blue-300 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-all cursor-pointer"
+                            onClick={() => setSelectedDispatchDetailsId(disp.id)}
+                            className="px-2 py-1 text-[10px] font-mono font-bold uppercase rounded-sm border border-blue-400 dark:border-blue-600/60 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-all cursor-pointer whitespace-nowrap"
                           >
-                            Complete
+                            Details
                           </button>
-                        )}
-                        {disp.status !== "CANCELLED" && disp.status !== "COMPLETED" && (
-                          <button
-                            onClick={() => handleUpdateDispatchStatus(disp.id, "CANCELLED")}
-                            disabled={updatingId === disp.id}
-                            className="px-2 py-1 text-[10px] font-mono font-bold uppercase rounded-sm border border-slate-300 dark:border-[#2a2a2a] text-slate-600 dark:text-[#aaa] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] transition-all cursor-pointer"
-                          >
-                            Cancel
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteDispatch(disp.id)}
-                          disabled={updatingId === disp.id}
-                          className="px-2 py-1 text-[10px] font-mono font-bold uppercase rounded-sm border border-red-300 dark:border-red-900/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
-                        >
-                          Purge
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -2485,6 +2500,16 @@ export default function SuperAdminPage() {
         isOpen={!!selectedAuditLog}
         onClose={() => setSelectedAuditLog(null)}
         auditItem={selectedAuditLog}
+      />
+
+      {/* Dedicated SuperAdmin Dispatch Request Details Modal */}
+      <SuperAdminDispatchModal
+        isOpen={Boolean(selectedDispatchDetailsId)}
+        dispatchId={selectedDispatchDetailsId}
+        onClose={() => setSelectedDispatchDetailsId(null)}
+        onActionComplete={async () => {
+          await fetchAllData(true);
+        }}
       />
     </div>
   );
