@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { hospitals, bedCategories, dispatchRequests } from "@/db/schema";
 import { calculateDistanceKm, INDIAN_CITIES, isValidCoordinates } from "@/lib/geo";
 import { seedIndianHospitals } from "@/lib/seed-service";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 
 // Maximum radius (km) for a hospital to be considered "local" to the selected city or GPS position
 const LOCAL_DISPATCH_RADIUS_KM = 50;
@@ -15,15 +15,30 @@ export async function GET(req: NextRequest) {
   try {
     await seedIndianHospitals(false);
 
-    const [allHospitals, allBeds, activeDispatches] = await Promise.all([
+    const [allHospitals, allBeds, activeDispatches, allDispatches] = await Promise.all([
       db.select().from(hospitals).where(eq(hospitals.status, "ACTIVE")),
       db.select().from(bedCategories),
       db
         .select()
         .from(dispatchRequests)
-        .where(eq(dispatchRequests.status, "PENDING"))
+        .where(inArray(dispatchRequests.status, ["PENDING", "ACCEPTED"]))
         .orderBy(desc(dispatchRequests.createdAt)),
+      db
+        .select({
+          status: dispatchRequests.status,
+        })
+        .from(dispatchRequests),
     ]);
+
+    const pendingCount = allDispatches.filter((d) => d.status === "PENDING").length;
+    const acceptedCount = allDispatches.filter((d) => d.status === "ACCEPTED").length;
+    const completedCount = allDispatches.filter((d) => d.status === "COMPLETED").length;
+    const counts = {
+      active: pendingCount + acceptedCount,
+      pending: pendingCount,
+      accepted: acceptedCount,
+      completed: completedCount,
+    };
 
     const { searchParams } = new URL(req.url);
     const category = searchParams.get("category") || "ALL";
@@ -151,6 +166,7 @@ export async function GET(req: NextRequest) {
         origin: originLat !== null && originLng !== null ? { lat: originLat, lng: originLng } : null,
         hospitals: localHospitals,
         activeDispatches: enrichedDispatches,
+        counts,
       },
       {
         headers: {

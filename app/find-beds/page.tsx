@@ -132,6 +132,11 @@ export default function FindHospitalPage() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [dispatchMsg, setDispatchMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Send Dispatch Modal form state
+  const [modalCategory, setModalCategory] = useState<string>("ICU");
+  const [modalRequestedBeds, setModalRequestedBeds] = useState<string | number>(1);
+  const prevModalRequestedBedsRef = useRef<number>(1);
+
   // Sync category and beds when landing on ?switch=true (Requirement 5 & 6)
   useEffect(() => {
     if (typeof window !== "undefined" && window.location.search.includes("switch=true") && activeDispatch) {
@@ -145,16 +150,16 @@ export default function FindHospitalPage() {
     }
   }, [activeDispatch]);
 
-  const handleConfirmSwitch = async () => {
+  const handleConfirmSwitch = async (customParams?: { bedCategoryCode: string; requestedBeds: number }) => {
     if (!switchTargetHospital) return;
     try {
       setSwitching(true);
       setSwitchError(null);
-      // Send real latest values from activeDispatch (Requirement 5 & 6)
+      // Send real latest values from activeDispatch or custom switch parameters
       const res = await switchHospital({
         targetHospitalId: switchTargetHospital.id,
-        bedCategoryCode: activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory,
-        requestedBeds: activeDispatch ? activeDispatch.requestedBeds : activeMinBedsNumber,
+        bedCategoryCode: customParams?.bedCategoryCode || (activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory),
+        requestedBeds: customParams?.requestedBeds || (activeDispatch ? activeDispatch.requestedBeds : activeMinBedsNumber),
         etaMinutes: activeDispatch ? activeDispatch.etaMinutes : 15,
         ambulanceLat: ambulanceCoordinates ? ambulanceCoordinates.lat : null,
         ambulanceLng: ambulanceCoordinates ? ambulanceCoordinates.lng : null,
@@ -303,7 +308,17 @@ export default function FindHospitalPage() {
     setDispatchModalHospital(hosp);
     setSelectedHospitalMapId(hosp.id);
     setDispatchMsg(null);
+    const initialCategory = selectedCategory !== "ALL" ? selectedCategory : "ICU";
+    setModalCategory(initialCategory);
+    const initialBeds = activeMinBedsNumber >= 1 ? activeMinBedsNumber : 1;
+    setModalRequestedBeds(initialBeds);
+    prevModalRequestedBedsRef.current = initialBeds;
   };
+
+  const modalCatBed = dispatchModalHospital?.beds?.find(
+    (b) => b.categoryCode.toUpperCase() === modalCategory.toUpperCase()
+  );
+  const modalMaxAvailableBeds = modalCatBed ? modalCatBed.availableBeds : 0;
 
   const handleSendDispatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -318,6 +333,29 @@ export default function FindHospitalPage() {
           ? Number(etaMinutes)
           : prevEtaRef.current || 12;
 
+      // Validate beds
+      if (modalRequestedBeds !== "") {
+        const rawBeds = Number(modalRequestedBeds);
+        if (isNaN(rawBeds) || rawBeds < 1) {
+          throw new Error("Requested beds count must be at least 1.");
+        }
+      }
+
+      const finalBeds =
+        modalRequestedBeds === "" || isNaN(Number(modalRequestedBeds))
+          ? prevModalRequestedBedsRef.current || 1
+          : Number(modalRequestedBeds);
+
+      if (finalBeds < 1) {
+        throw new Error("Requested beds count must be at least 1.");
+      }
+
+      if (modalMaxAvailableBeds > 0 && finalBeds > modalMaxAvailableBeds) {
+        throw new Error(
+          `Selected hospital only has ${modalMaxAvailableBeds} available ${modalCategory} bed(s). Cannot request ${finalBeds}.`
+        );
+      }
+
       const res = await fetch("/api/dispatch-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -326,8 +364,8 @@ export default function FindHospitalPage() {
           ambulanceUnit,
           ambulanceLat: ambulanceCoordinates ? ambulanceCoordinates.lat : null,
           ambulanceLng: ambulanceCoordinates ? ambulanceCoordinates.lng : null,
-          bedCategoryCode: selectedCategory,
-          requestedBeds: activeMinBedsNumber,
+          bedCategoryCode: modalCategory,
+          requestedBeds: finalBeds,
           etaMinutes: activeEta,
           patientCondition,
           dispatcherSessionId: getDispatcherSessionId(),
@@ -1026,7 +1064,7 @@ export default function FindHospitalPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">Ambulance Unit Identifier</label>
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">AMBULANCE UNIT IDENTIFIER</label>
                 <input
                   type="text"
                   value={ambulanceUnit}
@@ -1037,19 +1075,75 @@ export default function FindHospitalPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 font-mono text-xs">
-                <div className="p-2 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm">
-                  <div className="text-slate-500 dark:text-[#737373] uppercase">Category</div>
-                  <div className="font-bold text-slate-900 dark:text-[#ededed] mt-0.5">{selectedCategory}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">
+                    CATEGORY
+                  </label>
+                  <select
+                    value={modalCategory}
+                    onChange={(e) => setModalCategory(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#0a0a0a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
+                  >
+                    <option value="ICU">ICU (Intensive Care)</option>
+                    <option value="GENERAL">General Ward</option>
+                    <option value="VENTILATOR">Ventilator Care</option>
+                  </select>
                 </div>
-                <div className="p-2 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm">
-                  <div className="text-slate-500 dark:text-[#737373] uppercase">Requested Beds</div>
-                  <div className="font-bold text-slate-900 dark:text-[#ededed] mt-0.5">{activeMinBedsNumber}</div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase">
+                      REQUESTED BEDS
+                    </label>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-[#737373]">
+                      Max: <strong className="text-emerald-700 dark:text-emerald-400">{modalMaxAvailableBeds}</strong>
+                    </span>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    max={modalMaxAvailableBeds > 0 ? modalMaxAvailableBeds : undefined}
+                    value={modalRequestedBeds}
+                    onFocus={(e) => {
+                      const val = Number(e.target.value);
+                      if (!isNaN(val) && val >= 1) prevModalRequestedBedsRef.current = val;
+                    }}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "") {
+                        setModalRequestedBeds("");
+                        return;
+                      }
+                      const parsed = parseInt(val, 10);
+                      if (!isNaN(parsed)) {
+                        setModalRequestedBeds(val);
+                        if (parsed >= 1) prevModalRequestedBedsRef.current = parsed;
+                      }
+                    }}
+                    onBlur={() => {
+                      if (modalRequestedBeds === "" || isNaN(Number(modalRequestedBeds)) || Number(modalRequestedBeds) < 1) {
+                        setModalRequestedBeds(prevModalRequestedBedsRef.current || 1);
+                      } else {
+                        const parsed = Number(modalRequestedBeds);
+                        setModalRequestedBeds(parsed);
+                        prevModalRequestedBedsRef.current = parsed;
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#0a0a0a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
+                    required
+                  />
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-[#737373] block mt-1">
+                    Available in {modalCategory}: <span className="font-bold text-emerald-700 dark:text-emerald-400">{modalMaxAvailableBeds}</span>
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">Estimated Travel ETA (Minutes)</label>
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">ESTIMATED TRAVEL ETA (MINUTES)</label>
                 <input
                   type="number"
                   min="1"
@@ -1088,7 +1182,7 @@ export default function FindHospitalPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">Patient Clinical Condition & Notes</label>
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">PATIENT CLINICAL CONDITION & NOTES</label>
                 <textarea
                   value={patientCondition}
                   onChange={(e) => setPatientCondition(e.target.value)}
@@ -1138,6 +1232,7 @@ export default function FindHospitalPage() {
         isOpen={isModifyModalOpen}
         onClose={() => setIsModifyModalOpen(false)}
         dispatch={activeDispatch}
+        hospitalBeds={activeDispatch?.hospitalBeds}
         onSuccess={() => {
           refreshActive();
           fetchSuitableHospitals(true);

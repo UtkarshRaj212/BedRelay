@@ -168,11 +168,12 @@ export async function PATCH(req: NextRequest) {
         // Same category: handle bed count changes (Requirement 4)
         if (parsedBeds !== current.requestedBeds) {
           if (isAccepted) {
-            if (parsedBeds < current.approvedBeds) {
-              // Reduction: immediately reduce approved beds and release capacity
-              const diff = current.approvedBeds - parsedBeds;
+            nextRequestedBeds = parsedBeds;
+            if (parsedBeds < (current.approvedBeds || 0)) {
+              // Reduction below approved: immediately reduce approved beds and release capacity
+              const diff = (current.approvedBeds || 0) - parsedBeds;
               nextApprovedBeds = parsedBeds;
-              nextRequestedBeds = parsedBeds;
+              nextReviewRequired = false;
 
               await tx
                 .update(bedCategories)
@@ -195,9 +196,25 @@ export async function PATCH(req: NextRequest) {
                 },
                 tx
               );
-            } else if (parsedBeds > current.approvedBeds) {
+            } else if (parsedBeds === (current.approvedBeds || 0)) {
+              // Reduced back to approved count: no more pending review beds
+              nextApprovedBeds = current.approvedBeds;
+              nextReviewRequired = false;
+
+              await logDispatchActivity(
+                {
+                  dispatchId: current.id,
+                  actorType: "DISPATCHER",
+                  action: "BEDS_REDUCED",
+                  details: `Requested beds reduced from ${current.requestedBeds} to ${parsedBeds}.`,
+                  oldValue: `${current.requestedBeds}`,
+                  newValue: `${parsedBeds}`,
+                },
+                tx
+              );
+            } else {
               // Increase: approved beds stay the same, additional beds marked pending
-              const additionalPending = parsedBeds - current.approvedBeds;
+              const additionalPending = parsedBeds - (current.approvedBeds || 0);
               nextRequestedBeds = parsedBeds;
               nextReviewRequired = true;
               reviewReasons.push(`+${additionalPending} additional bed(s) pending hospital review`);

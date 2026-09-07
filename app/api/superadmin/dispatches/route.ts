@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assertSuperAdmin, recordAuditLog } from "@/lib/auth-server";
 import { db } from "@/db";
-import { dispatchRequests, hospitals } from "@/db/schema";
+import { dispatchRequests, hospitals, bedCategories } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { checkAndAutoCompleteExpiredDispatches } from "@/lib/dispatcher-server";
+import { logDispatchActivity } from "@/lib/activity-logger";
 
 export async function GET(req: NextRequest) {
   try {
@@ -94,16 +95,102 @@ export async function PATCH(req: NextRequest) {
     }
 
     const now = new Date();
-    const [updated] = await db
-      .update(dispatchRequests)
-      .set({
-        status: status.toUpperCase(),
-        updatedAt: now,
-      })
-      .where(eq(dispatchRequests.id, dispatchId))
-      .returning();
+    const prevStatus = existing.status.toUpperCase();
+    const nextStatus = status.trim().toUpperCase();
 
-    // Record audit log
+    const updated = await db.transaction(async (tx) => {
+      // If transitioning from non-ACCEPTED to ACCEPTED, atomically allocate beds with row lock
+      if (nextStatus === "ACCEPTED" && prevStatus !== "ACCEPTED") {
+        const [cat] = await tx
+          .select()
+          .from(bedCategories)
+          .where(
+            and(
+              eq(bedCategories.hospitalId, existing.hospitalId),
+              eq(bedCategories.categoryCode, existing.bedCategoryCode.toUpperCase())
+            )
+          )
+          .for("update")
+          .limit(1);
+
+        if (cat) {
+          await tx
+            .update(bedCategories)
+            .set({
+              availableBeds: Math.max(0, cat.availableBeds - existing.requestedBeds),
+              occupiedBeds: Math.min(cat.totalBeds, cat.occupiedBeds + existing.requestedBeds),
+              lastUpdated: now,
+              updatedAt: now,
+            })
+            .where(eq(bedCategories.id, cat.id));
+
+          await tx
+            .update(hospitals)
+            .set({ updatedAt: now })
+            .where(eq(hospitals.id, existing.hospitalId));
+        }
+      } else if (
+        (nextStatus === "REJECTED" || nextStatus === "CANCELLED") &&
+        prevStatus === "ACCEPTED"
+      ) {
+        // Release allocated beds back to available pool
+        const [cat] = await tx
+          .select()
+          .from(bedCategories)
+          .where(
+            and(
+              eq(bedCategories.hospitalId, existing.hospitalId),
+              eq(bedCategories.categoryCode, existing.bedCategoryCode.toUpperCase())
+            )
+          )
+          .for("update")
+          .limit(1);
+
+        if (cat) {
+          await tx
+            .update(bedCategories)
+            .set({
+              availableBeds: Math.min(cat.totalBeds, cat.availableBeds + existing.requestedBeds),
+              occupiedBeds: Math.max(0, cat.occupiedBeds - existing.requestedBeds),
+              lastUpdated: now,
+              updatedAt: now,
+            })
+            .where(eq(bedCategories.id, cat.id));
+
+          await tx
+            .update(hospitals)
+            .set({ updatedAt: now })
+            .where(eq(hospitals.id, existing.hospitalId));
+        }
+      }
+
+      const [updatedRecord] = await tx
+        .update(dispatchRequests)
+        .set({
+          status: nextStatus,
+          updatedAt: now,
+        })
+        .where(eq(dispatchRequests.id, dispatchId))
+        .returning();
+
+      // Record in shared dispatchActivities audit timeline
+      await logDispatchActivity(
+        {
+          dispatchId,
+          actorType: "SUPER_ADMIN",
+          actorName: "SUPER ADMIN",
+          action: `SUPERADMIN_${nextStatus}`,
+          oldValue: prevStatus,
+          newValue: nextStatus,
+          details: `Super Admin manually changed dispatch status from ${prevStatus} to ${nextStatus}`,
+        },
+        tx
+      );
+
+      return updatedRecord;
+    });
+
+    // Record security audit log
     await recordAuditLog({
       userId: superAdmin!.id,
       action: "SUPERADMIN_UPDATE_DISPATCH_STATUS",
@@ -112,8 +199,8 @@ export async function PATCH(req: NextRequest) {
       details: {
         hospitalId: existing.hospitalId,
         ambulanceUnit: existing.ambulanceUnit,
-        previousStatus: existing.status,
-        newStatus: status.toUpperCase(),
+        previousStatus: prevStatus,
+        newStatus: nextStatus,
       },
       req,
     });

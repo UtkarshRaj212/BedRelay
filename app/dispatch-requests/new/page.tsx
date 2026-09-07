@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { INDIAN_CITIES, isValidCoordinates } from "@/lib/geo";
@@ -44,7 +44,8 @@ function CreateDispatchContent() {
   const [lat, setLat] = useState<number>(13.0827); // Default Chennai
   const [lng, setLng] = useState<number>(80.2707);
   const [bedCategory, setBedCategory] = useState<string>("ICU");
-  const [requestedBeds, setRequestedBeds] = useState<number>(1);
+  const [requestedBeds, setRequestedBeds] = useState<string | number>(1);
+  const prevRequestedBedsRef = useRef<number>(1);
   const [patientRef, setPatientRef] = useState<string>(`PAT-${Math.floor(1000 + Math.random() * 9000)}`);
   const [patientCondition, setPatientCondition] = useState<string>("Acute Myocardial Infarction");
   const [etaMinutes, setEtaMinutes] = useState<number>(15);
@@ -136,14 +137,27 @@ function CreateDispatchContent() {
       return;
     }
 
-    if (requestedBeds <= 0) {
+    if (requestedBeds !== "") {
+      const rawBeds = Number(requestedBeds);
+      if (isNaN(rawBeds) || rawBeds < 1) {
+        setValidationError("Requested beds count must be at least 1.");
+        return;
+      }
+    }
+
+    const finalRequestedBeds =
+      requestedBeds === "" || isNaN(Number(requestedBeds))
+        ? prevRequestedBedsRef.current || 1
+        : Number(requestedBeds);
+
+    if (finalRequestedBeds <= 0) {
       setValidationError("Requested beds count must be at least 1.");
       return;
     }
 
-    if (requestedBeds > availableBeds) {
+    if (availableBeds > 0 && finalRequestedBeds > availableBeds) {
       setValidationError(
-        `Selected hospital only has ${availableBeds} available ${bedCategory} bed(s). Cannot request ${requestedBeds}.`
+        `Selected hospital only has ${availableBeds} available ${bedCategory} bed(s). Cannot request ${finalRequestedBeds}.`
       );
       return;
     }
@@ -157,7 +171,7 @@ function CreateDispatchContent() {
         const switchRes = await switchHospital({
           targetHospitalId: selectedHospitalId,
           bedCategoryCode: bedCategory,
-          requestedBeds,
+          requestedBeds: finalRequestedBeds,
           etaMinutes,
           ambulanceUnit,
           ambulanceId: ambulanceUnit,
@@ -186,7 +200,7 @@ function CreateDispatchContent() {
             patientRef,
             patientReference: patientRef,
             bedCategoryCode: bedCategory,
-            requestedBeds,
+            requestedBeds: finalRequestedBeds,
             etaMinutes,
             patientCondition,
           }),
@@ -477,7 +491,31 @@ function CreateDispatchContent() {
                   min="1"
                   max={availableBeds || 1}
                   value={requestedBeds}
-                  onChange={(e) => setRequestedBeds(Number(e.target.value))}
+                  onFocus={(e) => {
+                    const val = Number(e.target.value);
+                    if (!isNaN(val) && val >= 1) prevRequestedBedsRef.current = val;
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setRequestedBeds("");
+                      return;
+                    }
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) {
+                      setRequestedBeds(val);
+                      if (parsed >= 1) prevRequestedBedsRef.current = parsed;
+                    }
+                  }}
+                  onBlur={() => {
+                    if (requestedBeds === "" || isNaN(Number(requestedBeds)) || Number(requestedBeds) < 1) {
+                      setRequestedBeds(prevRequestedBedsRef.current || 1);
+                    } else {
+                      const parsed = Number(requestedBeds);
+                      setRequestedBeds(parsed);
+                      prevRequestedBedsRef.current = parsed;
+                    }
+                  }}
                   className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
                   required
                 />
@@ -611,7 +649,7 @@ function CreateDispatchContent() {
               </Link>
               <button
                 type="submit"
-                disabled={submitting || (selectedBedCategory && availableBeds < requestedBeds)}
+                disabled={submitting || (selectedBedCategory && availableBeds < Number(requestedBeds))}
                 className="w-full sm:w-auto px-6 py-3 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
               >
                 {submitting

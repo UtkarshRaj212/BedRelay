@@ -8,7 +8,7 @@ export interface ActivityItem {
   id: string;
   dispatchId: string;
   timestamp: string;
-  actorType: "DISPATCHER" | "HOSPITAL" | "SYSTEM";
+  actorType: "DISPATCHER" | "HOSPITAL" | "SYSTEM" | "SUPER_ADMIN" | string;
   actorName: string | null;
   action: string;
   details: string | null;
@@ -98,36 +98,75 @@ export function RequestTimeline({ dispatchId, refreshTrigger }: RequestTimelineP
               hour12: false,
             });
 
+            const isSuperAdmin =
+              act.actorType === "SUPER_ADMIN" ||
+              act.actorName === "SUPER ADMIN" ||
+              act.action.startsWith("SUPERADMIN");
             const isHospital = act.actorType === "HOSPITAL";
-            const isReview = act.action === "HOSPITAL_REVIEWED";
-            const isCritical = act.action === "CONDITION_CHANGED" || act.action === "BEDS_INCREASED";
+            const isSystem = act.actorType === "SYSTEM";
+            const isCritical =
+              act.action === "CONDITION_CHANGED" ||
+              act.action === "BEDS_INCREASED" ||
+              act.action === "REQUEST_REJECTED" ||
+              act.action === "REQUEST_CANCELLED";
+
+            const actorDisplay = isSuperAdmin
+              ? "SUPER ADMIN"
+              : isSystem
+              ? "SYSTEM"
+              : isHospital
+              ? (act.actorName || "HOSPITAL STAFF")
+              : (act.actorName || "DISPATCHER");
+
+            const actorBadgeClass = isSuperAdmin
+              ? "bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-400 border border-purple-300 dark:border-purple-800/60"
+              : isHospital
+              ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/60"
+              : isSystem
+              ? "bg-slate-100 dark:bg-[#1f1f1f] text-slate-700 dark:text-[#aaa] border border-slate-300 dark:border-[#333]"
+              : "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-800/60";
+
+            const formatActionDisplay = (action: string) => {
+              if (action === "AUTO_COMPLETED" || action === "SYSTEM_AUTO_COMPLETION") {
+                return "SYSTEM AUTO-COMPLETION";
+              }
+              if (action === "HOSPITAL_SWITCHED") {
+                return "HOSPITAL CHANGED";
+              }
+              if (action === "REQUEST_MODIFIED") {
+                return "REQUEST MODIFIED";
+              }
+              if (action.startsWith("SUPERADMIN_")) {
+                const sub = action.replace("SUPERADMIN_", "").replace(/_/g, " ");
+                return `SUPER ADMIN ACTION (${sub})`;
+              }
+              return action.replace(/_/g, " ");
+            };
 
             return (
               <div key={act.id} className="relative group text-xs font-mono">
                 {/* Timeline node icon */}
                 <div
                   className={`absolute -left-6 top-1 w-2.5 h-2.5 rounded-full border-2 bg-white dark:bg-[#0f0f0f] ${
-                    isHospital
+                    isSuperAdmin
+                      ? "border-purple-600 dark:border-purple-400"
+                      : isHospital
                       ? "border-emerald-600 dark:border-emerald-400"
                       : isCritical
                       ? "border-amber-600 dark:border-amber-400"
+                      : isSystem
+                      ? "border-slate-500 dark:border-slate-400"
                       : "border-blue-600 dark:border-blue-400"
                   }`}
                 />
 
                 <div className="flex flex-wrap items-baseline gap-2">
                   <span className="font-bold text-slate-900 dark:text-[#ededed]">{timeStr}</span>
-                  <span
-                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-xs uppercase ${
-                      isHospital
-                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400"
-                        : "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400"
-                    }`}
-                  >
-                    {act.actorName || act.actorType}
+                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-xs uppercase ${actorBadgeClass}`}>
+                    {actorDisplay}
                   </span>
                   <span className="font-semibold text-slate-700 dark:text-[#ccc]">
-                    {act.action.replace(/_/g, " ")}
+                    {formatActionDisplay(act.action)}
                   </span>
                 </div>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import { ActiveDispatch } from "@/hooks/use-active-dispatch";
 
 interface SwitchHospitalModalProps {
@@ -12,8 +13,14 @@ interface SwitchHospitalModalProps {
     address?: string;
     city?: string;
     state?: string;
+    beds?: {
+      categoryCode: string;
+      name?: string;
+      availableBeds: number;
+      totalBeds: number;
+    }[];
   } | null;
-  onConfirmSwitch: () => Promise<void>;
+  onConfirmSwitch: (params?: { bedCategoryCode: string; requestedBeds: number }) => Promise<void>;
   isSubmitting?: boolean;
   error?: string | null;
 }
@@ -27,11 +34,63 @@ export function SwitchHospitalModal({
   isSubmitting = false,
   error = null,
 }: SwitchHospitalModalProps) {
+  const [bedCategoryCode, setBedCategoryCode] = useState<string>("ICU");
+  const [requestedBeds, setRequestedBeds] = useState<string | number>(1);
+  const prevRequestedBedsRef = useRef<number>(1);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (currentDispatch) {
+      setBedCategoryCode(currentDispatch.bedCategoryCode || "ICU");
+      setRequestedBeds(currentDispatch.requestedBeds || 1);
+      prevRequestedBedsRef.current = currentDispatch.requestedBeds || 1;
+    }
+  }, [currentDispatch, isOpen]);
+
   if (!isOpen || !currentDispatch || !targetHospital) {
     return null;
   }
 
   const isAccepted = currentDispatch.status.toUpperCase() === "ACCEPTED";
+
+  const targetCategoryBeds = targetHospital.beds?.find(
+    (b: any) => b.categoryCode?.toUpperCase() === bedCategoryCode.toUpperCase()
+  );
+  const maxAvailableBeds = targetCategoryBeds ? targetCategoryBeds.availableBeds : 0;
+
+  const handleConfirm = async () => {
+    setLocalError(null);
+
+    if (requestedBeds !== "") {
+      const rawBeds = Number(requestedBeds);
+      if (isNaN(rawBeds) || rawBeds < 1) {
+        setLocalError("Requested bed count must be at least 1.");
+        return;
+      }
+    }
+
+    const finalBeds =
+      requestedBeds === "" || isNaN(Number(requestedBeds))
+        ? prevRequestedBedsRef.current || 1
+        : Number(requestedBeds);
+
+    if (finalBeds < 1) {
+      setLocalError("Requested bed count must be at least 1.");
+      return;
+    }
+
+    if (maxAvailableBeds > 0 && finalBeds > maxAvailableBeds) {
+      setLocalError(
+        `Target facility only has ${maxAvailableBeds} available ${bedCategoryCode} bed(s). Cannot request ${finalBeds}.`
+      );
+      return;
+    }
+
+    await onConfirmSwitch({
+      bedCategoryCode,
+      requestedBeds: finalBeds,
+    });
+  };
 
   return (
     <div
@@ -122,13 +181,77 @@ export function SwitchHospitalModal({
           </div>
         </div>
 
+        {/* Editable Category & Requested Beds for Destination Facility */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 font-mono text-xs">
+          <div>
+            <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
+              Category
+            </label>
+            <select
+              value={bedCategoryCode}
+              onChange={(e) => setBedCategoryCode(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-white dark:bg-[#111] border border-slate-300 dark:border-[#333] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none"
+            >
+              <option value="ICU">ICU</option>
+              <option value="GENERAL">General Ward</option>
+              <option value="VENTILATOR">Ventilator Care</option>
+            </select>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa]">
+                Requested Beds
+              </label>
+              {maxAvailableBeds > 0 && (
+                <span className="text-[10px] text-slate-500 dark:text-[#777]">
+                  Max: {maxAvailableBeds}
+                </span>
+              )}
+            </div>
+            <input
+              type="number"
+              min="1"
+              max={maxAvailableBeds > 0 ? maxAvailableBeds : undefined}
+              value={requestedBeds}
+              onFocus={(e) => {
+                const val = Number(e.target.value);
+                if (!isNaN(val) && val >= 1) prevRequestedBedsRef.current = val;
+              }}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === "") {
+                  setRequestedBeds("");
+                  return;
+                }
+                const parsed = parseInt(val, 10);
+                if (!isNaN(parsed)) {
+                  setRequestedBeds(val);
+                  if (parsed >= 1) prevRequestedBedsRef.current = parsed;
+                }
+              }}
+              onBlur={() => {
+                if (requestedBeds === "" || isNaN(Number(requestedBeds)) || Number(requestedBeds) < 1) {
+                  setRequestedBeds(prevRequestedBedsRef.current || 1);
+                } else {
+                  const parsed = Number(requestedBeds);
+                  setRequestedBeds(parsed);
+                  prevRequestedBedsRef.current = parsed;
+                }
+              }}
+              className="w-full px-2.5 py-1.5 bg-white dark:bg-[#111] border border-slate-300 dark:border-[#333] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none"
+              required
+            />
+          </div>
+        </div>
+
         <div className="p-2.5 bg-slate-100 dark:bg-[#121212] border border-slate-200 dark:border-[#222222] rounded-xs text-[11px] text-slate-600 dark:text-[#888888] mb-5 font-mono">
           The current request (<span className="font-bold text-slate-800 dark:text-[#ccc]">{currentDispatch.id}</span>) will be atomically cancelled before the new request is sent.
         </div>
 
-        {error && (
+        {(error || localError) && (
           <div className="mb-4 p-2.5 bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-800/60 text-red-800 dark:text-red-400 text-xs font-mono rounded-xs">
-            {error}
+            {error || localError}
           </div>
         )}
 
@@ -144,7 +267,7 @@ export function SwitchHospitalModal({
           </button>
           <button
             type="button"
-            onClick={onConfirmSwitch}
+            onClick={handleConfirm}
             disabled={isSubmitting}
             className={`w-full sm:w-auto py-2.5 px-4 text-xs font-mono font-bold uppercase tracking-wider text-white rounded-xs transition-colors cursor-pointer disabled:opacity-50 text-center shadow-xs ${
               isAccepted
@@ -163,3 +286,4 @@ export function SwitchHospitalModal({
     </div>
   );
 }
+

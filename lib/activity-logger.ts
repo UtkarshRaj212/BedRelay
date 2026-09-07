@@ -3,7 +3,7 @@ import { dispatchActivities } from "@/db/schema";
 
 export interface LogActivityParams {
   dispatchId: string;
-  actorType: "DISPATCHER" | "HOSPITAL" | "SYSTEM";
+  actorType: "DISPATCHER" | "HOSPITAL" | "SYSTEM" | "SUPER_ADMIN";
   actorName?: string;
   action: string;
   details?: string;

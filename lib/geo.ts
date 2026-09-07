@@ -53,19 +53,33 @@ export type DestinationInput =
       name?: string | null;
       address?: string | null;
       city?: string | null;
+      origin?: {
+        lat?: number | null;
+        lng?: number | null;
+        latitude?: number | null;
+        longitude?: number | null;
+      } | null;
     }
   | null
   | undefined;
 
 /**
  * Builds a universal Google Maps driving directions URL opening in a new tab.
- * Does NOT specify a starting point (origin), allowing Google Maps to accurately route
- * from the user's or ambulance's real-world current device location.
- * Accurately sets the destination using hospital coordinates.
+ * Accurately sets the destination using hospital name and city.
+ * If an explicit origin coordinate is provided in dest.origin or options.origin (such as ambulance location at request time),
+ * routes from that origin. If omitted, Google Maps routes from the user's real-world current device location.
  */
 export function buildGoogleMapsDirectionsUrl(
   destinationOrOrigin: DestinationInput,
-  maybeDestination?: DestinationInput
+  maybeDestination?: DestinationInput,
+  options?: {
+    origin?: {
+      lat?: number | null;
+      lng?: number | null;
+      latitude?: number | null;
+      longitude?: number | null;
+    } | null;
+  }
 ): string {
   // If called with legacy 2-arg signature (origin, destination), resolve to the destination
   let dest = destinationOrOrigin;
@@ -77,6 +91,17 @@ export function buildGoogleMapsDirectionsUrl(
     return "https://www.google.com/maps";
   }
 
+  // Resolve explicit origin if provided
+  const origin = dest.origin || options?.origin || null;
+  let originParam = "";
+  if (origin) {
+    const oLat = origin.lat ?? origin.latitude;
+    const oLng = origin.lng ?? origin.longitude;
+    if (isValidCoordinates(oLat, oLng)) {
+      originParam = `&origin=${Number(Number(oLat).toFixed(6))},${Number(Number(oLng).toFixed(6))}`;
+    }
+  }
+
   // Prioritize hospital name (+ city/address) for accurate real-world place resolution in Google Maps
   if (dest.name && dest.name.trim()) {
     const parts = [dest.name.trim()];
@@ -86,14 +111,14 @@ export function buildGoogleMapsDirectionsUrl(
       parts.push(dest.address.trim());
     }
     const query = encodeURIComponent(parts.join(", "));
-    return `https://www.google.com/maps/dir/?api=1&destination=${query}&travelmode=driving`;
+    return `https://www.google.com/maps/dir/?api=1${originParam}&destination=${query}&travelmode=driving`;
   }
 
   // Fallback to address/city query if name is missing
   if (dest.address || dest.city) {
     const parts = [dest.address, dest.city].filter(Boolean);
     const query = encodeURIComponent(parts.join(", "));
-    return `https://www.google.com/maps/dir/?api=1&destination=${query}&travelmode=driving`;
+    return `https://www.google.com/maps/dir/?api=1${originParam}&destination=${query}&travelmode=driving`;
   }
 
   // Fallback to coordinates only if no name or address text is available
@@ -102,7 +127,7 @@ export function buildGoogleMapsDirectionsUrl(
   if (isValidCoordinates(rawLat, rawLng)) {
     const lat = Number(Number(rawLat).toFixed(6));
     const lng = Number(Number(rawLng).toFixed(6));
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+    return `https://www.google.com/maps/dir/?api=1${originParam}&destination=${lat},${lng}&travelmode=driving`;
   }
 
   return "https://www.google.com/maps";

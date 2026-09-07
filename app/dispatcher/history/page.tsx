@@ -209,25 +209,26 @@ export default function DispatcherHistoryPage() {
         {/* Metric Quick Glance Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
-            <span className="text-[11px] font-mono text-slate-500 dark:text-[#777] uppercase">Total In Log</span>
+            <span className="text-[11px] font-mono text-blue-700 dark:text-blue-400 uppercase font-bold">Active Requests</span>
             <div className="text-2xl font-bold font-mono text-slate-900 dark:text-[#ededed] mt-1">
-              {dispatches.length}
+              {pendingCount + acceptedCount}
             </div>
+            <span className="text-[10px] font-mono text-slate-400 dark:text-[#666] mt-0.5 block">PENDING + ACCEPTED</span>
           </div>
           <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
-            <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400 uppercase">Pending Review</span>
+            <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400 uppercase font-bold">Pending</span>
             <div className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">
               {pendingCount}
             </div>
           </div>
           <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
-            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 uppercase">Accepted / En Route</span>
+            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 uppercase font-bold">Accepted</span>
             <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
               {acceptedCount}
             </div>
           </div>
           <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
-            <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 uppercase">Completed</span>
+            <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 uppercase font-bold">Completed</span>
             <div className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-1">
               {completedCount}
             </div>

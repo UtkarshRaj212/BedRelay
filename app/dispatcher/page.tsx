@@ -57,6 +57,17 @@ export default function DispatcherDashboardPage() {
   const router = useRouter();
   const [hospitals, setHospitals] = useState<HospitalItem[]>([]);
   const [activeDispatches, setActiveDispatches] = useState<DispatchItem[]>([]);
+  const [dashboardCounts, setDashboardCounts] = useState<{
+    active: number;
+    pending: number;
+    accepted: number;
+    completed: number;
+  }>({
+    active: 0,
+    pending: 0,
+    accepted: 0,
+    completed: 0,
+  });
   const [selectedCity, setSelectedCity] = useState<string>("Chennai");
   const [loading, setLoading] = useState(true);
   const [lastSynced, setLastSynced] = useState<string>("");
@@ -96,19 +107,24 @@ export default function DispatcherDashboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [dispatchMsg, setDispatchMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const handleConfirmSwitch = async () => {
+  // Send Dispatch Modal form state
+  const [modalCategory, setModalCategory] = useState("ICU");
+  const [modalRequestedBeds, setModalRequestedBeds] = useState<string | number>(1);
+  const prevModalRequestedBedsRef = useRef<number>(1);
+
+  const handleConfirmSwitch = async (customParams?: { bedCategoryCode: string; requestedBeds: number }) => {
     if (!switchTargetHospital) return;
     try {
       setSwitching(true);
       setSwitchError(null);
       const res = await switchHospital({
         targetHospitalId: switchTargetHospital.id,
-        bedCategoryCode: activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory,
-        requestedBeds: activeDispatch
+        bedCategoryCode: customParams?.bedCategoryCode || (activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory),
+        requestedBeds: customParams?.requestedBeds || (activeDispatch
           ? activeDispatch.requestedBeds
           : typeof requestedBeds === "number"
           ? requestedBeds
-          : parseInt(requestedBeds, 10) || 1,
+          : parseInt(requestedBeds, 10) || 1),
         etaMinutes: activeDispatch
           ? activeDispatch.etaMinutes
           : typeof etaMinutes === "number"
@@ -193,6 +209,18 @@ export default function DispatcherDashboardPage() {
         const data = await res.json();
         setHospitals(data.hospitals || []);
         setActiveDispatches(data.activeDispatches || []);
+        if (data.counts) {
+          setDashboardCounts(data.counts);
+        } else {
+          const pending = (data.activeDispatches || []).filter((d: any) => d.status === "PENDING").length;
+          const accepted = (data.activeDispatches || []).filter((d: any) => d.status === "ACCEPTED").length;
+          setDashboardCounts((prev) => ({
+            ...prev,
+            active: pending + accepted,
+            pending,
+            accepted,
+          }));
+        }
         setLastSynced(formatDateTime(new Date(), true));
       }
     } catch (err) {
@@ -222,8 +250,18 @@ export default function DispatcherDashboardPage() {
       setDispatchModalHospital(hospital);
       setSelectedHospitalMapId(hospital.id);
       setDispatchMsg(null);
+      const initialCat = selectedCategory !== "ALL" ? selectedCategory : "ICU";
+      setModalCategory(initialCat);
+      const initialBeds = typeof requestedBeds === "number" && requestedBeds >= 1 ? requestedBeds : 1;
+      setModalRequestedBeds(initialBeds);
+      prevModalRequestedBedsRef.current = initialBeds;
     }
   };
+
+  const modalCatBed = dispatchModalHospital?.beds?.find(
+    (b) => b.categoryCode.toUpperCase() === modalCategory.toUpperCase()
+  );
+  const modalMaxAvailableBeds = modalCatBed ? modalCatBed.availableBeds : 0;
 
   const handleSubmitDispatch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -233,10 +271,29 @@ export default function DispatcherDashboardPage() {
       setSubmitting(true);
       setDispatchMsg(null);
 
+      // Validate beds
+      if (modalRequestedBeds !== "") {
+        const rawBeds = Number(modalRequestedBeds);
+        if (isNaN(rawBeds) || rawBeds < 1) {
+          throw new Error("Requested beds count must be at least 1.");
+        }
+      }
+
       const finalRequestedBeds =
-        typeof requestedBeds === "number"
-          ? requestedBeds
-          : parseInt(requestedBeds, 10) || prevRequestedBedsRef.current || 1;
+        modalRequestedBeds === "" || isNaN(Number(modalRequestedBeds))
+          ? prevModalRequestedBedsRef.current || 1
+          : Number(modalRequestedBeds);
+
+      if (finalRequestedBeds < 1) {
+        throw new Error("Requested beds count must be at least 1.");
+      }
+
+      if (modalMaxAvailableBeds > 0 && finalRequestedBeds > modalMaxAvailableBeds) {
+        throw new Error(
+          `Selected hospital only has ${modalMaxAvailableBeds} available ${modalCategory} bed(s). Cannot request ${finalRequestedBeds}.`
+        );
+      }
+
       const finalEtaMinutes =
         typeof etaMinutes === "number"
           ? etaMinutes
@@ -250,7 +307,7 @@ export default function DispatcherDashboardPage() {
           ambulanceUnit,
           ambulanceLat: ambulanceCoordinates ? ambulanceCoordinates.lat : null,
           ambulanceLng: ambulanceCoordinates ? ambulanceCoordinates.lng : null,
-          bedCategoryCode: selectedCategory,
+          bedCategoryCode: modalCategory,
           requestedBeds: finalRequestedBeds,
           etaMinutes: finalEtaMinutes,
           patientCondition,
@@ -522,6 +579,35 @@ export default function DispatcherDashboardPage() {
             </div>
           </div>
         )}
+
+        {/* Metric Quick Glance Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+          <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
+            <span className="text-[11px] font-mono text-blue-700 dark:text-blue-400 uppercase font-bold">Active Requests</span>
+            <div className="text-2xl font-bold font-mono text-slate-900 dark:text-[#ededed] mt-1">
+              {dashboardCounts.active}
+            </div>
+            <span className="text-[10px] font-mono text-slate-400 dark:text-[#666] mt-0.5 block">PENDING + ACCEPTED</span>
+          </div>
+          <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
+            <span className="text-[11px] font-mono text-amber-600 dark:text-amber-400 uppercase font-bold">Pending</span>
+            <div className="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">
+              {dashboardCounts.pending}
+            </div>
+          </div>
+          <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
+            <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 uppercase font-bold">Accepted</span>
+            <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+              {dashboardCounts.accepted}
+            </div>
+          </div>
+          <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
+            <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400 uppercase font-bold">Completed</span>
+            <div className="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-1">
+              {dashboardCounts.completed}
+            </div>
+          </div>
+        </div>
 
         {/* Active Dispatch Requests Section */}
         <div className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm mb-8 overflow-hidden">
@@ -897,7 +983,7 @@ export default function DispatcherDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">Ambulance Unit / Vehicle Identifier</label>
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">AMBULANCE UNIT / VEHICLE IDENTIFIER</label>
                 <input
                   type="text"
                   value={ambulanceUnit}
@@ -908,12 +994,12 @@ export default function DispatcherDashboardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">Required Category</label>
+                  <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">CATEGORY</label>
                   <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    value={modalCategory}
+                    onChange={(e) => setModalCategory(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#0a0a0a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
                   >
                     <option value="ICU">ICU (Intensive Care)</option>
@@ -923,34 +1009,40 @@ export default function DispatcherDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">Requested Beds</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase">REQUESTED BEDS</label>
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-[#737373]">
+                      Max: <strong className="text-emerald-700 dark:text-emerald-400">{modalMaxAvailableBeds}</strong>
+                    </span>
+                  </div>
                   <input
                     type="number"
                     min="1"
-                    value={requestedBeds}
+                    max={modalMaxAvailableBeds > 0 ? modalMaxAvailableBeds : undefined}
+                    value={modalRequestedBeds}
                     onFocus={(e) => {
                       const val = Number(e.target.value);
-                      if (!isNaN(val) && val >= 1) prevRequestedBedsRef.current = val;
+                      if (!isNaN(val) && val >= 1) prevModalRequestedBedsRef.current = val;
                     }}
                     onChange={(e) => {
                       const val = e.target.value;
                       if (val === "") {
-                        setRequestedBeds("");
+                        setModalRequestedBeds("");
                         return;
                       }
                       const parsed = parseInt(val, 10);
                       if (!isNaN(parsed)) {
-                        setRequestedBeds(val);
-                        if (parsed >= 1) prevRequestedBedsRef.current = parsed;
+                        setModalRequestedBeds(val);
+                        if (parsed >= 1) prevModalRequestedBedsRef.current = parsed;
                       }
                     }}
                     onBlur={() => {
-                      if (requestedBeds === "" || isNaN(Number(requestedBeds)) || Number(requestedBeds) < 1) {
-                        setRequestedBeds(prevRequestedBedsRef.current || 1);
+                      if (modalRequestedBeds === "" || isNaN(Number(modalRequestedBeds)) || Number(modalRequestedBeds) < 1) {
+                        setModalRequestedBeds(prevModalRequestedBedsRef.current || 1);
                       } else {
-                        const parsed = Number(requestedBeds);
-                        setRequestedBeds(parsed);
-                        prevRequestedBedsRef.current = parsed;
+                        const parsed = Number(modalRequestedBeds);
+                        setModalRequestedBeds(parsed);
+                        prevModalRequestedBedsRef.current = parsed;
                       }
                     }}
                     onKeyDown={(e) => {
@@ -959,11 +1051,14 @@ export default function DispatcherDashboardPage() {
                     className="w-full px-3 py-2 border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#0a0a0a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
                     required
                   />
+                  <span className="text-[11px] font-mono text-slate-500 dark:text-[#737373] block mt-1">
+                    Available in {modalCategory}: <span className="font-bold text-emerald-700 dark:text-emerald-400">{modalMaxAvailableBeds}</span>
+                  </span>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">ETA (Estimated Minutes)</label>
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">ESTIMATED TRAVEL ETA (MINUTES)</label>
                 <input
                   type="number"
                   min="1"
@@ -1002,7 +1097,7 @@ export default function DispatcherDashboardPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">Patient Clinical Condition</label>
+                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase mb-1">PATIENT CLINICAL CONDITION & NOTES</label>
                 <textarea
                   value={patientCondition}
                   onChange={(e) => setPatientCondition(e.target.value)}

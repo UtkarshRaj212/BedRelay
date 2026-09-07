@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ActiveDispatch } from "@/hooks/use-active-dispatch";
 
 interface ModifyRequestModalProps {
@@ -49,8 +49,30 @@ export function ModifyRequestModal({
   const isAccepted = dispatch.status.toUpperCase() === "ACCEPTED";
   const isCategoryChanged = bedCategoryCode.toUpperCase() !== (dispatch.bedCategoryCode || "").toUpperCase();
 
-  // Dynamic hospital bed availability from Neon (Requirement 3)
-  const hospitalBeds = propHospitalBeds || (dispatch as any).hospitalBeds || [];
+  const [fetchedBeds, setFetchedBeds] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!isOpen || !dispatch) return;
+    const provided = propHospitalBeds || (dispatch as any).hospitalBeds;
+    if (provided && provided.length > 0) {
+      setFetchedBeds(provided);
+      return;
+    }
+    // Fetch live beds from Neon for this dispatch/hospital
+    fetch(`/api/dispatch-requests/${dispatch.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.beds && Array.isArray(data.beds)) {
+          setFetchedBeds(data.beds);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch live hospital beds in modify modal:", err);
+      });
+  }, [isOpen, dispatch, propHospitalBeds]);
+
+  // Dynamic hospital bed availability from Neon
+  const hospitalBeds = propHospitalBeds || (dispatch as any).hospitalBeds || fetchedBeds;
   const currentCategoryBeds = hospitalBeds.find(
     (b: any) => b.categoryCode?.toUpperCase() === bedCategoryCode.toUpperCase()
   );
@@ -60,7 +82,7 @@ export function ModifyRequestModal({
     ? !isCategoryChanged && isAccepted
       ? currentCategoryBeds.availableBeds + approvedCount
       : currentCategoryBeds.availableBeds
-    : 10;
+    : 0;
 
   // Calculations for bed preview
   const parsedPreviewBeds =
@@ -103,16 +125,32 @@ export function ModifyRequestModal({
       setSubmitting(true);
       setError(null);
 
-      // Validate only final submitted value & restore previous stored value if empty (Requirement 2)
+      // Validate only final submitted value & restore previous stored value if empty
       const finalEta =
         etaMinutes.trim() === "" || isNaN(Number(etaMinutes))
           ? dispatch.etaMinutes || 15
-          : Math.max(1, parseInt(etaMinutes, 10));
+          : parseInt(etaMinutes, 10);
+
+      if (finalEta < 1) {
+        throw new Error("Travel duration must be at least 1 minute.");
+      }
+
+      // Explicitly reject negative or zero bed count
+      if (requestedBeds.trim() !== "") {
+        const rawBeds = Number(requestedBeds);
+        if (isNaN(rawBeds) || rawBeds < 1) {
+          throw new Error("Requested bed count must be at least 1.");
+        }
+      }
 
       const finalBeds =
         requestedBeds.trim() === "" || isNaN(Number(requestedBeds))
           ? dispatch.requestedBeds || 1
-          : Math.max(1, parseInt(requestedBeds, 10));
+          : parseInt(requestedBeds, 10);
+
+      if (finalBeds < 1) {
+        throw new Error("Requested bed count must be at least 1.");
+      }
 
       const finalCondition =
         patientCondition.trim() === "" ? dispatch.patientCondition : patientCondition.trim();
@@ -123,8 +161,8 @@ export function ModifyRequestModal({
       const finalAmbulanceUnit =
         ambulanceUnit.trim() === "" ? (dispatch.ambulanceUnit || dispatch.ambulanceId || "") : ambulanceUnit.trim();
 
-      // Enforce bed count limit against real hospital capacity (Requirement 3)
-      if (finalBeds > maxAvailableBeds) {
+      // Enforce bed count limit against real hospital capacity from Neon
+      if (maxAvailableBeds > 0 && finalBeds > maxAvailableBeds) {
         throw new Error(
           `Requested bed count (${finalBeds}) exceeds available hospital capacity (${maxAvailableBeds}) for ${bedCategoryCode}.`
         );
@@ -243,11 +281,61 @@ export function ModifyRequestModal({
           </div>
 
           {/* Form Fields */}
+          {/* Bed Category & Requested Beds */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
+            {/* Bed Category Selection */}
+            <div>
+              <label className="block font-mono text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
+                CATEGORY
+              </label>
+              <select
+                value={bedCategoryCode}
+                onChange={(e) => setBedCategoryCode(e.target.value)}
+                className="w-full px-3 py-2 font-mono text-xs bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none"
+              >
+                {BED_CATEGORIES.map((cat) => (
+                  <option key={cat.code} value={cat.code}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Requested Beds */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa]">
+                  REQUESTED BEDS
+                </label>
+                <span className="text-[10px] font-mono text-slate-500 dark:text-[#777]">
+                  Max: <strong className="text-emerald-700 dark:text-emerald-400">{maxAvailableBeds}</strong>
+                </span>
+              </div>
+              <input
+                type="number"
+                min="1"
+                max={maxAvailableBeds > 0 ? maxAvailableBeds : undefined}
+                value={requestedBeds}
+                onChange={(e) => setRequestedBeds(e.target.value)}
+                onBlur={() => {
+                  if (requestedBeds.trim() === "" || isNaN(Number(requestedBeds)) || Number(requestedBeds) < 1) {
+                    setRequestedBeds(String(dispatch.requestedBeds || 1));
+                  }
+                }}
+                className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none font-mono"
+                placeholder={String(dispatch.requestedBeds || 1)}
+              />
+              <span className="text-[10px] font-mono text-slate-500 dark:text-[#777] block mt-1">
+                Available in {bedCategoryCode}: <strong className="text-emerald-700 dark:text-emerald-400">{maxAvailableBeds}</strong> beds
+              </span>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
             {/* ETA (Minutes) */}
             <div>
               <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
-                Travel Duration (Minutes)
+                ESTIMATED TRAVEL ETA (MINUTES)
               </label>
               <input
                 type="number"
@@ -260,50 +348,25 @@ export function ModifyRequestModal({
               />
             </div>
 
-            {/* Requested Beds */}
+            {/* Ambulance / Unit ID */}
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa]">
-                  Requested Beds Count
-                </label>
-                <span className="text-[10px] font-mono text-slate-500 dark:text-[#777]">
-                  Max: {maxAvailableBeds}
-                </span>
-              </div>
+              <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
+                AMBULANCE UNIT IDENTIFIER
+              </label>
               <input
-                type="number"
-                min="1"
-                max={maxAvailableBeds}
-                value={requestedBeds}
-                onChange={(e) => setRequestedBeds(e.target.value)}
+                type="text"
+                value={ambulanceUnit}
+                onChange={(e) => setAmbulanceUnit(e.target.value)}
+                placeholder={dispatch.ambulanceUnit || dispatch.ambulanceId || "e.g. 108 EMS Unit-22"}
                 className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none font-mono"
-                placeholder={String(dispatch.requestedBeds || 1)}
               />
             </div>
-          </div>
-
-          {/* Bed Category Selection */}
-          <div>
-            <label className="block font-mono text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
-              Required Bed Category
-            </label>
-            <select
-              value={bedCategoryCode}
-              onChange={(e) => setBedCategoryCode(e.target.value)}
-              className="w-full px-3 py-2 font-mono text-xs bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none"
-            >
-              {BED_CATEGORIES.map((cat) => (
-                <option key={cat.code} value={cat.code}>
-                  {cat.label}
-                </option>
-              ))}
-            </select>
           </div>
 
           {/* Patient Condition */}
           <div>
             <label className="block font-mono text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
-              Patient Clinical Condition
+              PATIENT CLINICAL CONDITION & NOTES
             </label>
             <textarea
               rows={2}
@@ -318,30 +381,18 @@ export function ModifyRequestModal({
             </p>
           </div>
 
-          {/* Identifiers */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
-                Ambulance / Unit ID
-              </label>
-              <input
-                type="text"
-                value={ambulanceUnit}
-                onChange={(e) => setAmbulanceUnit(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
-                Patient Reference
-              </label>
-              <input
-                type="text"
-                value={patientRef}
-                onChange={(e) => setPatientRef(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none"
-              />
-            </div>
+          {/* Patient Reference */}
+          <div>
+            <label className="block font-mono text-[11px] uppercase font-semibold text-slate-700 dark:text-[#aaa] mb-1">
+              PATIENT REFERENCE ID
+            </label>
+            <input
+              type="text"
+              value={patientRef}
+              onChange={(e) => setPatientRef(e.target.value)}
+              placeholder={dispatch.patientRef || dispatch.patientReference || "e.g. PAT-9204"}
+              className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none font-mono text-xs"
+            />
           </div>
 
           {/* Footer Actions */}

@@ -5,6 +5,7 @@ import { calculateDistanceKm } from "@/lib/geo";
 import { eq, and, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { checkAndAutoCompleteExpiredDispatches } from "@/lib/dispatcher-server";
+import { logDispatchActivity } from "@/lib/activity-logger";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -180,10 +181,15 @@ export async function PATCH(
       cookieSessionId === existingDispatch.dispatcherSessionId);
 
     const session = await auth.api.getSession({ headers: req.headers });
+    let isSuperAdmin = false;
+    let actorType: "SUPER_ADMIN" | "DISPATCHER" | "HOSPITAL" = "HOSPITAL";
+    let actorName = "Hospital Staff";
 
     if (!session || !session.user) {
       if (nextStatus === "CANCELLED" && isDispatcherOwner) {
         // Permitted: Dispatcher cancelling their own pending dispatch
+        actorType = "DISPATCHER";
+        actorName = "Ambulance Dispatcher";
       } else {
         return NextResponse.json(
           { error: "Unauthorized: Active staff or SuperAdmin session required to modify dispatch state." },
@@ -198,9 +204,14 @@ export async function PATCH(
         .where(eq(user.id, session.user.id))
         .limit(1);
 
-      const isSuperAdmin = dbUser?.role === "SUPER_ADMIN";
+      isSuperAdmin = dbUser?.role === "SUPER_ADMIN";
+      if (isSuperAdmin) {
+        actorType = "SUPER_ADMIN";
+        actorName = "SUPER ADMIN";
+      } else {
+        actorType = "HOSPITAL";
+        actorName = dbUser?.name || "Hospital Staff";
 
-      if (!isSuperAdmin) {
         const [membership] = await db
           .select()
           .from(hospitalMemberships)
@@ -306,6 +317,32 @@ export async function PATCH(
         })
         .where(eq(dispatchRequests.id, id))
         .returning();
+
+      // Log status transition into shared dispatchActivities audit timeline
+      let actionName = `REQUEST_${nextStatus}`;
+      if (isSuperAdmin) {
+        actionName = `SUPERADMIN_${nextStatus}`;
+      } else if (nextStatus === "CANCELLED") {
+        actionName = "REQUEST_CANCELLED";
+      }
+
+      await logDispatchActivity(
+        {
+          dispatchId: id,
+          actorType,
+          actorName,
+          action: actionName,
+          oldValue: prevStatus,
+          newValue: nextStatus,
+          details: isSuperAdmin
+            ? `Super Admin updated dispatch request status to ${nextStatus}`
+            : nextStatus === "CANCELLED"
+            ? "Dispatch request cancelled by ambulance dispatcher"
+            : `Hospital transitioned request status from ${prevStatus} to ${nextStatus}`,
+          note: body.note || body.rejectionReason || null,
+        },
+        tx
+      );
 
       return updated;
     });

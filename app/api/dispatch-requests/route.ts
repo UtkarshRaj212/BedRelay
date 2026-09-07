@@ -7,6 +7,7 @@ import {
   resolveServerDispatcherSession,
   getActiveDispatchForSession,
 } from "@/lib/dispatcher-server";
+import { logDispatchActivity } from "@/lib/activity-logger";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -244,6 +245,16 @@ export async function POST(req: NextRequest) {
         updatedAt: now,
       })
       .returning();
+
+    // Log REQUEST_CREATED into dispatchActivities audit timeline
+    await logDispatchActivity({
+      dispatchId: newDispatchId,
+      actorType: "DISPATCHER",
+      actorName: "Ambulance Dispatcher",
+      action: "REQUEST_CREATED",
+      details: `Pre-arrival dispatch alert transmitted to ${targetHospital.name}. Required: ${numRequested} ${bedCategoryCode} bed(s). ETA: ${eta}m. Ambulance: ${ambulanceUnit}.`,
+      newValue: `Hospital: ${targetHospital.name} | Category: ${bedCategoryCode} | Beds: ${numRequested} | ETA: ${eta}m`,
+    });
 
     const response = NextResponse.json(
       {

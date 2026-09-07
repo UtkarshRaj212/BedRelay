@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { formatDateTime } from "@/lib/format-date";
 
 export interface AuditPayloadItem {
@@ -130,6 +131,12 @@ function formatValue(key: string, val: any): string {
 }
 
 export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -144,7 +151,7 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
-  if (!isOpen || !auditItem) return null;
+  if (!mounted || !isOpen || !auditItem) return null;
 
   const actorLabel = normalizeActor(auditItem);
   const requestId = auditItem.dispatchId || auditItem.requestId || auditItem.resourceId || "N/A";
@@ -244,34 +251,34 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
     note: auditItem.note || null,
   };
 
-  return (
+  const modalContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="audit-modal-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div
-        className="relative w-full max-w-lg max-h-[92vh] flex flex-col bg-white dark:bg-[#0c0c0c] border border-slate-300 dark:border-[#262626] rounded-sm shadow-2xl overflow-hidden font-sans text-slate-900 dark:text-[#f0f0f0] animate-in fade-in zoom-in-95 duration-150"
+        className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-[#0c0c0c] border border-slate-300 dark:border-[#262626] rounded-sm shadow-2xl overflow-hidden font-sans text-slate-900 dark:text-[#f0f0f0] animate-in fade-in zoom-in-95 duration-150 my-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-[#222] bg-slate-50 dark:bg-[#121212]">
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-mono font-bold tracking-widest text-blue-600 dark:text-blue-400 uppercase block">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 sm:py-4 border-b border-slate-200 dark:border-[#222] bg-slate-50 dark:bg-[#121212] shrink-0">
+          <div className="space-y-0.5 min-w-0">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-blue-600 dark:text-blue-400 uppercase block truncate">
               AUDIT RECORD INSPECTOR
             </span>
-            <h2 id="audit-modal-title" className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-tight">
+            <h2 id="audit-modal-title" className="text-sm sm:text-base font-bold text-slate-900 dark:text-white uppercase tracking-tight truncate">
               AUDIT PAYLOAD DETAILS
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-white rounded hover:bg-slate-200/50 dark:hover:bg-[#222] transition-colors"
+            className="p-1.5 text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-white rounded hover:bg-slate-200/50 dark:hover:bg-[#222] transition-colors cursor-pointer shrink-0 ml-2"
             aria-label="Close modal"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -281,14 +288,14 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
         </div>
 
         {/* Modal Body: Scrollable Internally */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5 text-xs">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 text-xs">
           {/* Metadata Section */}
-          <div className="grid grid-cols-2 gap-3 p-3.5 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222] rounded-xs font-mono">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 p-3 sm:p-3.5 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222] rounded-xs font-mono">
             <div>
               <span className="text-[10px] uppercase text-slate-500 dark:text-[#777] font-bold block">
                 Action
               </span>
-              <span className="font-bold text-blue-700 dark:text-blue-400 break-words">
+              <span className="font-bold text-blue-700 dark:text-blue-400 break-all">
                 {auditItem.action}
               </span>
             </div>
@@ -355,7 +362,7 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
                             <span className="text-slate-400 dark:text-[#666] text-[10px] uppercase block mb-1">
                               Previous:
                             </span>
-                            <pre className="p-2 bg-slate-50 dark:bg-[#181818] border border-slate-200 dark:border-[#292929] rounded text-[10px] text-slate-600 dark:text-[#aaa] overflow-x-auto max-h-40 overflow-y-auto">
+                            <pre className="p-2 bg-slate-50 dark:bg-[#181818] border border-slate-200 dark:border-[#292929] rounded text-[10px] text-slate-600 dark:text-[#aaa] overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap break-all">
                               {JSON.stringify(row.previousJson, null, 2)}
                             </pre>
                           </div>
@@ -365,7 +372,7 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
                             <span className="text-emerald-600 dark:text-emerald-400 text-[10px] uppercase font-bold block mb-1">
                               New:
                             </span>
-                            <pre className="p-2 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded text-[10px] text-emerald-900 dark:text-emerald-300 overflow-x-auto max-h-40 overflow-y-auto font-bold">
+                            <pre className="p-2 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded text-[10px] text-emerald-900 dark:text-emerald-300 overflow-x-auto max-h-40 overflow-y-auto font-bold whitespace-pre-wrap break-all">
                               {JSON.stringify(row.nextJson, null, 2)}
                             </pre>
                           </div>
@@ -374,20 +381,20 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
                     ) : (
                       <div className="space-y-1 text-xs">
                         {row.previous && (
-                          <div className="flex items-baseline gap-2">
+                          <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
                             <span className="text-slate-400 dark:text-[#666] font-mono text-[10px] uppercase w-16 shrink-0">
                               Previous:
                             </span>
-                            <span className="text-slate-600 dark:text-[#999] break-words">
+                            <span className="text-slate-600 dark:text-[#999] break-all sm:break-words">
                               {row.previous}
                             </span>
                           </div>
                         )}
-                        <div className="flex items-baseline gap-2">
+                        <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
                           <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[10px] uppercase font-bold w-16 shrink-0">
                             New:
                           </span>
-                          <span className="font-bold text-slate-900 dark:text-white break-words">
+                          <span className="font-bold text-slate-900 dark:text-white break-all sm:break-words">
                             {row.next || "—"}
                           </span>
                         </div>
@@ -409,7 +416,7 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
               <span className="font-mono text-[10px] uppercase text-slate-500 dark:text-[#777] font-bold block">
                 Details Summary
               </span>
-              <p className="p-2.5 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222] rounded-xs text-slate-700 dark:text-[#bbb] break-words">
+              <p className="p-2.5 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222] rounded-xs text-slate-700 dark:text-[#bbb] break-all sm:break-words">
                 {auditItem.details}
               </p>
             </div>
@@ -421,7 +428,7 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
               <span className="font-mono text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold block">
                 NOTE
               </span>
-              <div className="p-2.5 bg-emerald-50/60 dark:bg-emerald-950/20 border-l-2 border-emerald-600 dark:border-emerald-400 text-emerald-900 dark:text-emerald-200 rounded-r-xs font-mono break-words">
+              <div className="p-2.5 bg-emerald-50/60 dark:bg-emerald-950/20 border-l-2 border-emerald-600 dark:border-emerald-400 text-emerald-900 dark:text-emerald-200 rounded-r-xs font-mono break-all sm:break-words">
                 {auditItem.note}
               </div>
             </div>
@@ -437,7 +444,7 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
                 </span>
               </summary>
               <div className="mt-2">
-                <pre className="p-3 bg-slate-100 dark:bg-[#080808] border border-slate-200 dark:border-[#222] rounded text-[10px] font-mono text-slate-700 dark:text-[#aaa] overflow-x-auto max-h-56 overflow-y-auto whitespace-pre-wrap sm:whitespace-pre break-all sm:break-normal">
+                <pre className="p-3 bg-slate-100 dark:bg-[#080808] border border-slate-200 dark:border-[#222] rounded text-[10px] font-mono text-slate-700 dark:text-[#aaa] overflow-x-auto max-h-56 overflow-y-auto whitespace-pre-wrap break-all sm:break-normal">
                   {JSON.stringify(fullRawPayload, null, 2)}
                 </pre>
               </div>
@@ -446,14 +453,14 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
         </div>
 
         {/* Modal Footer: Clear Close Button */}
-        <div className="px-5 py-3 border-t border-slate-200 dark:border-[#222] bg-slate-50 dark:bg-[#121212] flex items-center justify-between">
-          <span className="text-[10px] font-mono text-slate-400 dark:text-[#666]">
+        <div className="px-4 sm:px-5 py-3 border-t border-slate-200 dark:border-[#222] bg-slate-50 dark:bg-[#121212] flex items-center justify-between shrink-0">
+          <span className="text-[10px] font-mono text-slate-400 dark:text-[#666] truncate mr-2">
             Immutable telemetry record
           </span>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 rounded cursor-pointer transition-colors shadow-xs"
+            className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 rounded cursor-pointer transition-colors shadow-xs shrink-0"
           >
             CLOSE
           </button>
@@ -461,4 +468,6 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

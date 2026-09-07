@@ -58,7 +58,8 @@ export async function checkAndAutoCompleteExpiredDispatches(): Promise<string[]>
           {
             dispatchId: record.id,
             actorType: "SYSTEM",
-            action: "AUTO_COMPLETED",
+            actorName: "System Automation",
+            action: "SYSTEM_AUTO_COMPLETION",
             details: `Dispatch request automatically completed based on elapsed ETA (${eta}m + max(20m, ${Math.round(eta / 3)}m buffer) = ${thresholdMinutes}m threshold reached).`,
             oldValue: record.status,
             newValue: "COMPLETED",
@@ -487,6 +488,19 @@ export async function cancelActiveDispatchTx(sessionId: string) {
       })
       .where(eq(dispatchRequests.id, activeRecord.id))
       .returning();
+
+    await logDispatchActivity(
+      {
+        dispatchId: activeRecord.id,
+        actorType: "DISPATCHER",
+        actorName: "Ambulance Dispatcher",
+        action: "REQUEST_CANCELLED",
+        details: "Active dispatch alert cancelled by dispatcher.",
+        oldValue: activeRecord.status,
+        newValue: "CANCELLED",
+      },
+      tx
+    );
 
     return cancelled;
   });

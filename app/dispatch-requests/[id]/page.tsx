@@ -54,6 +54,7 @@ export default function DispatchRequestTrackingPage({
 
   const [dispatch, setDispatch] = useState<DispatchDetails | null>(null);
   const [hospital, setHospital] = useState<any>(null);
+  const [hospitalBeds, setHospitalBeds] = useState<any[]>([]);
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -87,6 +88,7 @@ export default function DispatchRequestTrackingPage({
         const data = await res.json();
         setDispatch(data.dispatch);
         setHospital(data.hospital);
+        setHospitalBeds(data.beds || []);
         setDistanceKm(data.distanceKm);
         setLastSynced(new Date().toLocaleTimeString());
         setErrorMsg(null);
@@ -327,6 +329,10 @@ export default function DispatchRequestTrackingPage({
                       name: hospital.name,
                       address: hospital.address,
                       city: hospital.city,
+                      origin:
+                        dispatch.ambulanceLat !== null && dispatch.ambulanceLng !== null
+                          ? { lat: dispatch.ambulanceLat, lng: dispatch.ambulanceLng }
+                          : undefined,
                     })}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -495,6 +501,49 @@ export default function DispatchRequestTrackingPage({
           </div>
         )}
 
+        {/* Dedicated Ambulance Location at Request Time Card (Immutable Telemetry) */}
+        <div className="bg-white dark:bg-[#0f0f0f] border-2 border-blue-600/30 dark:border-blue-500/30 p-4 sm:p-5 rounded-sm mb-6 shadow-xs font-mono">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 pb-2 mb-3 border-b border-slate-200 dark:border-[#222222]">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-blue-700 dark:text-blue-400 tracking-widest block">
+                IMMUTABLE HISTORICAL TELEMETRY
+              </span>
+              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-[#ededed]">
+                AMBULANCE LOCATION AT REQUEST TIME
+              </h3>
+            </div>
+            <span className="text-[11px] text-slate-500 dark:text-[#777]">
+              Captured at {formatDateTime(dispatch.createdAt, true)}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-xs space-y-1">
+              <span className="text-slate-500 dark:text-[#777] uppercase text-[10px] block font-bold tracking-wider">
+                Latitude:
+              </span>
+              <span className="text-lg font-bold text-slate-900 dark:text-white block font-mono">
+                {dispatch.ambulanceLat !== null && dispatch.ambulanceLat !== undefined
+                  ? Number(dispatch.ambulanceLat).toFixed(4)
+                  : "Not recorded"}
+              </span>
+            </div>
+            <div className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-xs space-y-1">
+              <span className="text-slate-500 dark:text-[#777] uppercase text-[10px] block font-bold tracking-wider">
+                Longitude:
+              </span>
+              <span className="text-lg font-bold text-slate-900 dark:text-white block font-mono">
+                {dispatch.ambulanceLng !== null && dispatch.ambulanceLng !== undefined
+                  ? Number(dispatch.ambulanceLng).toFixed(4)
+                  : "Not recorded"}
+              </span>
+            </div>
+          </div>
+          <p className="mt-2.5 text-[11px] text-slate-500 dark:text-[#888] font-sans">
+            These coordinates reflect the exact vehicle location captured when this dispatch request was created. They remain permanent and immutable even if the ambulance changes location.
+          </p>
+        </div>
+
         {/* Detailed Information Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Ambulance & Patient Section */}
@@ -522,9 +571,9 @@ export default function DispatchRequestTrackingPage({
 
               {dispatch.ambulanceLat !== null && dispatch.ambulanceLng !== null && (
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1">
-                  <span className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase shrink-0">GPS Coordinates:</span>
-                  <span className="font-mono text-xs text-slate-800 dark:text-[#ededed] break-all">
-                    {dispatch.ambulanceLat}, {dispatch.ambulanceLng}
+                  <span className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase shrink-0">Captured Request Coordinates:</span>
+                  <span className="font-mono text-xs font-bold text-slate-800 dark:text-[#ededed] break-all">
+                    {Number(dispatch.ambulanceLat).toFixed(4)}, {Number(dispatch.ambulanceLng).toFixed(4)}
                   </span>
                 </div>
               )}
@@ -648,6 +697,7 @@ export default function DispatchRequestTrackingPage({
       <ModifyRequestModal
         isOpen={isModifyOpen}
         onClose={() => setIsModifyOpen(false)}
+        hospitalBeds={hospitalBeds.length > 0 ? hospitalBeds : activeDispatch?.hospitalBeds}
         dispatch={{
           ...dispatch,
           hospitalName: hospital?.name || activeDispatch?.hospitalName || "Hospital",
@@ -658,7 +708,7 @@ export default function DispatchRequestTrackingPage({
           hospitalLat: hospital?.latitude || activeDispatch?.hospitalLat || null,
           hospitalLng: hospital?.longitude || activeDispatch?.hospitalLng || null,
           distanceKm,
-          hospitalBeds: activeDispatch?.hospitalBeds || [],
+          hospitalBeds: hospitalBeds.length > 0 ? hospitalBeds : activeDispatch?.hospitalBeds || [],
         } as any}
         onSuccess={async (updatedDispatch) => {
           setDispatch(updatedDispatch);
