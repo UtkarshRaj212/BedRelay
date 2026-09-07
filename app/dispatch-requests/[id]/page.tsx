@@ -251,6 +251,8 @@ export default function DispatchRequestTrackingPage({
                   className={`text-xs font-mono font-bold px-2 py-0.5 rounded-xs border ${
                     dispatch.status === "ACCEPTED"
                       ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                      : dispatch.status === "EXPIRED"
+                      ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border-slate-300 dark:border-[#333]"
                       : dispatch.status === "REJECTED"
                       ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
                       : dispatch.status === "CANCELLED"
@@ -368,6 +370,13 @@ export default function DispatchRequestTrackingPage({
             </div>
           )}
 
+          {dispatch.status === "EXPIRED" && (
+            <div className="mt-3 p-3 bg-slate-100 dark:bg-[#151515] border-l-4 border-slate-400 dark:border-slate-600 rounded-xs text-xs font-mono text-slate-700 dark:text-[#aaa]">
+              <span className="font-bold uppercase block mb-0.5 text-slate-900 dark:text-[#eee]">REQUEST EXPIRED</span>
+              Required hospital approval or review was not received within the allowed time threshold.
+            </div>
+          )}
+
           {!["PENDING", "SENT", "ACCEPTED"].includes(dispatch.status.toUpperCase()) && (
             <div className="mt-2 text-xs font-mono text-slate-500 dark:text-[#777]">
               Status locked ({dispatch.status}). No active actions available.
@@ -399,6 +408,8 @@ export default function DispatchRequestTrackingPage({
                 className={`inline-block px-3 py-1 text-sm font-bold border rounded-sm mt-0.5 ${
                   dispatch.status === "ACCEPTED"
                     ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                    : dispatch.status === "EXPIRED"
+                    ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border-slate-300 dark:border-[#333]"
                     : dispatch.status === "REJECTED"
                     ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
                     : dispatch.status === "CANCELLED"

@@ -72,6 +72,7 @@ export default function DispatcherDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [lastSynced, setLastSynced] = useState<string>("");
   const [isModifyOpen, setIsModifyOpen] = useState(false);
+  const [isSwitchOpen, setIsSwitchOpen] = useState(false);
   const isFetchingRef = useRef(false);
 
   // Ambulance GPS & Map State
@@ -113,15 +114,16 @@ export default function DispatcherDashboardPage() {
   const prevModalRequestedBedsRef = useRef<number>(1);
 
   const handleConfirmSwitch = async (customParams?: { targetHospitalId?: string; bedCategoryCode: string; requestedBeds: number }) => {
-    const target = customParams?.targetHospitalId
-      ? hospitals.find((h) => h.id === customParams.targetHospitalId) || switchTargetHospital
-      : switchTargetHospital;
-    if (!target) return;
+    const targetId = customParams?.targetHospitalId || switchTargetHospital?.id;
+    if (!targetId) {
+      setSwitchError("Please select a valid destination hospital.");
+      return;
+    }
     try {
       setSwitching(true);
       setSwitchError(null);
       const res = await switchHospital({
-        targetHospitalId: target.id,
+        targetHospitalId: targetId,
         bedCategoryCode: customParams?.bedCategoryCode || (activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory),
         requestedBeds: customParams?.requestedBeds || (activeDispatch
           ? activeDispatch.requestedBeds
@@ -144,6 +146,7 @@ export default function DispatcherDashboardPage() {
 
       if (res.success) {
         setSwitchTargetHospital(null);
+        setIsSwitchOpen(false);
         await refreshActive();
         await fetchLiveData();
       } else {
@@ -238,16 +241,17 @@ export default function DispatcherDashboardPage() {
     fetchLiveData();
     const interval = setInterval(() => {
       // Background sync without clobbering unsaved form inputs if editing
-      if (!dispatchModalHospital && !switchTargetHospital && !isModifyOpen) {
+      if (!dispatchModalHospital && !switchTargetHospital && !isModifyOpen && !isSwitchOpen) {
         fetchLiveData();
       }
     }, 1000); // 1-second synchronization
     return () => clearInterval(interval);
-  }, [selectedCity, ambulanceCoordinates, dispatchModalHospital, switchTargetHospital, isModifyOpen]);
+  }, [selectedCity, ambulanceCoordinates, dispatchModalHospital, switchTargetHospital, isModifyOpen, isSwitchOpen]);
 
   const handleOpenDispatchModal = (hospital: HospitalItem) => {
     if (activeDispatch) {
       setSwitchTargetHospital(hospital);
+      setIsSwitchOpen(true);
       setSwitchError(null);
     } else {
       setDispatchModalHospital(hospital);
@@ -321,12 +325,12 @@ export default function DispatcherDashboardPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Failed to create dispatch request");
+        throw new Error(data.error || "Failed to transmit dispatch alert");
       }
 
       setDispatchMsg({
         type: "success",
-        text: `Dispatch request transmitted successfully to ${dispatchModalHospital.name}`,
+        text: `Pre-arrival dispatch alert transmitted to ${dispatchModalHospital.name}`,
       });
 
       setTimeout(() => {
@@ -338,7 +342,7 @@ export default function DispatcherDashboardPage() {
     } catch (err: any) {
       setDispatchMsg({
         type: "error",
-        text: err.message || "Failed to send dispatch alert.",
+        text: err.message || "Failed to transmit dispatch request.",
       });
     } finally {
       setSubmitting(false);
@@ -348,25 +352,25 @@ export default function DispatcherDashboardPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Header */}
-      <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
-            <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
+      <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-40">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
               BR
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight">
+              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight leading-none">
                 BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
               </span>
               <span className="text-[10px] text-slate-500 dark:text-[#737373] font-mono tracking-widest uppercase mt-0.5">
-                Ambulance Dispatcher Console
+                Regional Dispatch Console
               </span>
             </div>
           </Link>
 
-          <nav className="flex items-center gap-2 sm:gap-3 font-mono text-xs overflow-x-auto no-scrollbar scroll-smooth py-1 w-full sm:w-auto">
-            <Link href="/dispatcher" className="px-3 py-1.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold rounded-sm whitespace-nowrap shrink-0">
-              DISPATCHER DASHBOARD
+          <nav className="flex items-center gap-1.5 sm:gap-2 font-mono text-xs overflow-x-auto no-scrollbar py-0.5 max-w-full">
+            <Link href="/dispatch-requests/new" className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-bold rounded-sm transition-colors whitespace-nowrap shrink-0">
+              + NEW DISPATCH
             </Link>
             <Link href="/find-beds" className="px-3 py-1.5 text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors whitespace-nowrap shrink-0">
               FIND HOSPITAL
@@ -390,6 +394,7 @@ export default function DispatcherDashboardPage() {
             hospitals[0] ||
             null;
           setSwitchTargetHospital(alternate);
+          setIsSwitchOpen(true);
           setSwitchError(null);
         }}
       />
@@ -648,6 +653,8 @@ export default function DispatcherDashboardPage() {
                       className={`inline-block px-2 py-0.5 text-[11px] font-mono font-bold border rounded-sm ${
                         disp.status === "ACCEPTED" || disp.status === "COMPLETED"
                           ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                          : disp.status === "EXPIRED"
+                          ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border-slate-300 dark:border-[#333]"
                           : disp.status === "REJECTED" || disp.status === "CANCELLED"
                           ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
                           : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
@@ -760,6 +767,8 @@ export default function DispatcherDashboardPage() {
                           className={`px-2.5 py-1 text-xs font-mono font-bold border rounded-sm ${
                             disp.status === "ACCEPTED" || disp.status === "COMPLETED"
                               ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                              : disp.status === "EXPIRED"
+                              ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border-slate-300 dark:border-[#333]"
                               : disp.status === "REJECTED" || disp.status === "CANCELLED"
                               ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
                               : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
@@ -868,7 +877,7 @@ export default function DispatcherDashboardPage() {
                       <div className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm flex items-center justify-between">
                         <div>
                           <div className="text-[11px] font-mono text-slate-500 dark:text-[#737373] uppercase font-semibold">ICU BEDS</div>
-                          <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5">
+                          <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5 whitespace-nowrap">
                             {icuBed ? icuBed.availableBeds : 0} <span className="text-xs font-normal text-slate-500 dark:text-[#737373]">/ {icuBed ? icuBed.totalBeds : 0} Available</span>
                           </div>
                         </div>
@@ -885,7 +894,7 @@ export default function DispatcherDashboardPage() {
                       <div className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm flex items-center justify-between">
                         <div>
                           <div className="text-[11px] font-mono text-slate-500 dark:text-[#737373] uppercase font-semibold">GENERAL WARD</div>
-                          <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5">
+                          <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5 whitespace-nowrap">
                             {genBed ? genBed.availableBeds : 0} <span className="text-xs font-normal text-slate-500 dark:text-[#737373]">/ {genBed ? genBed.totalBeds : 0} Available</span>
                           </div>
                         </div>
@@ -902,7 +911,7 @@ export default function DispatcherDashboardPage() {
                       <div className="p-3 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm flex items-center justify-between">
                         <div>
                           <div className="text-[11px] font-mono text-slate-500 dark:text-[#737373] uppercase font-semibold">VENTILATOR BEDS</div>
-                          <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5">
+                          <div className="text-lg font-bold font-mono text-emerald-700 dark:text-emerald-400 mt-0.5 whitespace-nowrap">
                             {ventBed ? ventBed.availableBeds : 0} <span className="text-xs font-normal text-slate-500 dark:text-[#737373]">/ {ventBed ? ventBed.totalBeds : 0} Available</span>
                           </div>
                         </div>
@@ -1141,8 +1150,9 @@ export default function DispatcherDashboardPage() {
 
       {/* Switch Receiving Hospital Modal */}
       <SwitchHospitalModal
-        isOpen={Boolean(switchTargetHospital)}
+        isOpen={isSwitchOpen || Boolean(switchTargetHospital)}
         onClose={() => {
+          setIsSwitchOpen(false);
           setSwitchTargetHospital(null);
           setSwitchError(null);
         }}

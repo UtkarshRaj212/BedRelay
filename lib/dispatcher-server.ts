@@ -8,7 +8,7 @@ import crypto from "crypto";
 
 export const DISPATCHER_COOKIE_NAME = "bedrelay_dispatcher_session_id";
 export const ACTIVE_STATUSES = ["PENDING", "SENT", "ACCEPTED"] as const;
-export const TERMINAL_STATUSES = ["REJECTED", "COMPLETED", "CANCELLED"] as const;
+export const TERMINAL_STATUSES = ["REJECTED", "COMPLETED", "CANCELLED", "EXPIRED"] as const;
 
 export type ActiveStatus = (typeof ACTIVE_STATUSES)[number];
 export type TerminalStatus = (typeof TERMINAL_STATUSES)[number];
@@ -20,22 +20,37 @@ export interface ServerDispatcherIdentity {
 }
 
 /**
- * Automatically completes active dispatch requests whose elapsed time has reached
- * completion threshold = ETA × 3.
- * Only completes requests in ACTIVE_STATUSES (PENDING, SENT, ACCEPTED).
- * Does NOT complete REJECTED, CANCELLED, or already COMPLETED requests.
- * Records an audit entry in dispatchActivities.
+ * Automatically processes active dispatch requests whose elapsed time has reached
+ * completion threshold = ETA + max(20 minutes, ETA / 3).
+ *
+ * Outcome Distinction:
+ * - If required approval is still pending at the threshold (e.g. status !== ACCEPTED,
+ *   approvedBeds < requestedBeds, or reviewRequired === true):
+ *   -> status = EXPIRED
+ *   -> releases any allocated beds if partially accepted
+ *   -> records audit entry: SYSTEM | REQUEST_EXPIRED | Reason: Required approval not received within threshold
+ *
+ * - If the request has been properly approved and reaches arrival threshold:
+ *   -> status = COMPLETED
+ *   -> records audit entry: SYSTEM | SYSTEM_AUTO_COMPLETION
+ *
+ * Does NOT apply expiry or completion to:
+ * - REJECTED
+ * - CANCELLED
+ * - already COMPLETED
+ * - already EXPIRED
  */
-export async function checkAndAutoCompleteExpiredDispatches(): Promise<string[]> {
+export async function checkAndAutoCompleteExpiredDispatches(): Promise<string[] & { completedIds: string[]; expiredIds: string[] }> {
   const now = new Date();
 
-  // Find all candidate active requests
+  // Find all candidate active requests strictly in ACTIVE_STATUSES
   const activeList = await db
     .select()
     .from(dispatchRequests)
     .where(inArray(dispatchRequests.status, [...ACTIVE_STATUSES]));
 
   const completedIds: string[] = [];
+  const expiredIds: string[] = [];
 
   for (const record of activeList) {
     const eta = Math.max(1, record.etaMinutes || 15);
@@ -45,35 +60,108 @@ export async function checkAndAutoCompleteExpiredDispatches(): Promise<string[]>
     const elapsedMinutes = (now.getTime() - createdAtMs) / (60 * 1000);
 
     if (elapsedMinutes >= thresholdMinutes) {
-      await db.transaction(async (tx) => {
-        await tx
-          .update(dispatchRequests)
-          .set({
-            status: "COMPLETED",
-            updatedAt: now,
-          })
-          .where(eq(dispatchRequests.id, record.id));
+      // Check if properly approved:
+      // Must be ACCEPTED, have approvedBeds >= requestedBeds, and reviewRequired must not be true
+      const isProperlyApproved =
+        record.status.toUpperCase() === "ACCEPTED" &&
+        (record.approvedBeds || 0) >= record.requestedBeds &&
+        !record.reviewRequired;
 
-        await logDispatchActivity(
-          {
-            dispatchId: record.id,
-            actorType: "SYSTEM",
-            actorName: "System Automation",
-            action: "SYSTEM_AUTO_COMPLETION",
-            details: `Dispatch request automatically completed based on elapsed ETA (${eta}m + max(20m, ${Math.round(eta / 3)}m buffer) = ${thresholdMinutes}m threshold reached).`,
-            oldValue: record.status,
-            newValue: "COMPLETED",
-            note: `ETA ${eta}m threshold (${thresholdMinutes}m) reached`,
-          },
-          tx
-        );
-      });
+      if (isProperlyApproved) {
+        // COMPLETED
+        await db.transaction(async (tx) => {
+          await tx
+            .update(dispatchRequests)
+            .set({
+              status: "COMPLETED",
+              updatedAt: now,
+            })
+            .where(eq(dispatchRequests.id, record.id));
 
-      completedIds.push(record.id);
+          await logDispatchActivity(
+            {
+              dispatchId: record.id,
+              actorType: "SYSTEM",
+              actorName: "System Automation",
+              action: "SYSTEM_AUTO_COMPLETION",
+              details: `Dispatch request automatically completed based on elapsed ETA (${eta}m + max(20m, ${Math.round(eta / 3)}m buffer) = ${thresholdMinutes}m threshold reached).`,
+              oldValue: record.status,
+              newValue: "COMPLETED",
+              note: `ETA ${eta}m threshold (${thresholdMinutes}m) reached with full approval (${record.approvedBeds}/${record.requestedBeds} beds)`,
+            },
+            tx
+          );
+        });
+
+        completedIds.push(record.id);
+      } else {
+        // EXPIRED
+        await db.transaction(async (tx) => {
+          // If any beds were previously allocated at the hospital, release them back to prevent capacity leaks
+          if (record.status.toUpperCase() === "ACCEPTED" && (record.approvedBeds || 0) > 0) {
+            const bedsToRelease = record.approvedBeds;
+            const [cat] = await tx
+              .select()
+              .from(bedCategories)
+              .where(
+                and(
+                  eq(bedCategories.hospitalId, record.hospitalId),
+                  eq(bedCategories.categoryCode, record.bedCategoryCode.toUpperCase())
+                )
+              )
+              .for("update")
+              .limit(1);
+
+            if (cat) {
+              await tx
+                .update(bedCategories)
+                .set({
+                  availableBeds: Math.min(cat.totalBeds, cat.availableBeds + bedsToRelease),
+                  occupiedBeds: Math.max(0, cat.occupiedBeds - bedsToRelease),
+                  lastUpdated: now,
+                  updatedAt: now,
+                })
+                .where(eq(bedCategories.id, cat.id));
+
+              await tx
+                .update(hospitals)
+                .set({ updatedAt: now })
+                .where(eq(hospitals.id, record.hospitalId));
+            }
+          }
+
+          await tx
+            .update(dispatchRequests)
+            .set({
+              status: "EXPIRED",
+              updatedAt: now,
+            })
+            .where(eq(dispatchRequests.id, record.id));
+
+          await logDispatchActivity(
+            {
+              dispatchId: record.id,
+              actorType: "SYSTEM",
+              actorName: "System Automation",
+              action: "REQUEST_EXPIRED",
+              details: "Required approval not received within threshold",
+              oldValue: record.status,
+              newValue: "EXPIRED",
+              note: "Required approval not received within threshold",
+            },
+            tx
+          );
+        });
+
+        expiredIds.push(record.id);
+      }
     }
   }
 
-  return completedIds;
+  const allProcessed = [...completedIds, ...expiredIds] as string[] & { completedIds: string[]; expiredIds: string[] };
+  allProcessed.completedIds = completedIds;
+  allProcessed.expiredIds = expiredIds;
+  return allProcessed;
 }
 
 /**

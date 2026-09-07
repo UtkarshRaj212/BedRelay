@@ -120,6 +120,7 @@ export default function FindHospitalPage() {
   } = useActiveDispatch(1000);
 
   const [isModifyModalOpen, setIsModifyModalOpen] = useState<boolean>(false);
+  const [isSwitchModalOpen, setIsSwitchModalOpen] = useState<boolean>(false);
   const [switchTargetHospital, setSwitchTargetHospital] = useState<HospitalResult | null>(null);
   const [switching, setSwitching] = useState<boolean>(false);
   const [switchError, setSwitchError] = useState<string | null>(null);
@@ -143,6 +144,7 @@ export default function FindHospitalPage() {
       setSelectedCategory(activeDispatch.bedCategoryCode);
       setMinBeds(activeDispatch.requestedBeds);
       prevMinBedsRef.current = activeDispatch.requestedBeds;
+      setIsSwitchModalOpen(true);
       setTimeout(() => {
         const el = document.getElementById("hospital-results-section");
         el?.scrollIntoView({ behavior: "smooth" });
@@ -151,16 +153,17 @@ export default function FindHospitalPage() {
   }, [activeDispatch]);
 
   const handleConfirmSwitch = async (customParams?: { targetHospitalId?: string; bedCategoryCode: string; requestedBeds: number }) => {
-    const target = customParams?.targetHospitalId
-      ? hospitals.find((h) => h.id === customParams.targetHospitalId) || switchTargetHospital
-      : switchTargetHospital;
-    if (!target) return;
+    const targetId = customParams?.targetHospitalId || switchTargetHospital?.id;
+    if (!targetId) {
+      setSwitchError("Please select a valid destination hospital.");
+      return;
+    }
     try {
       setSwitching(true);
       setSwitchError(null);
       // Send real latest values from custom switch parameters or activeDispatch
       const res = await switchHospital({
-        targetHospitalId: target.id,
+        targetHospitalId: targetId,
         bedCategoryCode: customParams?.bedCategoryCode || (activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory),
         requestedBeds: customParams?.requestedBeds || (activeDispatch ? activeDispatch.requestedBeds : activeMinBedsNumber),
         etaMinutes: activeDispatch ? activeDispatch.etaMinutes : 15,
@@ -175,9 +178,11 @@ export default function FindHospitalPage() {
 
       if (res.success) {
         setSwitchTargetHospital(null);
+        setIsSwitchModalOpen(false);
         if (res.dispatch?.id) {
           router.push(`/dispatch-requests/${res.dispatch.id}`);
         } else {
+          await refreshActive();
           await fetchSuitableHospitals(true);
         }
       } else {
@@ -464,6 +469,7 @@ export default function FindHospitalPage() {
             hospitals[0] ||
             null;
           setSwitchTargetHospital(alternate);
+          setIsSwitchModalOpen(true);
           setSwitchError(null);
         }}
       />
@@ -782,9 +788,10 @@ export default function FindHospitalPage() {
                               : "border-slate-200 dark:border-[#222222] hover:border-slate-300 dark:hover:border-[#333333]"
                           }`}
                         >
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-[#1e1e1e] pb-3 mb-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 dark:border-[#1e1e1e] pb-3.5 mb-3.5">
+                            {/* 1. Hospital Information */}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1">
                                 <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 text-xs font-mono font-bold rounded-sm">
                                   SUITABLE
                                 </span>
@@ -797,10 +804,10 @@ export default function FindHospitalPage() {
                                   </span>
                                 )}
                               </div>
-                              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed] mt-1 break-words">
+                              <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed] mt-0.5 break-words leading-tight">
                                 {hosp.name}
                               </h3>
-                              <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-0.5 break-words">
+                              <p className="text-xs text-slate-600 dark:text-[#888888] font-mono mt-1 break-words">
                                 <span>{hosp.address}</span>
                                 {hosp.phone && (
                                   <>
@@ -813,48 +820,54 @@ export default function FindHospitalPage() {
                               </p>
                             </div>
 
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between sm:justify-end gap-2 sm:gap-3 pt-2 sm:pt-0 border-t border-slate-100 sm:border-t-0 dark:border-[#1e1e1e]">
-                              <div className="text-left sm:text-right">
-                                <div className="text-[10px] sm:text-[11px] font-mono text-slate-500 dark:text-[#737373] uppercase">
-                                  {selectedCategory}
-                                </div>
-                                <div className="text-lg sm:text-xl font-bold text-emerald-700 dark:text-emerald-400 font-mono leading-tight">
-                                  {availCount}{" "}
-                                  <span className="text-xs font-normal text-slate-500">
-                                    / {catBed ? catBed.totalBeds : 0}
-                                  </span>
-                                </div>
+                            {/* 2. Bed Availability (Balanced between info and actions) */}
+                            <div className="shrink-0 text-left lg:text-center px-0 lg:px-4 py-2 lg:py-0 border-t border-b lg:border-t-0 lg:border-b-0 border-slate-100 dark:border-[#1a1a1a]">
+                              <div className="text-[10px] sm:text-[11px] font-mono uppercase font-semibold text-slate-500 dark:text-[#737373]">
+                                {selectedCategory}
                               </div>
+                              <div className="text-xl sm:text-2xl font-bold font-mono whitespace-nowrap leading-tight mt-0.5">
+                                <span className="text-emerald-700 dark:text-emerald-400">{availCount}</span>
+                                <span className="text-slate-400 dark:text-[#666] mx-1.5 font-normal">/</span>
+                                <span className="text-slate-600 dark:text-[#888]">{catBed ? catBed.totalBeds : 0}</span>
+                              </div>
+                            </div>
 
-                              <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
-                                {hosp.latitude !== null && hosp.longitude !== null && (
-                                  <a
-                                    href={buildGoogleMapsDirectionsUrl({
-                                      lat: hosp.latitude,
-                                      lng: hosp.longitude,
-                                      name: hosp.name,
-                                      address: hosp.address,
-                                      city: hosp.city,
-                                    })}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="flex-1 sm:flex-none px-2.5 py-2 text-[11px] font-mono font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-900/60 rounded-xs transition-colors text-center inline-flex items-center justify-center gap-1 cursor-pointer"
-                                    title="Open driving directions in Google Maps"
-                                  >
-                                    <span>GET DIRECTIONS</span>
-                                    <span className="text-[10px]">↗</span>
-                                  </a>
-                                )}
-
-                                {activeDispatch && activeDispatch.hospitalId === hosp.id ? (
-                                  <>
-                                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 font-mono text-[10px] font-bold border border-blue-300 dark:border-blue-800 rounded-xs">
+                            {/* 3. Actions (Right-aligned within the card) */}
+                            <div className="shrink-0 flex flex-col items-start sm:items-end gap-1.5 w-full sm:w-auto lg:ml-auto">
+                              {activeDispatch && activeDispatch.hospitalId === hosp.id ? (
+                                <>
+                                  {/* Row 1: GET DIRECTIONS & CURRENT REQUEST */}
+                                  <div className="flex items-center justify-start sm:justify-end gap-1.5 flex-wrap w-full sm:w-auto">
+                                    {hosp.latitude !== null && hosp.longitude !== null && (
+                                      <a
+                                        href={buildGoogleMapsDirectionsUrl({
+                                          lat: hosp.latitude,
+                                          lng: hosp.longitude,
+                                          name: hosp.name,
+                                          address: hosp.address,
+                                          city: hosp.city,
+                                        })}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex-1 sm:flex-none px-2.5 py-1.5 text-[11px] font-mono font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-900/60 rounded-xs transition-colors text-center inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                                        title="Open driving directions in Google Maps"
+                                      >
+                                        <span>GET DIRECTIONS</span>
+                                        <span className="text-[10px]">↗</span>
+                                      </a>
+                                    )}
+                                    <span className="flex-1 sm:flex-none px-2.5 py-1.5 bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 font-mono text-[10px] font-bold border border-blue-300 dark:border-blue-800 rounded-xs text-center whitespace-nowrap">
                                       CURRENT REQUEST
                                     </span>
+                                  </div>
+
+                                  {/* Row 2: VIEW REQUEST & MODIFY REQUEST */}
+                                  <div className="flex items-center justify-start sm:justify-end gap-1.5 flex-wrap w-full sm:w-auto">
                                     <Link
                                       href={`/dispatch-requests/${activeDispatch.id}`}
-                                      className="flex-1 sm:flex-none px-2.5 py-2 text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ccc] bg-slate-100 hover:bg-slate-200 dark:bg-[#1f1f1f] dark:hover:bg-[#2a2a2a] border border-slate-300 dark:border-[#333] rounded-xs transition-colors text-center"
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex-1 sm:flex-none px-2.5 py-1.5 text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ccc] bg-slate-100 hover:bg-slate-200 dark:bg-[#1f1f1f] dark:hover:bg-[#2a2a2a] border border-slate-300 dark:border-[#333] rounded-xs transition-colors text-center whitespace-nowrap"
                                     >
                                       VIEW REQUEST
                                     </Link>
@@ -864,50 +877,76 @@ export default function FindHospitalPage() {
                                         e.stopPropagation();
                                         setIsModifyModalOpen(true);
                                       }}
-                                      className="flex-1 sm:flex-none px-3 py-2 text-[11px] font-mono font-bold uppercase tracking-wider rounded-xs transition-colors cursor-pointer text-center shadow-xs bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                                      className="flex-1 sm:flex-none px-3 py-1.5 text-[11px] font-mono font-bold uppercase tracking-wider rounded-xs transition-colors cursor-pointer text-center shadow-xs bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white whitespace-nowrap"
                                     >
                                       MODIFY REQUEST
                                     </button>
-                                  </>
-                                ) : (
-                                  <>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  {/* Row 1: GET DIRECTIONS & VIEW HOSPITAL */}
+                                  <div className="flex items-center justify-start sm:justify-end gap-1.5 flex-wrap w-full sm:w-auto">
+                                    {hosp.latitude !== null && hosp.longitude !== null && (
+                                      <a
+                                        href={buildGoogleMapsDirectionsUrl({
+                                          lat: hosp.latitude,
+                                          lng: hosp.longitude,
+                                          name: hosp.name,
+                                          address: hosp.address,
+                                          city: hosp.city,
+                                        })}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="flex-1 sm:flex-none px-2.5 py-1.5 text-[11px] font-mono font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-900/60 rounded-xs transition-colors text-center inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap"
+                                        title="Open driving directions in Google Maps"
+                                      >
+                                        <span>GET DIRECTIONS</span>
+                                        <span className="text-[10px]">↗</span>
+                                      </a>
+                                    )}
                                     <button
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedHospitalMapId(hosp.id);
                                       }}
-                                      className="flex-1 sm:flex-none px-2.5 py-2 text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ccc] bg-slate-100 hover:bg-slate-200 dark:bg-[#1f1f1f] dark:hover:bg-[#2a2a2a] border border-slate-300 dark:border-[#333] rounded-xs transition-colors cursor-pointer text-center"
+                                      className="flex-1 sm:flex-none px-2.5 py-1.5 text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ccc] bg-slate-100 hover:bg-slate-200 dark:bg-[#1f1f1f] dark:hover:bg-[#2a2a2a] border border-slate-300 dark:border-[#333] rounded-xs transition-colors cursor-pointer text-center whitespace-nowrap"
                                     >
                                       VIEW HOSPITAL
                                     </button>
+                                  </div>
 
+                                  {/* Row 2: SWITCH TO THIS HOSPITAL or SEND REQUEST */}
+                                  <div className="flex items-center justify-start sm:justify-end gap-1.5 flex-wrap w-full sm:w-auto">
                                     <button
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         if (activeDispatch) {
                                           setSwitchTargetHospital(hosp);
+                                          setIsSwitchModalOpen(true);
                                         } else {
                                           handleOpenDispatch(hosp);
                                         }
                                       }}
-                                      className={`flex-1 sm:flex-none px-3 py-2 text-[11px] font-mono font-semibold uppercase tracking-wider rounded-xs transition-colors cursor-pointer text-center shadow-xs ${
+                                      className={`flex-1 sm:flex-none px-3.5 py-1.5 text-[11px] font-mono font-bold uppercase tracking-wider rounded-xs transition-colors cursor-pointer text-center shadow-xs whitespace-nowrap ${
                                         activeDispatch
-                                          ? "bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-slate-950 dark:text-black font-bold border border-amber-600 dark:border-amber-500"
+                                          ? "bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 text-slate-950 dark:text-black border border-amber-600 dark:border-amber-500"
                                           : "text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700"
                                       }`}
                                     >
                                       {activeDispatch ? "SWITCH TO THIS HOSPITAL" : "SEND REQUEST"}
                                     </button>
-                                  </>
-                                )}
-                              </div>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
 
                           {/* Bed Categories breakdown */}
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-2">
                             {hosp.beds.map((b) => (
                               <div
                                 key={b.id}
@@ -916,11 +955,12 @@ export default function FindHospitalPage() {
                                 <div className="text-slate-500 dark:text-[#737373] uppercase text-[10px] truncate">
                                   {b.name}
                                 </div>
-                                <div className="text-xs font-bold text-slate-900 dark:text-[#ededed] mt-0.5">
+                                <div className="text-xs font-bold text-slate-900 dark:text-[#ededed] mt-0.5 whitespace-nowrap">
                                   <span className="text-emerald-700 dark:text-emerald-400">
                                     {b.availableBeds}
                                   </span>{" "}
-                                  / {b.totalBeds}
+                                  <span className="text-slate-400 dark:text-[#666]">/</span>{" "}
+                                  <span className="text-slate-600 dark:text-[#888]">{b.totalBeds}</span>
                                 </div>
                               </div>
                             ))}
@@ -953,8 +993,8 @@ export default function FindHospitalPage() {
                           className="bg-white dark:bg-[#0f0f0f] p-3 border border-slate-200 dark:border-[#222222] rounded-sm flex items-center justify-between cursor-pointer hover:border-slate-300 dark:hover:border-[#333333]"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-400 text-[10px] font-mono font-bold border border-amber-200 dark:border-amber-900/60 rounded-sm">
-                              {availCount}/{totalCount} {selectedCategory}
+                            <span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-400 text-[10px] font-mono font-bold border border-amber-200 dark:border-amber-900/60 rounded-sm whitespace-nowrap">
+                              {availCount} / {totalCount} {selectedCategory}
                             </span>
                             <span className="text-xs font-semibold text-slate-800 dark:text-[#ededed]">
                               {hosp.name}
@@ -1217,8 +1257,9 @@ export default function FindHospitalPage() {
 
       {/* Switch Receiving Hospital Modal */}
       <SwitchHospitalModal
-        isOpen={Boolean(switchTargetHospital)}
+        isOpen={isSwitchModalOpen || Boolean(switchTargetHospital)}
         onClose={() => {
+          setIsSwitchModalOpen(false);
           setSwitchTargetHospital(null);
           setSwitchError(null);
         }}
@@ -1231,16 +1272,18 @@ export default function FindHospitalPage() {
       />
 
       {/* Modify Active Dispatch Modal */}
-      <ModifyRequestModal
-        isOpen={isModifyModalOpen}
-        onClose={() => setIsModifyModalOpen(false)}
-        dispatch={activeDispatch}
-        hospitalBeds={activeDispatch?.hospitalBeds}
-        onSuccess={() => {
-          refreshActive();
-          fetchSuitableHospitals(true);
-        }}
-      />
+      {activeDispatch && (
+        <ModifyRequestModal
+          isOpen={isModifyModalOpen}
+          onClose={() => setIsModifyModalOpen(false)}
+          dispatch={activeDispatch}
+          hospitalBeds={activeDispatch.hospitalBeds}
+          onSuccess={() => {
+            refreshActive();
+            fetchSuitableHospitals(true);
+          }}
+        />
+      )}
     </div>
   );
 }

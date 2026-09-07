@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { ActiveDispatch } from "@/hooks/use-active-dispatch";
 
 interface ModifyRequestModalProps {
@@ -17,13 +17,22 @@ interface ModifyRequestModalProps {
   onSuccess: (updatedDispatch: any) => void;
 }
 
-const BED_CATEGORIES = [
+const BASE_CATEGORIES = [
   { code: "ICU", label: "Intensive Care Unit (ICU)" },
-  { code: "VENTILATOR", label: "Ventilator & Critical Care" },
   { code: "GENERAL", label: "General Medical Ward" },
+  { code: "VENTILATOR", label: "Ventilator & Critical Care" },
+  { code: "NICU", label: "Neonatal ICU (NICU)" },
   { code: "PEDIATRIC_ICU", label: "Pediatric ICU (PICU)" },
-  { code: "NEONATAL_ICU", label: "Neonatal ICU (NICU)" },
 ];
+
+function matchCategory(codeA?: string, codeB?: string): boolean {
+  if (!codeA || !codeB) return false;
+  const a = codeA.trim().toUpperCase();
+  const b = codeB.trim().toUpperCase();
+  if (a === b) return true;
+  if ((a === "NICU" && b === "NEONATAL_ICU") || (a === "NEONATAL_ICU" && b === "NICU")) return true;
+  return false;
+}
 
 export function ModifyRequestModal({
   isOpen,
@@ -40,31 +49,45 @@ export function ModifyRequestModal({
   const [patientRef, setPatientRef] = useState<string>("");
   const [ambulanceUnit, setAmbulanceUnit] = useState<string>("");
 
+  const prevValidBedsRef = useRef<number>(1);
+  const prevOpenRef = useRef<boolean>(false);
+  const prevDispatchIdRef = useRef<string | null>(null);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetchedBeds, setFetchedBeds] = useState<any[]>([]);
 
-  // Synchronize form fields whenever dispatch or isOpen changes
+  // Synchronize form fields STRICTLY when modal opens or active request ID changes
+  // Crucial: background polling must NOT wipe out user input while modal is open
   useEffect(() => {
-    if (dispatch && isOpen) {
+    const isJustOpening = isOpen && !prevOpenRef.current;
+    const isNewDispatch = Boolean(dispatch && dispatch.id !== prevDispatchIdRef.current);
+
+    if (isOpen && dispatch && (isJustOpening || isNewDispatch)) {
       setEtaMinutes(String(dispatch.etaMinutes || 15));
       setPatientCondition(dispatch.patientCondition || "");
-      setRequestedBeds(String(dispatch.requestedBeds || 1));
+      const beds = dispatch.requestedBeds || 1;
+      setRequestedBeds(String(beds));
+      prevValidBedsRef.current = beds;
       setBedCategoryCode(dispatch.bedCategoryCode || "ICU");
       setPatientRef(dispatch.patientRef || dispatch.patientReference || "");
       setAmbulanceUnit(dispatch.ambulanceUnit || dispatch.ambulanceId || "");
       setError(null);
     }
-  }, [dispatch, isOpen]);
+
+    prevOpenRef.current = isOpen;
+    if (dispatch) {
+      prevDispatchIdRef.current = dispatch.id;
+    }
+  }, [isOpen, dispatch?.id]);
 
   useEffect(() => {
     if (!isOpen || !dispatch) return;
     const provided = propHospitalBeds || (dispatch as any).hospitalBeds;
     if (provided && provided.length > 0) {
-      setFetchedBeds(provided);
       return;
     }
-    // Fetch live beds from Neon for this dispatch/hospital
+    // Only fetch live beds from Neon if not provided in props/dispatch
     fetch(`/api/dispatch-requests/${dispatch.id}`)
       .then((res) => res.json())
       .then((data) => {
@@ -75,18 +98,45 @@ export function ModifyRequestModal({
       .catch((err) => {
         console.error("Failed to fetch live hospital beds in modify modal:", err);
       });
-  }, [isOpen, dispatch, propHospitalBeds]);
-
-  if (!isOpen || !dispatch) return null;
-
-  const approvedCount = dispatch.approvedBeds || 0;
-  const isAccepted = dispatch.status.toUpperCase() === "ACCEPTED";
-  const isCategoryChanged = bedCategoryCode.toUpperCase() !== (dispatch.bedCategoryCode || "").toUpperCase();
+  }, [isOpen, dispatch?.id]);
 
   // Dynamic hospital bed availability from Neon
-  const hospitalBeds = propHospitalBeds || (dispatch as any).hospitalBeds || fetchedBeds;
-  const currentCategoryBeds = hospitalBeds.find(
-    (b: any) => b.categoryCode?.toUpperCase() === bedCategoryCode.toUpperCase()
+  const hospitalBeds = propHospitalBeds || (dispatch as any)?.hospitalBeds || fetchedBeds;
+
+  // Build complete list of available categories
+  const categoryOptions = useMemo(() => {
+    const list: { code: string; label: string; available: number }[] = [];
+
+    for (const base of BASE_CATEGORIES) {
+      const match = hospitalBeds.find((b: any) => matchCategory(b.categoryCode, base.code));
+      list.push({
+        code: base.code,
+        label: base.label,
+        available: match ? match.availableBeds : 0,
+      });
+    }
+
+    if (Array.isArray(hospitalBeds)) {
+      for (const b of hospitalBeds) {
+        if (!list.some((c) => matchCategory(c.code, b.categoryCode))) {
+          list.push({
+            code: b.categoryCode,
+            label: b.name || b.categoryCode,
+            available: b.availableBeds,
+          });
+        }
+      }
+    }
+
+    return list;
+  }, [hospitalBeds]);
+
+  const approvedCount = dispatch?.approvedBeds || 0;
+  const isAccepted = dispatch?.status?.toUpperCase() === "ACCEPTED";
+  const isCategoryChanged = !matchCategory(bedCategoryCode, dispatch?.bedCategoryCode);
+
+  const currentCategoryBeds = hospitalBeds.find((b: any) =>
+    matchCategory(b.categoryCode, bedCategoryCode)
   );
 
   // Maximum beds available in hospital for the selected category
@@ -96,10 +146,12 @@ export function ModifyRequestModal({
       : currentCategoryBeds.availableBeds
     : 0;
 
+  if (!isOpen || !dispatch) return null;
+
   // Calculations for bed preview
   const parsedPreviewBeds =
     requestedBeds.trim() === "" || isNaN(Number(requestedBeds))
-      ? dispatch.requestedBeds || 1
+      ? prevValidBedsRef.current || dispatch.requestedBeds || 1
       : Math.max(1, parseInt(requestedBeds, 10));
 
   let approvedPreview = approvedCount;
@@ -305,9 +357,9 @@ export function ModifyRequestModal({
                 onChange={(e) => setBedCategoryCode(e.target.value)}
                 className="w-full px-3 py-2 font-mono text-xs bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none"
               >
-                {BED_CATEGORIES.map((cat) => (
+                {categoryOptions.map((cat) => (
                   <option key={cat.code} value={cat.code}>
-                    {cat.label}
+                    {cat.label} ({cat.available} avail)
                   </option>
                 ))}
               </select>
@@ -328,10 +380,29 @@ export function ModifyRequestModal({
                 min="1"
                 max={maxAvailableBeds > 0 ? maxAvailableBeds : undefined}
                 value={requestedBeds}
-                onChange={(e) => setRequestedBeds(e.target.value)}
+                onFocus={(e) => {
+                  const val = Number(e.target.value);
+                  if (!isNaN(val) && val >= 1) prevValidBedsRef.current = val;
+                }}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setRequestedBeds("");
+                    return;
+                  }
+                  const parsed = parseInt(val, 10);
+                  if (!isNaN(parsed)) {
+                    setRequestedBeds(val);
+                    if (parsed >= 1) prevValidBedsRef.current = parsed;
+                  }
+                }}
                 onBlur={() => {
                   if (requestedBeds.trim() === "" || isNaN(Number(requestedBeds)) || Number(requestedBeds) < 1) {
-                    setRequestedBeds(String(dispatch.requestedBeds || 1));
+                    setRequestedBeds(String(prevValidBedsRef.current || dispatch.requestedBeds || 1));
+                  } else {
+                    const parsed = parseInt(requestedBeds, 10);
+                    setRequestedBeds(String(parsed));
+                    prevValidBedsRef.current = parsed;
                   }
                 }}
                 className="w-full px-3 py-2 bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] rounded-xs focus:outline-none font-mono"

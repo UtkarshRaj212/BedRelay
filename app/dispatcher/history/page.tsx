@@ -248,6 +248,7 @@ export default function DispatcherHistoryPage() {
                 <option value="ALL">All Statuses</option>
                 <option value="PENDING">PENDING</option>
                 <option value="ACCEPTED">ACCEPTED</option>
+                <option value="EXPIRED">EXPIRED</option>
                 <option value="REJECTED">REJECTED</option>
                 <option value="COMPLETED">COMPLETED</option>
                 <option value="CANCELLED">CANCELLED</option>
@@ -341,7 +342,7 @@ export default function DispatcherHistoryPage() {
                             ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border-blue-300 dark:border-blue-800/60"
                             : disp.status === "REJECTED"
                             ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
-                            : disp.status === "CANCELLED"
+                            : disp.status === "CANCELLED" || disp.status === "EXPIRED"
                             ? "bg-slate-100 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border-slate-300 dark:border-[#333]"
                             : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
                         }`}
@@ -507,7 +508,7 @@ export default function DispatcherHistoryPage() {
                               ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border-blue-300 dark:border-blue-800/60"
                               : disp.status === "REJECTED"
                               ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
-                              : disp.status === "CANCELLED"
+                              : disp.status === "CANCELLED" || disp.status === "EXPIRED"
                               ? "bg-slate-100 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border-slate-300 dark:border-[#333]"
                               : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
                           }`}

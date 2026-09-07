@@ -6,6 +6,7 @@ import { calculateDistanceKm, isValidCoordinates } from "@/lib/geo";
 import {
   resolveServerDispatcherSession,
   getActiveDispatchForSession,
+  checkAndAutoCompleteExpiredDispatches,
 } from "@/lib/dispatcher-server";
 import { logDispatchActivity } from "@/lib/activity-logger";
 
@@ -14,6 +15,8 @@ export const revalidate = 0;
 
 export async function GET(req: NextRequest) {
   try {
+    await checkAndAutoCompleteExpiredDispatches();
+
     const { searchParams } = new URL(req.url);
     const { sessionId: serverSessionId, applyCookie } = resolveServerDispatcherSession(req);
     const sessionId = searchParams.get("sessionId") || serverSessionId;

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { hospitals, bedCategories, dispatchRequests } from "@/db/schema";
 import { calculateDistanceKm, INDIAN_CITIES, isValidCoordinates } from "@/lib/geo";
 import { seedIndianHospitals } from "@/lib/seed-service";
+import { checkAndAutoCompleteExpiredDispatches } from "@/lib/dispatcher-server";
 import { desc, eq, inArray } from "drizzle-orm";
 
 // Maximum radius (km) for a hospital to be considered "local" to the selected city or GPS position
@@ -14,6 +15,7 @@ export const revalidate = 0;
 export async function GET(req: NextRequest) {
   try {
     await seedIndianHospitals(false);
+    await checkAndAutoCompleteExpiredDispatches();
 
     const [allHospitals, allBeds, activeDispatches, allDispatches] = await Promise.all([
       db.select().from(hospitals).where(eq(hospitals.status, "ACTIVE")),
@@ -33,11 +35,13 @@ export async function GET(req: NextRequest) {
     const pendingCount = allDispatches.filter((d) => d.status === "PENDING").length;
     const acceptedCount = allDispatches.filter((d) => d.status === "ACCEPTED").length;
     const completedCount = allDispatches.filter((d) => d.status === "COMPLETED").length;
+    const expiredCount = allDispatches.filter((d) => d.status === "EXPIRED").length;
     const counts = {
       active: pendingCount + acceptedCount,
       pending: pendingCount,
       accepted: acceptedCount,
       completed: completedCount,
+      expired: expiredCount,
     };
 
     const { searchParams } = new URL(req.url);

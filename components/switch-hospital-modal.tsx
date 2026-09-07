@@ -21,7 +21,7 @@ interface SwitchHospitalModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentDispatch: ActiveDispatch | null;
-  targetHospital: TargetHospitalInfo | null;
+  targetHospital?: TargetHospitalInfo | null;
   availableHospitals?: TargetHospitalInfo[];
   onConfirmSwitch: (params?: { targetHospitalId?: string; bedCategoryCode: string; requestedBeds: number }) => Promise<void>;
   isSubmitting?: boolean;
@@ -46,54 +46,124 @@ export function SwitchHospitalModal({
   isSubmitting = false,
   error = null,
 }: SwitchHospitalModalProps) {
+  const [internalHospitals, setInternalHospitals] = useState<TargetHospitalInfo[]>([]);
+  const [isLoadingHospitals, setIsLoadingHospitals] = useState<boolean>(false);
   const [selectedHospitalId, setSelectedHospitalId] = useState<string>("");
   const [bedCategoryCode, setBedCategoryCode] = useState<string>("ICU");
   const [requestedBeds, setRequestedBeds] = useState<string>("1");
   const prevRequestedBedsRef = useRef<number>(1);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Sync selected hospital when modal opens or targetHospital changes
-  useEffect(() => {
-    if (targetHospital) {
-      setSelectedHospitalId(targetHospital.id);
-    } else if (availableHospitals && availableHospitals.length > 0) {
-      setSelectedHospitalId(availableHospitals[0].id);
-    }
-  }, [targetHospital, availableHospitals, isOpen]);
+  const prevOpenRef = useRef<boolean>(false);
+  const prevDispatchIdRef = useRef<string | null>(null);
 
-  // Sync category and beds when active dispatch or modal open state changes
+  // Fallback: If availableHospitals is not provided or empty, fetch hospitals from API
   useEffect(() => {
-    if (currentDispatch && isOpen) {
-      const cat = currentDispatch.bedCategoryCode || "ICU";
-      const beds = currentDispatch.requestedBeds || 1;
-      setBedCategoryCode(cat);
-      setRequestedBeds(String(beds));
-      prevRequestedBedsRef.current = beds;
-      setLocalError(null);
+    if (!isOpen) return;
+    if (availableHospitals && availableHospitals.length > 0) return;
+
+    let isMounted = true;
+    setIsLoadingHospitals(true);
+    fetch("/api/hospitals/search")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isMounted) return;
+        if (data && Array.isArray(data.hospitals)) {
+          const others = data.hospitals.filter(
+            (h: any) => h.id !== currentDispatch?.hospitalId
+          );
+          setInternalHospitals(others);
+        }
+      })
+      .catch((err) => console.error("Error fetching hospitals for switch modal:", err))
+      .finally(() => {
+        if (isMounted) setIsLoadingHospitals(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen, availableHospitals, currentDispatch?.hospitalId]);
+
+  // Combine external and internal hospital lists, excluding the current receiving facility
+  const combinedHospitals = useMemo(() => {
+    const list = (availableHospitals && availableHospitals.length > 0)
+      ? availableHospitals
+      : internalHospitals;
+    return list.filter((h) => h.id !== currentDispatch?.hospitalId);
+  }, [availableHospitals, internalHospitals, currentDispatch?.hospitalId]);
+
+  // Synchronize initial form state strictly when the modal opens or active dispatch changes.
+  // NEVER overwrite user typing on background polling ticks!
+  useEffect(() => {
+    if (isOpen && currentDispatch) {
+      const isNewOpen = !prevOpenRef.current;
+      const isDifferentDispatch = currentDispatch.id !== prevDispatchIdRef.current;
+
+      if (isNewOpen || isDifferentDispatch) {
+        prevOpenRef.current = true;
+        prevDispatchIdRef.current = currentDispatch.id;
+
+        const initialCategory = currentDispatch.bedCategoryCode || "ICU";
+        const initialBeds = currentDispatch.requestedBeds || 1;
+        setBedCategoryCode(initialCategory);
+        setRequestedBeds(String(initialBeds));
+        prevRequestedBedsRef.current = initialBeds;
+        setLocalError(null);
+
+        // Set initial hospital
+        if (targetHospital && targetHospital.id !== currentDispatch.hospitalId) {
+          setSelectedHospitalId(targetHospital.id);
+        } else if (combinedHospitals.length > 0) {
+          setSelectedHospitalId(combinedHospitals[0].id);
+        }
+      }
+    } else if (!isOpen) {
+      prevOpenRef.current = false;
     }
-  }, [currentDispatch, isOpen]);
+  }, [isOpen, currentDispatch, targetHospital, combinedHospitals]);
+
+  // If selectedHospitalId is empty or not in combinedHospitals, select the first valid option
+  useEffect(() => {
+    if (isOpen && combinedHospitals.length > 0) {
+      const exists = combinedHospitals.some((h) => h.id === selectedHospitalId);
+      if (!exists) {
+        if (targetHospital && targetHospital.id !== currentDispatch?.hospitalId) {
+          setSelectedHospitalId(targetHospital.id);
+        } else {
+          setSelectedHospitalId(combinedHospitals[0].id);
+        }
+      }
+    }
+  }, [isOpen, combinedHospitals, selectedHospitalId, targetHospital, currentDispatch?.hospitalId]);
 
   // Determine effective target hospital
   const effectiveHospital = useMemo(() => {
-    if (availableHospitals && availableHospitals.length > 0) {
-      const match = availableHospitals.find((h) => h.id === selectedHospitalId);
-      if (match) return match;
+    if (selectedHospitalId) {
+      const found = combinedHospitals.find((h) => h.id === selectedHospitalId);
+      if (found) return found;
     }
-    return targetHospital || (availableHospitals && availableHospitals[0]) || null;
-  }, [selectedHospitalId, availableHospitals, targetHospital]);
+    if (targetHospital && targetHospital.id !== currentDispatch?.hospitalId) {
+      return targetHospital;
+    }
+    return combinedHospitals[0] || null;
+  }, [selectedHospitalId, combinedHospitals, targetHospital, currentDispatch?.hospitalId]);
 
-  // Derive available categories for the effective hospital
+  // Derive available categories and available counts for the effective hospital
   const categoryOptions = useMemo(() => {
-    if (!effectiveHospital) return SUPPORTED_CATEGORIES.map((c) => ({ ...c, available: 0 }));
+    if (!effectiveHospital) {
+      return SUPPORTED_CATEGORIES.map((c) => ({ ...c, available: 0 }));
+    }
 
     const list: { code: string; label: string; available: number }[] = [];
 
-    // Map base categories with current hospital's available counts
+    // Map base categories
     for (const cat of SUPPORTED_CATEGORIES) {
       const found = effectiveHospital.beds?.find(
         (b) =>
           b.categoryCode.toUpperCase() === cat.code.toUpperCase() ||
-          (cat.code === "NICU" && b.categoryCode.toUpperCase() === "NEONATAL_ICU")
+          (cat.code === "NICU" && b.categoryCode.toUpperCase() === "NEONATAL_ICU") ||
+          (cat.code === "NEONATAL_ICU" && b.categoryCode.toUpperCase() === "NICU")
       );
       list.push({
         code: cat.code,
@@ -102,10 +172,15 @@ export function SwitchHospitalModal({
       });
     }
 
-    // Add any hospital-specific bed categories not in base list
+    // Add hospital-specific bed categories not present in base list
     if (effectiveHospital.beds) {
       for (const b of effectiveHospital.beds) {
-        if (!list.some((c) => c.code.toUpperCase() === b.categoryCode.toUpperCase())) {
+        const isAlreadyListed = list.some(
+          (c) =>
+            c.code.toUpperCase() === b.categoryCode.toUpperCase() ||
+            (c.code === "NICU" && b.categoryCode.toUpperCase() === "NEONATAL_ICU")
+        );
+        if (!isAlreadyListed) {
           list.push({
             code: b.categoryCode,
             label: b.name || b.categoryCode,
@@ -124,14 +199,15 @@ export function SwitchHospitalModal({
     return effectiveHospital.beds.find(
       (b) =>
         b.categoryCode.toUpperCase() === bedCategoryCode.toUpperCase() ||
-        (bedCategoryCode.toUpperCase() === "NICU" && b.categoryCode.toUpperCase() === "NEONATAL_ICU")
+        (bedCategoryCode.toUpperCase() === "NICU" && b.categoryCode.toUpperCase() === "NEONATAL_ICU") ||
+        (bedCategoryCode.toUpperCase() === "NEONATAL_ICU" && b.categoryCode.toUpperCase() === "NICU")
     );
   }, [effectiveHospital, bedCategoryCode]);
 
   const maxAvailableBeds = targetCategoryBed ? targetCategoryBed.availableBeds : 0;
 
-  // Early return strictly AFTER all hooks
-  if (!isOpen || !currentDispatch || !effectiveHospital) {
+  // Early return strictly AFTER all hooks are called
+  if (!isOpen || !currentDispatch) {
     return null;
   }
 
@@ -139,6 +215,11 @@ export function SwitchHospitalModal({
 
   const handleConfirm = async () => {
     setLocalError(null);
+
+    if (!effectiveHospital) {
+      setLocalError("Please select a target receiving hospital facility.");
+      return;
+    }
 
     let finalBeds: number;
     if (requestedBeds.trim() === "" || isNaN(Number(requestedBeds)) || Number(requestedBeds) < 1) {
@@ -180,7 +261,7 @@ export function SwitchHospitalModal({
         <div className="border-b border-slate-200 dark:border-[#222222] pb-3 mb-4 flex items-center justify-between">
           <div>
             <span className="text-[10px] font-mono uppercase tracking-widest text-amber-700 dark:text-amber-400 font-bold block">
-              ACTIVE REQUEST CONFLICT
+              ACTIVE REQUEST MANAGEMENT
             </span>
             <h2 id="switch-dialog-title" className="text-base sm:text-lg font-bold text-slate-900 dark:text-[#ededed] leading-tight">
               SWITCH RECEIVING HOSPITAL
@@ -246,36 +327,38 @@ export function SwitchHospitalModal({
               <span className="text-[10px] text-blue-700 dark:text-blue-400 uppercase font-bold tracking-wider">
                 NEW DESTINATION FACILITY
               </span>
-              {availableHospitals && availableHospitals.length > 1 && (
+              {combinedHospitals.length > 1 && (
                 <span className="text-[10px] text-slate-500 dark:text-[#777] font-mono">
-                  {availableHospitals.length} options
+                  {combinedHospitals.length} options
                 </span>
               )}
             </div>
 
-            {availableHospitals && availableHospitals.length > 1 ? (
+            {isLoadingHospitals && combinedHospitals.length === 0 ? (
+              <div className="text-xs text-slate-500 py-2">Loading available facilities...</div>
+            ) : combinedHospitals.length > 0 ? (
               <div className="mt-1">
                 <select
-                  value={effectiveHospital.id}
+                  value={effectiveHospital ? effectiveHospital.id : selectedHospitalId}
                   onChange={(e) => {
                     setSelectedHospitalId(e.target.value);
                     setLocalError(null);
                   }}
                   className="w-full px-2.5 py-1.5 bg-white dark:bg-[#111] border border-blue-300 dark:border-blue-800 text-slate-900 dark:text-[#ededed] font-bold text-xs rounded-xs focus:outline-none"
                 >
-                  {availableHospitals.map((h) => (
+                  {combinedHospitals.map((h) => (
                     <option key={h.id} value={h.id}>
                       {h.name} {h.city ? `(${h.city})` : ""}
                     </option>
                   ))}
                 </select>
-                {effectiveHospital.address && (
+                {effectiveHospital && effectiveHospital.address && (
                   <div className="text-[10px] text-slate-500 dark:text-[#888] mt-1 break-words">
                     {effectiveHospital.address}{effectiveHospital.city ? `, ${effectiveHospital.city}` : ""}
                   </div>
                 )}
               </div>
-            ) : (
+            ) : effectiveHospital ? (
               <div>
                 <div className="font-bold text-slate-900 dark:text-[#ededed] text-sm break-words">
                   {effectiveHospital.name}
@@ -286,6 +369,10 @@ export function SwitchHospitalModal({
                     {effectiveHospital.city}
                   </div>
                 )}
+              </div>
+            ) : (
+              <div className="text-xs text-amber-700 dark:text-amber-400 py-2">
+                No alternate receiving hospital facilities available.
               </div>
             )}
           </div>
@@ -362,7 +449,7 @@ export function SwitchHospitalModal({
         </div>
 
         <div className="p-2.5 bg-slate-100 dark:bg-[#121212] border border-slate-200 dark:border-[#222222] rounded-xs text-[11px] text-slate-600 dark:text-[#888888] mb-5 font-mono">
-          The current request (<span className="font-bold text-slate-800 dark:text-[#ccc]">{currentDispatch.id}</span>) will be atomically cancelled before the new request is sent.
+          The current request (<span className="font-bold text-slate-800 dark:text-[#ccc]">{currentDispatch.id}</span>) will be atomically cancelled before the new request is transmitted.
         </div>
 
         {(error || localError) && (
@@ -371,7 +458,7 @@ export function SwitchHospitalModal({
           </div>
         )}
 
-        {/* Action Buttons: Stack on mobile, flex on desktop */}
+        {/* Action Buttons */}
         <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2">
           <button
             type="button"
@@ -384,7 +471,7 @@ export function SwitchHospitalModal({
           <button
             type="button"
             onClick={handleConfirm}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !effectiveHospital}
             className={`w-full sm:w-auto py-2.5 px-4 text-xs font-mono font-bold uppercase tracking-wider rounded-xs transition-colors cursor-pointer disabled:opacity-50 text-center shadow-xs ${
               isAccepted
                 ? "bg-red-700 hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-700 border border-red-800 dark:border-red-500 text-white"
@@ -395,7 +482,9 @@ export function SwitchHospitalModal({
               ? "SWITCHING FACILITY..."
               : isAccepted
               ? "CANCEL & SWITCH"
-              : `CANCEL & SEND TO ${effectiveHospital.name.split(" ")[0].toUpperCase()}`}
+              : effectiveHospital
+              ? `CANCEL & SEND TO ${effectiveHospital.name.split(" ")[0].toUpperCase()}`
+              : "CANCEL & SWITCH"}
           </button>
         </div>
       </div>

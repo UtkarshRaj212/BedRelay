@@ -552,6 +552,8 @@ export default function DashboardPage() {
                         className={`px-2 py-0.5 text-[10px] font-mono font-medium border rounded-xs uppercase ${
                           disp.status === "ACCEPTED" || disp.status === "COMPLETED"
                             ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                            : disp.status === "EXPIRED"
+                            ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border-slate-300 dark:border-[#333]"
                             : disp.status === "REJECTED" || disp.status === "CANCELLED"
                             ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
                             : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"
@@ -645,6 +647,8 @@ export default function DashboardPage() {
                             className={`px-2.5 py-1 text-xs font-mono font-medium border rounded-sm ${
                               disp.status === "ACCEPTED" || disp.status === "COMPLETED"
                                 ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+                                : disp.status === "EXPIRED"
+                                ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border-slate-300 dark:border-[#333]"
                                 : disp.status === "REJECTED" || disp.status === "CANCELLED"
                                 ? "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border-red-300 dark:border-red-800/60"
                                 : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60"

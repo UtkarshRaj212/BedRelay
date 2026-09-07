@@ -25,8 +25,11 @@ export function ActiveDispatchBanner({
   }
 
   const isAccepted = activeDispatch.status.toUpperCase() === "ACCEPTED";
+  const isExpired = activeDispatch.status.toUpperCase() === "EXPIRED";
   const statusBg = isAccepted
     ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60"
+    : isExpired
+    ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border-slate-300 dark:border-[#333]"
     : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-800/60";
 
   const handleSwitch = () => {

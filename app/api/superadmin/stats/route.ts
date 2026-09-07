@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assertSuperAdmin, recordAuditLog } from "@/lib/auth-server";
+import { checkAndAutoCompleteExpiredDispatches } from "@/lib/dispatcher-server";
 import { db } from "@/db";
 import { hospitals, bedCategories, dispatchRequests, hospitalMemberships, auditLogs, user } from "@/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
@@ -8,6 +9,8 @@ export async function GET(req: NextRequest) {
   try {
     const { errorResponse, user: superAdmin } = await assertSuperAdmin(req);
     if (errorResponse) return errorResponse;
+
+    await checkAndAutoCompleteExpiredDispatches();
 
     // 1. Hospital counts
     const allHospitals = await db.select({
@@ -49,6 +52,7 @@ export async function GET(req: NextRequest) {
     const pendingDispatches = allDispatches.filter((d) => d.status === "PENDING").length;
     const acceptedDispatches = allDispatches.filter((d) => d.status === "ACCEPTED").length;
     const completedDispatches = allDispatches.filter((d) => d.status === "COMPLETED").length;
+    const expiredDispatches = allDispatches.filter((d) => d.status === "EXPIRED").length;
 
     // 4. Staff counts across all hospitals
     const allMemberships = await db.select({
@@ -99,6 +103,7 @@ export async function GET(req: NextRequest) {
           pending: pendingDispatches,
           accepted: acceptedDispatches,
           completed: completedDispatches,
+          expired: expiredDispatches,
           active: pendingDispatches + acceptedDispatches,
         },
         staff: {

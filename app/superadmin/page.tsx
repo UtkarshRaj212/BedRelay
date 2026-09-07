@@ -1588,6 +1588,7 @@ export default function SuperAdminPage() {
                   <option value="ALL">All Statuses</option>
                   <option value="PENDING">PENDING</option>
                   <option value="ACCEPTED">ACCEPTED</option>
+                  <option value="EXPIRED">EXPIRED</option>
                   <option value="REJECTED">REJECTED</option>
                   <option value="COMPLETED">COMPLETED</option>
                   <option value="CANCELLED">CANCELLED</option>
@@ -1619,6 +1620,8 @@ export default function SuperAdminPage() {
                             ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/40"
                             : disp.status === "COMPLETED"
                             ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-800/40"
+                            : disp.status === "EXPIRED"
+                            ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border border-slate-300 dark:border-[#333]"
                             : "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border border-red-300 dark:border-red-800/40"
                         }`}
                       >
@@ -1746,6 +1749,8 @@ export default function SuperAdminPage() {
                               ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/40"
                               : disp.status === "COMPLETED"
                               ? "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-400 border border-blue-300 dark:border-blue-800/40"
+                              : disp.status === "EXPIRED"
+                              ? "bg-slate-200 dark:bg-[#1a1a1a] text-slate-700 dark:text-[#999] border border-slate-300 dark:border-[#333]"
                               : "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-400 border border-red-300 dark:border-red-800/40"
                           }`}
                         >

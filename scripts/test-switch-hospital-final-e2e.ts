@@ -46,6 +46,9 @@ async function runTest() {
         totalBeds: 10,
         availableBeds: 5,
         occupiedBeds: 5,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastUpdated: new Date(),
       });
     }
   }
@@ -72,6 +75,9 @@ async function runTest() {
         totalBeds: 50,
         availableBeds: 30,
         occupiedBeds: 20,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastUpdated: new Date(),
       });
     }
   }
