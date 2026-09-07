@@ -60,7 +60,7 @@ export default function Home() {
         {/* Hero Section */}
         <section id="overview" className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] py-16 sm:py-24">
           <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
-            <div className="max-w-3xl mx-auto text-center flex flex-col items-center">
+            <div className="max-w-4xl lg:max-w-5xl mx-auto text-center flex flex-col items-center">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] font-mono text-xs font-semibold rounded-sm mb-6 max-w-full">
                 <span className="w-1.5 h-1.5 bg-blue-700 dark:bg-blue-500 rounded-full shrink-0"></span>
                 <span>AMBULANCE-TO-HOSPITAL PRE-ARRIVAL COORDINATION PLATFORM</span>
@@ -94,7 +94,7 @@ export default function Home() {
                 </Link>
               </div>
 
-              <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-slate-200 dark:border-[#222222] w-full text-left">
+              <div className="mt-12 grid grid-cols-1 sm:grid-cols-[1fr_1.35fr_1fr] lg:grid-cols-[1fr_1.45fr_1fr] gap-4 pt-8 border-t border-slate-200 dark:border-[#222222] w-full text-left">
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Data Synchronization</div>
                   <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">&lt; 02 seconds</div>
@@ -102,7 +102,10 @@ export default function Home() {
                 </div>
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Tracked Categories</div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">ICU / General / Ventilator / NICU / PICU</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono leading-snug">
+                    <span>ICU / General / Ventilator /</span>{" "}
+                    <span className="whitespace-nowrap">NICU / PICU</span>
+                  </div>
                   <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">Intensive, general, ventilator, neonatal, and pediatric critical capacity</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
