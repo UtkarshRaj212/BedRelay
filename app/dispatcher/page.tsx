@@ -103,16 +103,29 @@ export default function DispatcherDashboardPage() {
       setSwitchError(null);
       const res = await switchHospital({
         targetHospitalId: switchTargetHospital.id,
-        bedCategoryCode: selectedCategory,
-        requestedBeds: typeof requestedBeds === "number" ? requestedBeds : parseInt(requestedBeds, 10) || 1,
-        etaMinutes: typeof etaMinutes === "number" ? etaMinutes : parseInt(etaMinutes, 10) || 15,
-        ambulanceLat: ambulanceCoordinates ? ambulanceCoordinates.lat : null,
-        ambulanceLng: ambulanceCoordinates ? ambulanceCoordinates.lng : null,
-        patientCondition,
+        bedCategoryCode: activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory,
+        requestedBeds: activeDispatch
+          ? activeDispatch.requestedBeds
+          : typeof requestedBeds === "number"
+          ? requestedBeds
+          : parseInt(requestedBeds, 10) || 1,
+        etaMinutes: activeDispatch
+          ? activeDispatch.etaMinutes
+          : typeof etaMinutes === "number"
+          ? etaMinutes
+          : parseInt(etaMinutes, 10) || 15,
+        ambulanceLat: ambulanceCoordinates ? ambulanceCoordinates.lat : (activeDispatch?.ambulanceLat ?? null),
+        ambulanceLng: ambulanceCoordinates ? ambulanceCoordinates.lng : (activeDispatch?.ambulanceLng ?? null),
+        patientCondition: activeDispatch ? activeDispatch.patientCondition : patientCondition,
+        ambulanceUnit: activeDispatch?.ambulanceUnit || ambulanceUnit,
+        ambulanceId: activeDispatch?.ambulanceId,
+        patientRef: activeDispatch?.patientRef,
+        patientReference: activeDispatch?.patientReference,
       });
 
       if (res.success) {
         setSwitchTargetHospital(null);
+        await refreshActive();
         await fetchLiveData();
       } else {
         setSwitchError(res.error || "Failed to switch receiving hospital.");
@@ -193,9 +206,14 @@ export default function DispatcherDashboardPage() {
 
   useEffect(() => {
     fetchLiveData();
-    const interval = setInterval(fetchLiveData, 1000); // 1-second synchronization
+    const interval = setInterval(() => {
+      // Background sync without clobbering unsaved form inputs if editing
+      if (!dispatchModalHospital && !switchTargetHospital && !isModifyOpen) {
+        fetchLiveData();
+      }
+    }, 1000); // 1-second synchronization
     return () => clearInterval(interval);
-  }, [selectedCity, ambulanceCoordinates]);
+  }, [selectedCity, ambulanceCoordinates, dispatchModalHospital, switchTargetHospital, isModifyOpen]);
 
   const handleOpenDispatchModal = (hospital: HospitalItem) => {
     if (activeDispatch) {
@@ -272,7 +290,7 @@ export default function DispatcherDashboardPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
               BR
@@ -310,7 +328,7 @@ export default function DispatcherDashboardPage() {
         onSwitchClick={() => router.push("/find-beds?switch=true")}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-8">
         {/* Controls Banner */}
         <div className="bg-white dark:bg-[#0f0f0f] p-6 border border-slate-200 dark:border-[#222222] rounded-sm mb-8">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -605,15 +623,15 @@ export default function DispatcherDashboardPage() {
             <table className="w-full text-left text-sm border-collapse">
               <thead className="bg-slate-100 dark:bg-[#141414] text-slate-700 dark:text-[#888888] font-mono text-xs uppercase border-b border-slate-200 dark:border-[#222222]">
                 <tr>
-                  <th className="py-3.5 px-6 font-semibold">Dispatch ID</th>
-                  <th className="py-3.5 px-6 font-semibold">Receiving Hospital</th>
-                  <th className="py-3.5 px-6 font-semibold">Ambulance Unit</th>
-                  <th className="py-3.5 px-6 font-semibold">Bed Category Required</th>
-                  <th className="py-3.5 px-6 font-semibold text-center">Beds Requested</th>
-                  <th className="py-3.5 px-6 font-semibold">Patient Clinical Condition</th>
-                  <th className="py-3.5 px-6 font-semibold text-center">ETA</th>
-                  <th className="py-3.5 px-6 font-semibold text-center">Status</th>
-                  <th className="py-3.5 px-6 font-semibold text-right">Transmitted</th>
+                  <th className="py-3.5 px-3 xl:px-4 font-semibold whitespace-nowrap">Dispatch ID</th>
+                  <th className="py-3.5 px-3 xl:px-4 font-semibold whitespace-nowrap">Receiving Hospital</th>
+                  <th className="py-3.5 px-3 xl:px-4 font-semibold whitespace-nowrap">Ambulance Unit</th>
+                  <th className="py-3.5 px-3 xl:px-4 font-semibold whitespace-nowrap">Bed Category Required</th>
+                  <th className="py-3.5 px-3 xl:px-4 font-semibold text-center whitespace-nowrap">Beds Requested</th>
+                  <th className="py-3.5 px-3 xl:px-4 font-semibold min-w-[200px] xl:min-w-[280px]">Patient Clinical Condition</th>
+                  <th className="py-3.5 px-3 xl:px-4 font-semibold text-center whitespace-nowrap">ETA</th>
+                  <th className="py-3.5 px-3 xl:px-4 font-semibold text-center whitespace-nowrap">Status</th>
+                  <th className="py-3.5 px-3 xl:px-4 font-semibold text-right whitespace-nowrap">Transmitted</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-[#1f1f1f] bg-white dark:bg-[#0f0f0f]">
@@ -626,21 +644,28 @@ export default function DispatcherDashboardPage() {
                 ) : (
                   activeDispatches.map((disp) => (
                     <tr key={disp.id} className="hover:bg-slate-50 dark:hover:bg-[#141414] transition-colors">
-                      <td className="py-4 px-6 font-mono text-xs text-slate-600 dark:text-[#888888]">{disp.id}</td>
-                      <td className="py-4 px-6">
+                      <td className="py-4 px-3 xl:px-4 font-mono text-xs text-slate-600 dark:text-[#888888] font-semibold whitespace-nowrap">
+                        <Link
+                          href={`/dispatch-requests/${disp.id}`}
+                          className="hover:text-blue-600 dark:hover:text-blue-400 underline decoration-slate-300"
+                        >
+                          {disp.id}
+                        </Link>
+                      </td>
+                      <td className="py-4 px-3 xl:px-4">
                         <div className="font-semibold text-slate-900 dark:text-[#ededed] text-sm">{disp.hospitalName}</div>
                         <div className="text-xs font-mono text-slate-500 dark:text-[#737373] mt-0.5">{disp.hospitalCity}{disp.hospitalState ? `, ${disp.hospitalState}` : ""}</div>
                       </td>
-                      <td className="py-4 px-6 font-mono font-bold text-slate-900 dark:text-[#ededed]">{disp.ambulanceUnit}</td>
-                      <td className="py-4 px-6 font-mono text-xs font-semibold">
+                      <td className="py-4 px-3 xl:px-4 font-mono font-bold text-slate-900 dark:text-[#ededed] whitespace-nowrap">{disp.ambulanceUnit}</td>
+                      <td className="py-4 px-3 xl:px-4 font-mono text-xs font-semibold whitespace-nowrap">
                         <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-400 border border-blue-200 dark:border-blue-900/60 rounded-sm">
                           {disp.bedCategoryCode}
                         </span>
                       </td>
-                      <td className="py-4 px-6 font-mono text-center font-bold text-slate-900 dark:text-[#ededed]">{disp.requestedBeds || 1}</td>
-                      <td className="py-4 px-6 text-slate-800 dark:text-[#a1a1a1] font-medium">{disp.patientCondition}</td>
-                      <td className="py-4 px-6 font-mono text-center font-bold text-slate-900 dark:text-[#ededed]">{disp.etaMinutes}m</td>
-                      <td className="py-4 px-6 text-center">
+                      <td className="py-4 px-3 xl:px-4 font-mono text-center font-bold text-slate-900 dark:text-[#ededed] whitespace-nowrap">{disp.requestedBeds || 1}</td>
+                      <td className="py-4 px-3 xl:px-4 text-slate-800 dark:text-[#a1a1a1] font-medium min-w-[200px] xl:min-w-[280px] leading-relaxed break-words">{disp.patientCondition}</td>
+                      <td className="py-4 px-3 xl:px-4 font-mono text-center font-bold text-slate-900 dark:text-[#ededed] whitespace-nowrap">{disp.etaMinutes}m</td>
+                      <td className="py-4 px-3 xl:px-4 text-center whitespace-nowrap">
                         <span
                           className={`px-2.5 py-1 text-xs font-mono font-bold border rounded-sm ${
                             disp.status === "ACCEPTED" || disp.status === "COMPLETED"
@@ -653,7 +678,7 @@ export default function DispatcherDashboardPage() {
                           {disp.status}
                         </span>
                       </td>
-                      <td className="py-4 px-6 font-mono text-xs text-right text-slate-500 dark:text-[#737373]">
+                      <td className="py-4 px-3 xl:px-4 font-mono text-xs text-right text-slate-500 dark:text-[#737373] whitespace-nowrap">
                         <div>{formatDate(disp.createdAt)}</div>
                         <div className="text-[10px] text-slate-400">{new Date(disp.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                       </td>

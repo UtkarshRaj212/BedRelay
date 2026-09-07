@@ -334,16 +334,17 @@ async function runTest() {
 
   // ---------------------------------------------------------------------------
   // STEP 6: ETA Auto-Completion Lifecycle Verification
-  // Rule: threshold = ETA * 3. With ETA = 20, threshold = 60 minutes.
-  // We simulate createdAt = 65 minutes ago (elapsed > 60m).
+  // Rule: threshold = ETA + buffer, where buffer = max(20, ETA / 3).
+  // With ETA = 20: buffer = max(20, 6.67) = 20 -> threshold = 40 minutes.
+  // We simulate createdAt = 45 minutes ago (elapsed > 40m).
   // ---------------------------------------------------------------------------
-  console.log("\n--- STEP 6: ETA Auto-Completion Rule (Threshold = ETA * 3) ---");
-  console.log("Setting new dispatch createdAt to 65 minutes ago (ETA = 20, threshold = 60 minutes)...");
-  const sixtyFiveMinutesAgo = new Date(Date.now() - 65 * 60 * 1000);
+  console.log("\n--- STEP 6: ETA Auto-Completion Rule: threshold = ETA + max(20, ETA / 3) ---");
+  console.log("Setting new dispatch createdAt to 45 minutes ago (ETA = 20, buffer = 20, threshold = 40 minutes)...");
+  const fortyFiveMinutesAgo = new Date(Date.now() - 45 * 60 * 1000);
   await db
     .update(dispatchRequests)
     .set({
-      createdAt: sixtyFiveMinutesAgo,
+      createdAt: fortyFiveMinutesAgo,
       status: "ACCEPTED", // Auto-completion applies to ACTIVE requests (ACCEPTED / PENDING)
     })
     .where(eq(dispatchRequests.id, newDispatchId));

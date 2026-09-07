@@ -425,7 +425,7 @@ function SuperAdminStaffContent() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       <SuperAdminNav activeTab="staff" onRefresh={fetchAllStaffData} refreshing={refreshing} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-8">
         {/* Banner Alert Messages */}
         {actionMessage && (
           <div className="mb-6 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs font-mono rounded-sm flex items-center justify-between shadow-2xs">
@@ -720,12 +720,12 @@ function SuperAdminStaffContent() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>
-                    <th className="py-3 px-4 font-semibold">Staff Member & Email</th>
-                    <th className="py-3 px-4 font-semibold">Hospital Facility</th>
-                    <th className="py-3 px-4 font-semibold">Role</th>
-                    <th className="py-3 px-4 font-semibold">Status</th>
-                    <th className="py-3 px-4 font-semibold">Joined Date</th>
-                    <th className="py-3 px-4 font-semibold text-right">Actions</th>
+                    <th className="py-3 px-4 font-semibold whitespace-nowrap">Staff Member & Email</th>
+                    <th className="py-3 px-4 font-semibold whitespace-nowrap">Hospital Facility</th>
+                    <th className="py-3 px-4 font-semibold whitespace-nowrap">Role</th>
+                    <th className="py-3 px-4 font-semibold whitespace-nowrap">Status</th>
+                    <th className="py-3 px-4 font-semibold whitespace-nowrap">Joined Date</th>
+                    <th className="py-3 px-4 font-semibold text-right whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] font-mono">

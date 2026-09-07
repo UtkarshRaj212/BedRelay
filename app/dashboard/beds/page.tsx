@@ -166,7 +166,7 @@ export default function BedManagementPage() {
         </div>
 
         <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
                 BR
@@ -237,7 +237,7 @@ export default function BedManagementPage() {
 
       {/* Main Header & Nav Tabs */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-16 py-2.5 sm:py-0 flex flex-col md:flex-row md:items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
               BR
@@ -291,7 +291,7 @@ export default function BedManagementPage() {
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-8">
         {/* Hospital Header Banner */}
         <div className="bg-white dark:bg-[#0f0f0f] p-4 sm:p-6 border border-slate-200 dark:border-[#222222] rounded-sm mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="w-full md:w-auto">
@@ -338,45 +338,47 @@ export default function BedManagementPage() {
             <div className="p-8 text-center text-sm font-mono text-slate-500 dark:text-[#737373]">Loading bed capacity...</div>
           ) : (
             <>
-              {/* Mobile Cards: Bed Categories */}
-              <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f]">
+              {/* Mobile Card View (< md) */}
+              <div className="block md:hidden divide-y divide-slate-200 dark:divide-[#1f1f1f] bg-white dark:bg-[#0f0f0f]">
                 {beds.map((bed) => {
                   const occPct = bed.totalBeds > 0 ? Math.round((bed.occupiedBeds / bed.totalBeds) * 100) : 0;
                   return (
-                    <div key={bed.id} className="p-4 space-y-3 bg-white dark:bg-[#0f0f0f]">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded-xs bg-slate-100 dark:bg-[#1a1a1a] text-slate-800 dark:text-[#ccc] border border-slate-200 dark:border-[#333]">
-                            {bed.categoryCode}
-                          </span>
-                          <span className="font-semibold text-sm text-slate-900 dark:text-[#ededed]">
-                            {bed.name}
-                          </span>
-                        </div>
-                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-[#aaa]">
-                          {occPct}% Occ.
+                    <div key={bed.id} className="p-4 space-y-3 font-sans">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-sm text-slate-900 dark:text-[#ededed]">
+                          {bed.categoryCode} · {bed.name}
+                        </span>
+                        <span
+                          className={`text-xs font-mono font-bold px-2 py-0.5 rounded-sm border ${
+                            occPct >= 90
+                              ? "bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/60"
+                              : occPct >= 70
+                              ? "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-900/60"
+                              : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/60"
+                          }`}
+                        >
+                          {occPct}% Occ
                         </span>
                       </div>
 
-                      {/* Capacity Metrics */}
-                      <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-[#141414] p-3 rounded-xs border border-slate-100 dark:border-[#1a1a1a]">
-                        <div className="text-center">
-                          <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-[#737373] block">Available</span>
-                          <span className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400">{bed.availableBeds}</span>
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono bg-slate-50 dark:bg-[#141414] p-3 rounded-sm border border-slate-200 dark:border-[#222222]">
+                        <div>
+                          <div className="text-[10px] text-slate-400 uppercase">Available</div>
+                          <div className="text-lg font-bold text-emerald-700 dark:text-emerald-400 mt-0.5">{bed.availableBeds}</div>
                         </div>
-                        <div className="text-center border-x border-slate-200 dark:border-[#222]">
-                          <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-[#737373] block">Occupied</span>
-                          <span className="text-lg font-bold font-mono text-slate-700 dark:text-[#aaa]">{bed.occupiedBeds}</span>
+                        <div>
+                          <div className="text-[10px] text-slate-400 uppercase">Occupied</div>
+                          <div className="text-lg font-bold text-slate-600 dark:text-[#a1a1a1] mt-0.5">{bed.occupiedBeds}</div>
                         </div>
-                        <div className="text-center">
-                          <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-[#737373] block">Total</span>
-                          <span className="text-lg font-bold font-mono text-slate-900 dark:text-[#ededed]">{bed.totalBeds}</span>
+                        <div>
+                          <div className="text-[10px] text-slate-400 uppercase">Total</div>
+                          <div className="text-lg font-bold text-slate-900 dark:text-[#ededed] mt-0.5">{bed.totalBeds}</div>
                         </div>
                       </div>
 
-                      {/* Occupancy Progress Bar */}
+                      {/* Progress Bar */}
                       <div className="space-y-1">
-                        <div className="w-full bg-slate-200 dark:bg-[#222] h-1.5 rounded-full overflow-hidden">
+                        <div className="w-full bg-slate-200 dark:bg-[#222222] h-2 rounded-full overflow-hidden">
                           <div
                             className={`h-full transition-all duration-300 ${
                               occPct >= 90
@@ -397,7 +399,7 @@ export default function BedManagementPage() {
                       <button
                         onClick={() => handleOpenModal(bed)}
                         disabled={hospital?.status === "DEACTIVATED"}
-                        className={`w-full py-2.5 text-xs font-semibold uppercase tracking-wider rounded-xs transition-colors text-center ${
+                        className={`w-full py-2.5 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors text-center ${
                           hospital?.status === "DEACTIVATED"
                             ? "bg-slate-200 dark:bg-[#222222] text-slate-400 dark:text-[#666] cursor-not-allowed"
                             : "text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 cursor-pointer shadow-xs"
@@ -416,14 +418,14 @@ export default function BedManagementPage() {
                 <table className="w-full text-left text-sm border-collapse">
                   <thead className="bg-slate-100 dark:bg-[#141414] text-slate-700 dark:text-[#888888] font-mono text-xs uppercase border-b border-slate-200 dark:border-[#222222]">
                     <tr>
-                      <th className="py-3.5 px-6 font-semibold">Code</th>
-                      <th className="py-3.5 px-6 font-semibold">Category Name</th>
-                      <th className="py-3.5 px-6 font-semibold text-right">Total Capacity</th>
-                      <th className="py-3.5 px-6 font-semibold text-right">Available Beds</th>
-                      <th className="py-3.5 px-6 font-semibold text-right">Occupied Beds</th>
-                      <th className="py-3.5 px-6 font-semibold text-right">Occupancy %</th>
-                      <th className="py-3.5 px-6 font-semibold">Last Updated</th>
-                      <th className="py-3.5 px-6 font-semibold text-center">Action</th>
+                      <th className="py-3.5 px-4 font-semibold whitespace-nowrap">Code</th>
+                      <th className="py-3.5 px-4 font-semibold">Category Name</th>
+                      <th className="py-3.5 px-4 font-semibold text-right whitespace-nowrap">Total Capacity</th>
+                      <th className="py-3.5 px-4 font-semibold text-right whitespace-nowrap">Available Beds</th>
+                      <th className="py-3.5 px-4 font-semibold text-right whitespace-nowrap">Occupied Beds</th>
+                      <th className="py-3.5 px-4 font-semibold text-right whitespace-nowrap">Occupancy %</th>
+                      <th className="py-3.5 px-4 font-semibold whitespace-nowrap">Last Updated</th>
+                      <th className="py-3.5 px-4 font-semibold text-center whitespace-nowrap">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-[#1f1f1f] bg-white dark:bg-[#0f0f0f]">
@@ -431,24 +433,24 @@ export default function BedManagementPage() {
                       const occPct = bed.totalBeds > 0 ? Math.round((bed.occupiedBeds / bed.totalBeds) * 100) : 0;
                       return (
                         <tr key={bed.id} className="hover:bg-slate-50 dark:hover:bg-[#141414] transition-colors">
-                          <td className="py-4 px-6 font-mono font-bold text-slate-900 dark:text-[#ededed]">{bed.categoryCode}</td>
-                          <td className="py-4 px-6 font-semibold text-slate-900 dark:text-[#ededed]">{bed.name}</td>
-                          <td className="py-4 px-6 font-mono text-right text-slate-900 dark:text-[#ededed] font-semibold">{bed.totalBeds}</td>
-                          <td className="py-4 px-6 font-mono text-right font-bold text-emerald-700 dark:text-emerald-400">{bed.availableBeds}</td>
-                          <td className="py-4 px-6 font-mono text-right text-slate-600 dark:text-[#a1a1a1]">{bed.occupiedBeds}</td>
-                          <td className="py-4 px-6 font-mono text-right font-semibold text-slate-900 dark:text-[#ededed]">{occPct}%</td>
-                          <td className="py-4 px-6 font-mono text-xs text-slate-500 dark:text-[#737373]">
+                          <td className="py-4 px-4 font-mono font-bold text-slate-900 dark:text-[#ededed] whitespace-nowrap">{bed.categoryCode}</td>
+                          <td className="py-4 px-4 font-semibold text-slate-900 dark:text-[#ededed]">{bed.name}</td>
+                          <td className="py-4 px-4 font-mono text-right text-slate-900 dark:text-[#ededed] font-semibold whitespace-nowrap">{bed.totalBeds}</td>
+                          <td className="py-4 px-4 font-mono text-right font-bold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">{bed.availableBeds}</td>
+                          <td className="py-4 px-4 font-mono text-right text-slate-600 dark:text-[#a1a1a1] whitespace-nowrap">{bed.occupiedBeds}</td>
+                          <td className="py-4 px-4 font-mono text-right font-semibold text-slate-900 dark:text-[#ededed] whitespace-nowrap">{occPct}%</td>
+                          <td className="py-4 px-4 font-mono text-xs text-slate-500 dark:text-[#737373] whitespace-nowrap">
                             <div>{formatDate(bed.lastUpdated)}</div>
                             <div className="text-[10px] text-slate-400">{new Date(bed.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</div>
                           </td>
-                          <td className="py-4 px-6 text-center">
+                          <td className="py-4 px-4 text-center whitespace-nowrap">
                             <button
                               onClick={() => handleOpenModal(bed)}
                               disabled={hospital?.status === "DEACTIVATED"}
-                              className={`px-3 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors ${
+                              className={`px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider rounded-sm transition-colors whitespace-nowrap ${
                                 hospital?.status === "DEACTIVATED"
                                   ? "bg-slate-200 dark:bg-[#222222] text-slate-400 dark:text-[#666] cursor-not-allowed"
-                                  : "text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 cursor-pointer"
+                                  : "text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 cursor-pointer shadow-2xs"
                               }`}
                               title={hospital?.status === "DEACTIVATED" ? "Updates disabled while facility is deactivated by SuperAdmin" : "Edit bed availability"}
                             >

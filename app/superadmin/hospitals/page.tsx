@@ -363,7 +363,7 @@ export default function SuperAdminHospitalsPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       <SuperAdminNav activeTab="hospitals" onRefresh={fetchHospitals} refreshing={refreshing} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-8">
         {/* Banner Alert Messages */}
         {actionMessage && (
           <div className="mb-6 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs font-mono rounded-sm flex items-center justify-between shadow-2xs">
@@ -632,13 +632,13 @@ export default function SuperAdminHospitalsPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                 <tr>
-                  <th className="py-3 px-4 font-semibold">Hospital Name & ID</th>
-                  <th className="py-3 px-4 font-semibold">Location & Contact</th>
-                  <th className="py-3 px-4 font-semibold">Coordinates</th>
-                  <th className="py-3 px-4 font-semibold">Beds (Vacant / Total)</th>
-                  <th className="py-3 px-4 font-semibold text-center">Staff Count</th>
-                  <th className="py-3 px-4 font-semibold">Status</th>
-                  <th className="py-3 px-4 font-semibold text-right">Actions</th>
+                  <th className="py-3 px-4 font-semibold whitespace-nowrap">Hospital Name & ID</th>
+                  <th className="py-3 px-4 font-semibold whitespace-nowrap">Location & Contact</th>
+                  <th className="py-3 px-4 font-semibold whitespace-nowrap">Coordinates</th>
+                  <th className="py-3 px-4 font-semibold whitespace-nowrap">Beds (Vacant / Total)</th>
+                  <th className="py-3 px-4 font-semibold text-center whitespace-nowrap">Staff Count</th>
+                  <th className="py-3 px-4 font-semibold whitespace-nowrap">Status</th>
+                  <th className="py-3 px-4 font-semibold text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] font-mono">

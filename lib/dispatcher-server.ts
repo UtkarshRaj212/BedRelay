@@ -39,7 +39,8 @@ export async function checkAndAutoCompleteExpiredDispatches(): Promise<string[]>
 
   for (const record of activeList) {
     const eta = Math.max(1, record.etaMinutes || 15);
-    const thresholdMinutes = eta * 3;
+    const buffer = Math.max(20, Math.round(eta / 3));
+    const thresholdMinutes = eta + buffer;
     const createdAtMs = new Date(record.createdAt).getTime();
     const elapsedMinutes = (now.getTime() - createdAtMs) / (60 * 1000);
 
@@ -58,7 +59,7 @@ export async function checkAndAutoCompleteExpiredDispatches(): Promise<string[]>
             dispatchId: record.id,
             actorType: "SYSTEM",
             action: "AUTO_COMPLETED",
-            details: `Dispatch request automatically completed based on elapsed ETA (${eta}m × 3 = ${thresholdMinutes}m threshold reached).`,
+            details: `Dispatch request automatically completed based on elapsed ETA (${eta}m + max(20m, ${Math.round(eta / 3)}m buffer) = ${thresholdMinutes}m threshold reached).`,
             oldValue: record.status,
             newValue: "COMPLETED",
             note: `ETA ${eta}m threshold (${thresholdMinutes}m) reached`,

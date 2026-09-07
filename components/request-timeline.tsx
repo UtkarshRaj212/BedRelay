@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { formatDateTime } from "@/lib/format-date";
+import { AuditPayloadModal } from "@/components/audit-payload-modal";
 
 export interface ActivityItem {
   id: string;
@@ -23,6 +24,7 @@ interface RequestTimelineProps {
 
 export function RequestTimeline({ dispatchId, refreshTrigger }: RequestTimelineProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [isArchived, setIsArchived] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -149,11 +151,38 @@ export function RequestTimeline({ dispatchId, refreshTrigger }: RequestTimelineP
                     {act.note}
                   </div>
                 )}
+
+                {/* Payload Details Control */}
+                <div className="mt-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setSelectedActivity(act);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider bg-slate-100 hover:bg-slate-200 dark:bg-[#1c1c1c] dark:hover:bg-[#282828] text-slate-700 dark:text-[#ccc] hover:text-slate-900 dark:hover:text-white rounded-xs border border-slate-300 dark:border-[#333] transition-colors cursor-pointer shadow-2xs"
+                    aria-label="View payload details"
+                  >
+                    <svg className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span>PAYLOAD DETAILS</span>
+                  </button>
+                </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Audit Payload Details Modal */}
+      <AuditPayloadModal
+        isOpen={!!selectedActivity}
+        onClose={() => setSelectedActivity(null)}
+        auditItem={selectedActivity}
+      />
     </div>
   );
 }

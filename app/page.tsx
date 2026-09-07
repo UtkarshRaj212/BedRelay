@@ -6,7 +6,7 @@ export default function Home() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Navigation Bar */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono tracking-wider rounded-sm shrink-0">
@@ -41,16 +41,16 @@ export default function Home() {
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <ThemeToggle />
             <Link
-              href="/dashboard"
-              className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ededed] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] hover:border-slate-400 dark:hover:border-[#444] bg-white dark:bg-[#0f0f0f] rounded-sm transition-all"
+              href="/find-beds"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-sm transition-all shadow-xs cursor-pointer"
             >
-              Hospital Staff
+              Find Beds
             </Link>
             <Link
-              href="/find-beds"
-              className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-white bg-slate-900 dark:bg-[#ededed] dark:text-black hover:bg-slate-800 dark:hover:bg-white rounded-sm transition-all shadow-sm"
+              href="/dashboard"
+              className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-[#ededed] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] hover:border-slate-400 dark:hover:border-[#444] bg-white dark:bg-[#0f0f0f] rounded-sm transition-all cursor-pointer"
             >
-              Ambulance / Dispatcher
+              Hospital Staff
             </Link>
           </div>
         </div>
@@ -59,55 +59,55 @@ export default function Home() {
       <main>
         {/* Hero Section */}
         <section id="overview" className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] py-16 sm:py-24">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] font-mono text-xs font-semibold rounded-sm mb-6 max-w-full overflow-hidden text-ellipsis">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
+            <div className="max-w-3xl mx-auto text-center flex flex-col items-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] font-mono text-xs font-semibold rounded-sm mb-6 max-w-full">
                 <span className="w-1.5 h-1.5 bg-blue-700 dark:bg-blue-500 rounded-full shrink-0"></span>
-                <span className="truncate">PRE-HOSPITAL DIVERSION REDUCTION PLATFORM</span>
+                <span>AMBULANCE-TO-HOSPITAL PRE-ARRIVAL COORDINATION PLATFORM</span>
               </div>
 
               <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-[#ededed] font-sans leading-tight">
-                Real-Time Hospital Bed Telemetry for Emergency Medical Services
+                Real-Time Bed Availability & Pre-Arrival Coordination
               </h1>
 
-              <p className="mt-6 text-base sm:text-lg text-slate-600 dark:text-[#a1a1a1] leading-relaxed font-normal">
-                BedRelay bridges the critical gap between hospital bed control managers and inbound ambulance dispatchers.
-                Maintain live capacity data, prevent emergency room overcrowding, and ensure ambulances divert only to facilities with verified, ready beds.
+              <p className="mt-6 text-base sm:text-lg text-slate-600 dark:text-[#a1a1a1] leading-relaxed font-normal max-w-2xl">
+                BedRelay is a real-time ambulance-to-hospital bed availability and pre-arrival coordination platform. Hospitals maintain current bed capacity across intensive care, ventilator support, and general wards. Ambulance dispatchers locate suitable facilities based on geographic proximity, bed category, and required volume, transmitting verified pre-arrival dispatch alerts.
               </p>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              {/* Action Hierarchy: Primary = FIND AVAILABLE BEDS, Secondary = HOSPITAL STAFF SIGN IN */}
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
                 <Link
-                  href="/dashboard"
-                  className="inline-flex items-center justify-center px-6 py-3.5 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-sm tracking-wide rounded-sm transition-colors shadow-sm"
+                  href="/find-beds"
+                  className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-sm tracking-wide rounded-sm transition-colors shadow-sm cursor-pointer"
                 >
-                  Hospital Staff Sign In
+                  FIND AVAILABLE BEDS
                   <svg className="w-4 h-4 ml-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                 </Link>
 
                 <Link
-                  href="/find-beds"
-                  className="inline-flex items-center justify-center px-6 py-3.5 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-[#181818] text-slate-900 dark:text-[#ededed] font-semibold text-sm tracking-wide border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors"
+                  href="/dashboard"
+                  className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 bg-white dark:bg-[#111111] hover:bg-slate-50 dark:hover:bg-[#181818] text-slate-800 dark:text-[#ededed] font-semibold text-sm tracking-wide border border-slate-300 dark:border-[#2a2a2a] rounded-sm transition-colors cursor-pointer"
                 >
-                  Find Available Beds
+                  HOSPITAL STAFF SIGN IN
                 </Link>
               </div>
 
-              <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-slate-200 dark:border-[#222222]">
+              <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-slate-200 dark:border-[#222222] w-full text-left">
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Data Synchronization</div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">&lt; 02 Seconds</div>
-                  <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">From floor update to dispatcher screen</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">&lt; 02 seconds</div>
+                  <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">Continuous live server synchronization</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Tracked Categories</div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">ICU / Gen / Vent</div>
-                  <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">Critical care and general capacity</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">ICU / Ventilator / General</div>
+                  <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">Intensive, ventilator, and ward capacity</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Dispatch Coordination</div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">Direct Pre-Arrival</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">Pre-Arrival Alerts</div>
                   <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">Instant notification to receiving unit</div>
                 </div>
               </div>
@@ -117,7 +117,7 @@ export default function Home() {
 
         {/* How It Works Section */}
         <section id="how-it-works" className="py-16 bg-slate-50 dark:bg-[#000000] border-b border-slate-200 dark:border-[#222222]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
             <div className="border-l-2 border-blue-700 dark:border-blue-500 pl-4 mb-10">
               <span className="text-xs font-mono text-blue-700 dark:text-blue-400 uppercase tracking-widest block">OPERATIONAL MODEL</span>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">How Bed Updates Reach Ambulance Dispatchers</h2>
@@ -159,7 +159,7 @@ export default function Home() {
 
         {/* Bed Categories Section */}
         <section id="categories" className="py-16 bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
             <div className="border-l-2 border-slate-900 dark:border-[#ededed] pl-4 mb-10">
               <span className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase tracking-widest block">CAPACITY MONITORING</span>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">Supported Bed Categories</h2>
@@ -248,7 +248,7 @@ export default function Home() {
 
         {/* 3-Step Workflow Section */}
         <section id="workflow" className="py-16 bg-slate-50 dark:bg-[#000000] border-b border-slate-200 dark:border-[#222222]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
             <div className="border-l-2 border-blue-700 dark:border-blue-500 pl-4 mb-10">
               <span className="text-xs font-mono text-blue-700 dark:text-blue-400 uppercase tracking-widest block">OPERATIONAL WORKFLOW</span>
               <h2 className="text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-1">Simple 3-Step Relay Process</h2>
@@ -294,7 +294,7 @@ export default function Home() {
 
       {/* Operational Footer */}
       <footer className="bg-slate-900 dark:bg-[#080808] text-slate-400 dark:text-[#888888] py-12 text-sm border-t border-slate-800 dark:border-[#1f1f1f] font-mono">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
             <div className="text-white dark:text-[#ededed] font-bold text-base tracking-tight mb-1">
               BED<span className="text-blue-500 dark:text-blue-400">RELAY</span> INFRASTRUCTURE

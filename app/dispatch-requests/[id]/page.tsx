@@ -181,7 +181,7 @@ export default function DispatchRequestTrackingPage({
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
               BR
@@ -220,16 +220,28 @@ export default function DispatchRequestTrackingPage({
         </div>
       </header>
 
-      {/* Persistent Active Dispatch Banner */}
-      <ActiveDispatchBanner
-        activeDispatch={activeDispatch}
-        lastUpdated={activeLastUpdated}
-        onModifyClick={() => setIsModifyOpen(true)}
-        onSwitchClick={() => router.push("/find-beds?switch=true")}
-      />
+      <main className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-6 sm:py-8">
+        {/* Top Header Row with BACK Button */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-xs font-mono text-slate-500 dark:text-[#888888] uppercase tracking-wider">
+            Telemetry Feed / Request {dispatch.id}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/find-beds");
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider bg-white dark:bg-[#181818] hover:bg-slate-100 dark:hover:bg-[#252525] text-slate-900 dark:text-[#ededed] border border-slate-300 dark:border-[#333333] rounded-xs transition-colors cursor-pointer shadow-2xs"
+          >
+            ← BACK
+          </button>
+        </div>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Dedicated Operational Action Section (Requirement 7) */}
+        {/* Dedicated Operational Action Section */}
         <div className="bg-white dark:bg-[#0f0f0f] border-2 border-slate-300 dark:border-[#2a2a2a] p-4 sm:p-6 rounded-xs mb-6 font-sans shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>

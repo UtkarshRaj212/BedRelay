@@ -5,6 +5,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate, formatDateTime } from "@/lib/format-date";
+import { AuditPayloadModal, AuditPayloadItem } from "@/components/audit-payload-modal";
 
 interface SuperAdminStats {
   hospitals: {
@@ -127,6 +128,7 @@ export default function SuperAdminPage() {
   const [forbidden, setForbidden] = useState(false);
   const [stats, setStats] = useState<SuperAdminStats | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [selectedAuditLog, setSelectedAuditLog] = useState<AuditPayloadItem | null>(null);
   const [hospitalsList, setHospitalsList] = useState<HospitalItem[]>([]);
   const [staffList, setStaffList] = useState<StaffItem[]>([]);
   const [bedsList, setBedsList] = useState<BedItem[]>([]);
@@ -265,14 +267,30 @@ export default function SuperAdminPage() {
       if (session?.user) {
         fetchAllData();
         const interval = setInterval(() => {
-          fetchAllData(true);
+          if (
+            !showAddHospitalModal &&
+            !showAddStaffModal &&
+            !showAddBedModal &&
+            !editingBed &&
+            !editingHospital
+          ) {
+            fetchAllData(true);
+          }
         }, 1000);
         return () => clearInterval(interval);
       } else {
         setLoading(false);
       }
     }
-  }, [session, sessionLoading]);
+  }, [
+    session,
+    sessionLoading,
+    showAddHospitalModal,
+    showAddStaffModal,
+    showAddBedModal,
+    editingBed,
+    editingHospital,
+  ]);
 
   // Set default hospitalId for modals when hospitalsList loads
   useEffect(() => {
@@ -662,7 +680,7 @@ export default function SuperAdminPage() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
         <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono tracking-wider rounded-sm shadow-xs">
                 BR
@@ -684,7 +702,7 @@ export default function SuperAdminPage() {
           </div>
         </header>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-16">
           <div className="max-w-md mx-auto bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm shadow-sm p-8">
             <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/50 border border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-400 font-mono text-xs font-semibold rounded-sm mb-6">
               SUPERADMIN PORTAL
@@ -735,7 +753,7 @@ export default function SuperAdminPage() {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
         <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono tracking-wider rounded-sm">
                 BR
@@ -756,7 +774,7 @@ export default function SuperAdminPage() {
           </div>
         </header>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-16">
           <div className="max-w-lg mx-auto bg-white dark:bg-[#0a0a0a] border border-red-200 dark:border-red-900/40 rounded-sm shadow-sm p-8 text-center">
             <div className="w-12 h-12 bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/40 font-mono font-bold flex items-center justify-center text-lg rounded-sm mx-auto mb-4">
               403
@@ -853,7 +871,7 @@ export default function SuperAdminPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Main Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-16 py-2.5 sm:py-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5 group">
               <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono tracking-wider rounded-sm shadow-xs shrink-0">
@@ -902,7 +920,7 @@ export default function SuperAdminPage() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-8">
         {/* Action confirmation alert */}
         {actionMessage && (
           <div className="mb-6 p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-xs font-mono rounded-sm flex items-center justify-between gap-2">
@@ -1167,14 +1185,14 @@ export default function SuperAdminPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>
-                    <th className="py-3 px-4">Hospital Name & ID</th>
-                    <th className="py-3 px-4">Location & Phone</th>
-                    <th className="py-3 px-4">Coordinates</th>
-                    <th className="py-3 px-4">Total Beds</th>
-                    <th className="py-3 px-4">Vacant</th>
-                    <th className="py-3 px-4">Staff Count</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Hospital Name & ID</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Location & Phone</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Coordinates</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Total Beds</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Vacant</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Staff Count</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Status</th>
+                    <th className="py-3 px-4 whitespace-nowrap text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] font-mono">
@@ -1293,12 +1311,12 @@ export default function SuperAdminPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>
-                    <th className="py-3 px-4">Staff Member & Email</th>
-                    <th className="py-3 px-4">Hospital Facility</th>
-                    <th className="py-3 px-4">Assigned Role</th>
-                    <th className="py-3 px-4">Membership Status</th>
-                    <th className="py-3 px-4">Joined Date</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Staff Member & Email</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Hospital Facility</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Assigned Role</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Membership Status</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Joined Date</th>
+                    <th className="py-3 px-4 whitespace-nowrap text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] font-mono">
@@ -1481,14 +1499,14 @@ export default function SuperAdminPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>
-                    <th className="py-3 px-4">Hospital Facility</th>
-                    <th className="py-3 px-4">Category Code & Name</th>
-                    <th className="py-3 px-4 text-right">Total Capacity</th>
-                    <th className="py-3 px-4 text-right">Available Beds</th>
-                    <th className="py-3 px-4 text-right">Occupied Beds</th>
-                    <th className="py-3 px-4 text-right">Occupancy %</th>
-                    <th className="py-3 px-4">Last Updated</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Hospital Facility</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Category Code & Name</th>
+                    <th className="py-3 px-4 whitespace-nowrap text-right">Total Capacity</th>
+                    <th className="py-3 px-4 whitespace-nowrap text-right">Available Beds</th>
+                    <th className="py-3 px-4 whitespace-nowrap text-right">Occupied Beds</th>
+                    <th className="py-3 px-4 whitespace-nowrap text-right">Occupancy %</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Last Updated</th>
+                    <th className="py-3 px-4 whitespace-nowrap text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] font-mono">
@@ -1684,14 +1702,14 @@ export default function SuperAdminPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>
-                    <th className="py-3 px-4">Dispatch ID & Time</th>
-                    <th className="py-3 px-4">Hospital Target</th>
-                    <th className="py-3 px-4">Ambulance Unit</th>
-                    <th className="py-3 px-4">Category & Beds</th>
-                    <th className="py-3 px-4">ETA</th>
-                    <th className="py-3 px-4">Patient Condition</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Administrative Actions</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Dispatch ID & Time</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Hospital Target</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Ambulance Unit</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Category & Beds</th>
+                    <th className="py-3 px-4 whitespace-nowrap">ETA</th>
+                    <th className="py-3 px-4 min-w-[200px] xl:min-w-[260px]">Patient Condition</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Status</th>
+                    <th className="py-3 px-4 whitespace-nowrap text-right">Administrative Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] font-mono">
@@ -1838,6 +1856,33 @@ export default function SuperAdminPage() {
                           {log.details}
                         </div>
                       )}
+                      <div className="pt-1.5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setSelectedAuditLog({
+                              id: log.id,
+                              action: log.action,
+                              resourceType: log.resourceType,
+                              resourceId: log.resourceId,
+                              timestamp: log.createdAt,
+                              userName: log.userName,
+                              userEmail: log.userEmail,
+                              actorType: "SUPER_ADMIN",
+                              details: log.details,
+                            });
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider bg-slate-100 hover:bg-slate-200 dark:bg-[#1a1a1a] dark:hover:bg-[#262626] text-slate-700 dark:text-[#ccc] hover:text-slate-900 dark:hover:text-white rounded-xs border border-slate-300 dark:border-[#333] transition-colors cursor-pointer"
+                        >
+                          <svg className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          <span>PAYLOAD DETAILS</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -1849,11 +1894,11 @@ export default function SuperAdminPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                   <tr>
-                    <th className="py-3 px-4">Timestamp</th>
-                    <th className="py-3 px-4">Operation</th>
-                    <th className="py-3 px-4">Resource Target</th>
-                    <th className="py-3 px-4">Actor</th>
-                    <th className="py-3 px-4">Payload Details</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Timestamp</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Operation</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Resource Target</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Actor</th>
+                    <th className="py-3 px-4 whitespace-nowrap">Payload Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] font-mono">
@@ -1877,8 +1922,37 @@ export default function SuperAdminPage() {
                         <div className="text-slate-900 dark:text-[#ededed] font-medium">{log.userName || "System"}</div>
                         <div className="text-[10px] text-slate-400 dark:text-[#666]">{log.userEmail || "—"}</div>
                       </td>
-                      <td className="py-3 px-4 text-slate-500 dark:text-[#888] max-w-xs truncate">
-                        {log.details || "—"}
+                      <td className="py-3 px-4 text-slate-500 dark:text-[#888]">
+                        <div className="flex items-center gap-2">
+                          <span className="max-w-[140px] truncate text-[11px]">
+                            {log.details || "—"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedAuditLog({
+                                id: log.id,
+                                action: log.action,
+                                resourceType: log.resourceType,
+                                resourceId: log.resourceId,
+                                timestamp: log.createdAt,
+                                userName: log.userName,
+                                userEmail: log.userEmail,
+                                actorType: "SUPER_ADMIN",
+                                details: log.details,
+                              });
+                            }}
+                            className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-bold uppercase tracking-wider bg-slate-100 hover:bg-slate-200 dark:bg-[#1a1a1a] dark:hover:bg-[#262626] text-slate-700 dark:text-[#ccc] hover:text-slate-900 dark:hover:text-white rounded-xs border border-slate-300 dark:border-[#333] transition-colors cursor-pointer"
+                          >
+                            <svg className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>PAYLOAD DETAILS</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -2400,6 +2474,13 @@ export default function SuperAdminPage() {
           </div>
         </div>
       )}
+
+      {/* Security Audit Payload Details Modal */}
+      <AuditPayloadModal
+        isOpen={!!selectedAuditLog}
+        onClose={() => setSelectedAuditLog(null)}
+        auditItem={selectedAuditLog}
+      />
     </div>
   );
 }

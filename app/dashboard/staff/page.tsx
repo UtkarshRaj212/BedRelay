@@ -305,7 +305,7 @@ export default function StaffManagementPage() {
 
       {/* Navigation Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
               BR
@@ -352,7 +352,7 @@ export default function StaffManagementPage() {
       </header>
 
       {/* Main Container */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-8">
         {/* Facility Header & Action */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-slate-200 dark:border-[#222222]">
           <div>
@@ -482,17 +482,17 @@ export default function StaffManagementPage() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-[#1f1f1f] bg-slate-50/50 dark:bg-[#121212]/50 text-[11px] font-mono uppercase text-slate-500 dark:text-[#777]">
-                  <th className="py-3 px-6">Staff Member</th>
-                  <th className="py-3 px-6">Email Address</th>
-                  <th className="py-3 px-6">Assigned Role</th>
-                  <th className="py-3 px-6">Status</th>
-                  <th className="py-3 px-6 text-right">Affiliation Date</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Staff Member</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Email Address</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Assigned Role</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Status</th>
+                  <th className="py-3.5 px-4 text-right whitespace-nowrap">Affiliation Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] text-xs">
                 {members.map((member) => (
                   <tr key={member.membershipId} className="hover:bg-slate-50/70 dark:hover:bg-[#111111] transition-colors">
-                    <td className="py-3.5 px-6">
+                    <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-[#222] text-slate-700 dark:text-[#ddd] flex items-center justify-center font-mono font-bold text-xs">
                           {member.name ? member.name.substring(0, 2).toUpperCase() : "MD"}
@@ -509,10 +509,10 @@ export default function StaffManagementPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-6 font-mono text-slate-600 dark:text-[#a1a1a1]">
+                    <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-[#a1a1a1]">
                       {member.email}
                     </td>
-                    <td className="py-3.5 px-6">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2 py-0.5 rounded-xs font-mono text-[11px] font-bold ${
                           member.role === "HOSPITAL_ADMIN"
@@ -523,12 +523,12 @@ export default function StaffManagementPage() {
                         {member.role}
                       </span>
                     </td>
-                    <td className="py-3.5 px-6 font-mono">
+                    <td className="py-3.5 px-4 font-mono whitespace-nowrap">
                       <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
                         {member.status}
                       </span>
                     </td>
-                    <td className="py-3.5 px-6 text-right font-mono text-slate-500 dark:text-[#777]">
+                    <td className="py-3.5 px-4 text-right font-mono text-slate-500 dark:text-[#777] whitespace-nowrap">
                       {formatDate(member.joinedAt)}
                     </td>
                   </tr>
@@ -615,17 +615,17 @@ export default function StaffManagementPage() {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-[#1f1f1f] bg-slate-50/50 dark:bg-[#121212]/50 text-[11px] font-mono uppercase text-slate-500 dark:text-[#777]">
-                      <th className="py-3 px-6">Invitation Code</th>
-                      <th className="py-3 px-6">Target Email</th>
-                      <th className="py-3 px-6">Role Offered</th>
-                      <th className="py-3 px-6">Expires Date</th>
-                      <th className="py-3 px-6 text-right">Actions</th>
+                      <th className="py-3.5 px-4 whitespace-nowrap">Invitation Code</th>
+                      <th className="py-3.5 px-4 whitespace-nowrap">Target Email</th>
+                      <th className="py-3.5 px-4 whitespace-nowrap">Role Offered</th>
+                      <th className="py-3.5 px-4 whitespace-nowrap">Expires Date</th>
+                      <th className="py-3.5 px-4 text-right whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] text-xs">
                     {invitations.map((inv) => (
                       <tr key={inv.id} className="hover:bg-slate-50/70 dark:hover:bg-[#111111] transition-colors">
-                        <td className="py-3.5 px-6">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
                             <code className="font-mono text-sm font-bold tracking-widest text-slate-900 dark:text-white bg-slate-100 dark:bg-[#1a1a1a] px-2 py-1 rounded-xs border border-slate-200 dark:border-[#333]">
                               {inv.code}
@@ -639,10 +639,10 @@ export default function StaffManagementPage() {
                             </button>
                           </div>
                         </td>
-                        <td className="py-3.5 px-6 font-mono text-slate-600 dark:text-[#a1a1a1]">
+                        <td className="py-3.5 px-4 font-mono text-slate-600 dark:text-[#a1a1a1]">
                           {inv.email || <span className="text-slate-400 italic">Open / Any Recipient</span>}
                         </td>
-                        <td className="py-3.5 px-6">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-xs font-mono text-[11px] font-bold ${
                               inv.role === "HOSPITAL_ADMIN"
@@ -653,10 +653,10 @@ export default function StaffManagementPage() {
                             {inv.role}
                           </span>
                         </td>
-                        <td className="py-3.5 px-6 font-mono text-slate-500 dark:text-[#777]">
+                        <td className="py-3.5 px-4 font-mono text-slate-500 dark:text-[#777] whitespace-nowrap">
                           {formatDateTime(inv.expiresAt)}
                         </td>
-                        <td className="py-3.5 px-6 text-right">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
                           <button
                             onClick={() => handleRevokeInvite(inv.id)}
                             disabled={revokingId === inv.id}

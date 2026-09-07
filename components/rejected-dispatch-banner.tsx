@@ -56,7 +56,7 @@ export function RejectedDispatchBanner({
       aria-label="Dispatch request rejected alert"
       className="w-full bg-red-50 dark:bg-[#130808] border-b-2 border-red-600 dark:border-red-500 text-slate-900 dark:text-[#ededed] font-sans transition-colors"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+      <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-3 sm:py-4">
         {/* DESKTOP LAYOUT (>= md) */}
         <div className="hidden md:flex md:items-start md:justify-between gap-6">
           <div className="min-w-0 flex-1">

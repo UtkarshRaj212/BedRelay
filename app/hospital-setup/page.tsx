@@ -434,7 +434,7 @@ function HospitalSetupContent() {
                     onClick={handleUseGeolocation}
                     className="px-2.5 py-1 text-xs font-mono bg-white dark:bg-[#1a1a1a] border border-slate-300 dark:border-[#333] hover:border-blue-500 rounded-sm text-slate-700 dark:text-slate-300 transition-colors"
                   >
-                    📍 Use Current Device GPS
+                    Use Current Device GPS
                   </button>
                 </div>
 
@@ -478,51 +478,63 @@ function HospitalSetupContent() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <label className="block text-[11px] font-mono text-slate-600 dark:text-[#888888] mb-1">
-                      Latitude (°N, India bounds 6.5 - 37.5)
+                    <label className="block text-[11px] font-mono uppercase text-slate-600 dark:text-[#888] mb-1">
+                      Latitude
                     </label>
                     <input
-                      type="number"
-                      step="any"
-                      required
+                      type="text"
                       value={createForm.latitude}
                       onChange={(e) => setCreateForm({ ...createForm, latitude: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs font-mono text-slate-900 dark:text-white outline-none"
+                      className="w-full px-3 py-1.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs font-mono text-slate-900 dark:text-white outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-mono text-slate-600 dark:text-[#888888] mb-1">
-                      Longitude (°E, India bounds 68.0 - 97.5)
+                    <label className="block text-[11px] font-mono uppercase text-slate-600 dark:text-[#888] mb-1">
+                      Longitude
                     </label>
                     <input
-                      type="number"
-                      step="any"
-                      required
+                      type="text"
                       value={createForm.longitude}
                       onChange={(e) => setCreateForm({ ...createForm, longitude: e.target.value })}
-                      className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs font-mono text-slate-900 dark:text-white outline-none"
+                      className="w-full px-3 py-1.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs font-mono text-slate-900 dark:text-white outline-none"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Initial Departments note */}
-              <div className="bg-slate-50 dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222] rounded-sm p-4 text-xs font-mono text-slate-600 dark:text-[#888]">
-                <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-300 mb-1">
-                  <span>ℹ️ Automatic Bed Category Initialization</span>
+              {/* Bed Inventory Telemetry Initialization */}
+              <div className="border border-slate-200 dark:border-[#222222] rounded-sm p-4 bg-slate-50 dark:bg-[#0f0f0f]">
+                <div className="mb-3">
+                  <span className="text-xs font-mono font-semibold uppercase text-slate-800 dark:text-[#ededed] block">
+                    Initial Bed Capacity Telemetry
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-[#777]">
+                    Telemetry channels initialized for Indian EMS dispatch standards.
+                  </span>
                 </div>
-                <span>
-                  Initial standard telemetry categories (ICU, General Medical Ward, Ventilator Critical Care, and PICU) will be created automatically. You can immediately adjust live bed counts and capacity limits from the Bed Management console.
-                </span>
+                <div className="space-y-2 text-xs font-mono">
+                  <div className="flex items-center justify-between p-2.5 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-sm">
+                    <span className="font-semibold text-slate-800 dark:text-[#ededed]">Intensive Care Unit (ICU)</span>
+                    <span className="text-slate-500 dark:text-[#888]">10 Total · 4 Available</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-sm">
+                    <span className="font-semibold text-slate-800 dark:text-[#ededed]">General Medical Ward</span>
+                    <span className="text-slate-500 dark:text-[#888]">50 Total · 18 Available</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2.5 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-sm">
+                    <span className="font-semibold text-slate-800 dark:text-[#ededed]">Ventilator & Respiratory Care</span>
+                    <span className="text-slate-500 dark:text-[#888]">6 Total · 2 Available</span>
+                  </div>
+                </div>
               </div>
 
               <div className="pt-2">
                 <button
                   type="submit"
                   disabled={creating}
-                  className="w-full sm:w-auto px-8 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-[#ededed] dark:hover:bg-white text-white dark:text-black font-semibold text-sm rounded-sm transition-colors cursor-pointer disabled:opacity-50 font-mono tracking-wide"
+                  className="w-full sm:w-auto px-8 py-3 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-sm rounded-sm transition-colors cursor-pointer disabled:opacity-50 font-mono tracking-wide"
                 >
-                  {creating ? "CREATING HOSPITAL & INITIALIZING..." : "REGISTER HOSPITAL & ENTER CONSOLE →"}
+                  {creating ? "REGISTERING FACILITY..." : "REGISTER HOSPITAL & INITIALIZE TELEMETRY →"}
                 </button>
               </div>
             </form>
@@ -531,29 +543,24 @@ function HospitalSetupContent() {
 
         {/* Tab 2: Join Existing Hospital */}
         {activeTab === "join" && (
-          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-4 sm:p-8">
-            <div className="border-b border-slate-200 dark:border-[#1f1f1f] pb-4 mb-6">
-              <div className="font-mono text-xs text-emerald-700 dark:text-emerald-400 font-semibold mb-1">
-                INVITATION-BASED STAFF ONBOARDING
-              </div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Join an Existing Hospital Facility
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-[#888888] mt-1">
-                If your hospital administrator has issued you an invitation code (e.g., <code className="bg-slate-100 dark:bg-[#222] px-1.5 py-0.5 rounded-xs font-mono">BR-XXXXXX</code>), enter it below to securely link your Google account to the facility.
-              </p>
-            </div>
+          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-5 sm:p-8 shadow-sm">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1">
+              Affiliate with an Existing Medical Facility
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-[#a1a1a1] mb-6 leading-relaxed">
+              Enter the 6-10 character staff invitation code provided by your hospital administrator to link your credentials.
+            </p>
 
             {joinError && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-sm text-xs font-mono text-red-700 dark:text-red-400">
-                ERROR: {joinError}
+              <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs font-mono rounded-sm">
+                {joinError}
               </div>
             )}
 
-            <form onSubmit={handleJoinHospital} className="space-y-6">
+            <form onSubmit={handleJoinHospital} className="space-y-5">
               <div>
                 <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1.5">
-                  Hospital Invitation Code *
+                  Staff Invitation Code
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2 max-w-md">
                   <input
@@ -581,7 +588,7 @@ function HospitalSetupContent() {
 
               {/* Demo Hint Banner */}
               <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-sm text-xs font-mono text-blue-800 dark:text-blue-300">
-                <span className="font-bold">🧪 Testing demo codes: </span>
+                <span className="font-bold">Testing demo codes: </span>
                 <span>Click to auto-fill: </span>
                 <button
                   type="button"

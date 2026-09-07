@@ -119,7 +119,7 @@ export default function DispatcherHistoryPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
       {/* Header Navigation */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+        <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-16 py-2.5 sm:py-0 flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
               BR
@@ -166,7 +166,7 @@ export default function DispatcherHistoryPage() {
         onSwitchClick={() => router.push("/find-beds?switch=true")}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-8">
         {/* Page Banner & Overview Stats */}
         <div className="bg-white dark:bg-[#0f0f0f] p-6 border border-slate-200 dark:border-[#222222] rounded-sm mb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
@@ -406,15 +406,15 @@ export default function DispatcherHistoryPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead className="bg-slate-100 dark:bg-[#111111] text-slate-600 dark:text-[#888888] font-mono text-[11px] uppercase tracking-wider border-b border-slate-200 dark:border-[#222222]">
                 <tr>
-                  <th className="py-3.5 px-4 font-semibold">Request ID</th>
-                  <th className="py-3.5 px-4 font-semibold">Ambulance ID</th>
-                  <th className="py-3.5 px-4 font-semibold">Selected Hospital</th>
-                  <th className="py-3.5 px-4 font-semibold">Required Category</th>
-                  <th className="py-3.5 px-4 font-semibold text-center">Beds</th>
-                  <th className="py-3.5 px-4 font-semibold text-center">Distance</th>
-                  <th className="py-3.5 px-4 font-semibold">Created Time</th>
-                  <th className="py-3.5 px-4 font-semibold text-center">Status</th>
-                  <th className="py-3.5 px-4 font-semibold text-right">Action</th>
+                  <th className="py-3.5 px-4 font-semibold whitespace-nowrap">Request ID</th>
+                  <th className="py-3.5 px-4 font-semibold whitespace-nowrap">Ambulance ID</th>
+                  <th className="py-3.5 px-4 font-semibold whitespace-nowrap">Selected Hospital</th>
+                  <th className="py-3.5 px-4 font-semibold whitespace-nowrap">Required Category</th>
+                  <th className="py-3.5 px-4 font-semibold text-center whitespace-nowrap">Beds</th>
+                  <th className="py-3.5 px-4 font-semibold text-center whitespace-nowrap">Distance</th>
+                  <th className="py-3.5 px-4 font-semibold whitespace-nowrap">Created Time</th>
+                  <th className="py-3.5 px-4 font-semibold text-center whitespace-nowrap">Status</th>
+                  <th className="py-3.5 px-4 font-semibold text-right whitespace-nowrap">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#1a1a1a] font-mono">
