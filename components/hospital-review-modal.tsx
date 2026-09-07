@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface ReviewDispatchItem {
   id: string;
@@ -28,11 +28,18 @@ export function HospitalReviewModal({
   dispatch,
   onSuccess,
 }: HospitalReviewModalProps) {
-  if (!isOpen || !dispatch) return null;
-
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setNotes("");
+      setError(null);
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !dispatch) return null;
 
   const approved = dispatch.approvedBeds ?? 0;
   const requested = dispatch.requestedBeds ?? 1;

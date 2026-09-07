@@ -150,14 +150,17 @@ export default function FindHospitalPage() {
     }
   }, [activeDispatch]);
 
-  const handleConfirmSwitch = async (customParams?: { bedCategoryCode: string; requestedBeds: number }) => {
-    if (!switchTargetHospital) return;
+  const handleConfirmSwitch = async (customParams?: { targetHospitalId?: string; bedCategoryCode: string; requestedBeds: number }) => {
+    const target = customParams?.targetHospitalId
+      ? hospitals.find((h) => h.id === customParams.targetHospitalId) || switchTargetHospital
+      : switchTargetHospital;
+    if (!target) return;
     try {
       setSwitching(true);
       setSwitchError(null);
-      // Send real latest values from activeDispatch or custom switch parameters
+      // Send real latest values from custom switch parameters or activeDispatch
       const res = await switchHospital({
-        targetHospitalId: switchTargetHospital.id,
+        targetHospitalId: target.id,
         bedCategoryCode: customParams?.bedCategoryCode || (activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory),
         requestedBeds: customParams?.requestedBeds || (activeDispatch ? activeDispatch.requestedBeds : activeMinBedsNumber),
         etaMinutes: activeDispatch ? activeDispatch.etaMinutes : 15,
@@ -456,13 +459,12 @@ export default function FindHospitalPage() {
         lastUpdated={activeLastUpdated}
         onModifyClick={() => setIsModifyModalOpen(true)}
         onSwitchClick={() => {
-          if (activeDispatch) {
-            setSelectedCategory(activeDispatch.bedCategoryCode);
-            setMinBeds(activeDispatch.requestedBeds);
-            prevMinBedsRef.current = activeDispatch.requestedBeds;
-          }
-          const el = document.getElementById("hospital-results-section");
-          el?.scrollIntoView({ behavior: "smooth" });
+          const alternate =
+            hospitals.find((h) => h.id !== activeDispatch?.hospitalId) ||
+            hospitals[0] ||
+            null;
+          setSwitchTargetHospital(alternate);
+          setSwitchError(null);
         }}
       />
 
@@ -563,7 +565,7 @@ export default function FindHospitalPage() {
                   Ambulance Telemetry Origin:
                 </span>
                 {locationStatus === "detecting" ? (
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 font-mono text-xs font-bold border border-amber-300 dark:border-amber-800/60 rounded-sm animate-pulse">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-400 font-mono text-xs font-bold border border-amber-300 dark:border-amber-800/60 rounded-sm">
                     ● ACQUIRING GPS...
                   </span>
                 ) : ambulanceCoordinates ? (
@@ -997,8 +999,8 @@ export default function FindHospitalPage() {
 
       {/* Send Dispatch Modal */}
       {dispatchModalHospital && (
-        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-[#0f0f0f] max-w-lg w-full border border-slate-300 dark:border-[#2a2a2a] shadow-lg rounded-sm p-6">
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/80 flex items-center justify-center p-3 sm:p-4 z-50 overflow-y-auto">
+          <div className="bg-white dark:bg-[#0f0f0f] max-w-lg w-full border border-slate-300 dark:border-[#2a2a2a] shadow-lg rounded-sm p-5 sm:p-6 my-8">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#222222] pb-3 mb-4">
               <div>
                 <span className="text-xs font-mono text-blue-700 dark:text-blue-400 uppercase font-semibold block">SEND DISPATCH REQUEST</span>
@@ -1222,6 +1224,7 @@ export default function FindHospitalPage() {
         }}
         currentDispatch={activeDispatch}
         targetHospital={switchTargetHospital}
+        availableHospitals={hospitals.filter((h) => h.id !== activeDispatch?.hospitalId)}
         onConfirmSwitch={handleConfirmSwitch}
         isSubmitting={switching}
         error={switchError}

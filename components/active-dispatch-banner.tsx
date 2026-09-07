@@ -117,12 +117,13 @@ export function ActiveDispatchBanner({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 shrink-0">
-            <Link
-              href={`/dispatch-requests/${activeDispatch.id}`}
+            <button
+              type="button"
+              onClick={() => router.push(`/dispatch-requests/${activeDispatch.id}`)}
               className="px-3 py-1.5 text-xs font-mono font-semibold uppercase tracking-wider bg-white dark:bg-[#181818] hover:bg-slate-50 dark:hover:bg-[#222222] text-slate-900 dark:text-[#ededed] border border-slate-300 dark:border-[#333333] rounded-xs transition-colors cursor-pointer"
             >
               VIEW
-            </Link>
+            </button>
             <button
               type="button"
               onClick={handleModify}
@@ -207,12 +208,13 @@ export function ActiveDispatchBanner({
 
           {/* Action Buttons: Stacked on mobile with wrap guarantee */}
           <div className="flex flex-col sm:flex-row gap-1.5">
-            <Link
-              href={`/dispatch-requests/${activeDispatch.id}`}
-              className="w-full text-center py-2 px-3 text-xs font-mono font-semibold uppercase tracking-wider bg-white dark:bg-[#181818] hover:bg-slate-50 dark:hover:bg-[#222222] text-slate-900 dark:text-[#ededed] border border-slate-300 dark:border-[#333333] rounded-xs transition-colors"
+            <button
+              type="button"
+              onClick={() => router.push(`/dispatch-requests/${activeDispatch.id}`)}
+              className="w-full text-center py-2 px-3 text-xs font-mono font-semibold uppercase tracking-wider bg-white dark:bg-[#181818] hover:bg-slate-50 dark:hover:bg-[#222222] text-slate-900 dark:text-[#ededed] border border-slate-300 dark:border-[#333333] rounded-xs transition-colors cursor-pointer"
             >
               VIEW REQUEST
-            </Link>
+            </button>
             <button
               type="button"
               onClick={handleModify}

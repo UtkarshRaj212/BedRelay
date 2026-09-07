@@ -1204,7 +1204,7 @@ export default function SuperAdminPage() {
                       </td>
                       <td className="py-3 px-4 text-slate-600 dark:text-[#aaa]">
                         <div>{hosp.city}, {hosp.state}</div>
-                        <div className="text-[10px] text-slate-400 dark:text-[#666]">{hosp.phone || "—"}</div>
+                        <div className="text-[10px] text-slate-400 dark:text-[#666] whitespace-nowrap">{hosp.phone || "—"}</div>
                       </td>
                       <td className="py-3 px-4 text-[11px] text-slate-500">
                         {hosp.latitude?.toFixed(4)}, {hosp.longitude?.toFixed(4)}

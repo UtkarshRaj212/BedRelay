@@ -102,8 +102,8 @@ export default function Home() {
                 </div>
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Tracked Categories</div>
-                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">ICU / Ventilator / General</div>
-                  <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">Intensive, ventilator, and ward capacity</div>
+                  <div className="text-xl font-bold text-slate-900 dark:text-[#ededed] mt-1 font-mono">ICU / General / Ventilator / NICU</div>
+                  <div className="text-xs text-slate-600 dark:text-[#888888] mt-1">Intensive, general, ventilator, and neonatal capacity</div>
                 </div>
                 <div className="bg-slate-50 dark:bg-[#111111] p-4 border border-slate-200 dark:border-[#222222] rounded-sm">
                   <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase">Dispatch Coordination</div>
@@ -186,6 +186,12 @@ export default function Home() {
                   scope: "Advanced mechanical ventilation and high-flow oxygen beds",
                   metric: "Total / Available / Occupied",
                 },
+                {
+                  code: "NICU-04",
+                  name: "Neonatal Intensive Care (NICU)",
+                  scope: "Neonatal critical care, premature infant stabilization",
+                  metric: "Total / Available / Occupied",
+                },
               ].map((cat) => (
                 <div
                   key={cat.code}
@@ -238,6 +244,12 @@ export default function Home() {
                     <td className="py-4 px-4 font-mono font-semibold text-slate-900 dark:text-[#ededed]">VENT-03</td>
                     <td className="py-4 px-4 font-semibold text-slate-900 dark:text-[#ededed]">Ventilator & Respiratory Care</td>
                     <td className="py-4 px-4 text-slate-600 dark:text-[#888888]">Advanced mechanical ventilation and high-flow oxygen beds</td>
+                    <td className="py-4 px-4 text-slate-600 dark:text-[#888888] font-mono text-xs">Total / Available / Occupied</td>
+                  </tr>
+                  <tr>
+                    <td className="py-4 px-4 font-mono font-semibold text-slate-900 dark:text-[#ededed]">NICU-04</td>
+                    <td className="py-4 px-4 font-semibold text-slate-900 dark:text-[#ededed]">Neonatal Intensive Care (NICU)</td>
+                    <td className="py-4 px-4 text-slate-600 dark:text-[#888888]">Neonatal critical care, premature infant stabilization</td>
                     <td className="py-4 px-4 text-slate-600 dark:text-[#888888] font-mono text-xs">Total / Available / Occupied</td>
                   </tr>
                 </tbody>

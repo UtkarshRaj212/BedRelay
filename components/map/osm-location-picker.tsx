@@ -110,6 +110,7 @@ export default function OSMLocationPicker({
           center={currentPos}
           zoom={13}
           scrollWheelZoom={false}
+          attributionControl={false}
           className="w-full h-full"
         >
           <TileLayer

@@ -158,6 +158,7 @@ export default function OSMMapView({
         center={center}
         zoom={zoom}
         scrollWheelZoom={false}
+        attributionControl={false}
         className="w-full h-full"
       >
         <TileLayer
@@ -305,7 +306,7 @@ export default function OSMMapView({
 
                   {hosp.phone && (
                     <div className="mt-1 text-[11px] font-mono text-slate-600 dark:text-slate-400">
-                      Emergency: <span className="font-bold text-slate-900 dark:text-slate-200">{hosp.phone}</span>
+                      Emergency: <span className="font-bold text-slate-900 dark:text-slate-200 whitespace-nowrap">{hosp.phone}</span>
                     </div>
                   )}
 

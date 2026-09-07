@@ -112,13 +112,16 @@ export default function DispatcherDashboardPage() {
   const [modalRequestedBeds, setModalRequestedBeds] = useState<string | number>(1);
   const prevModalRequestedBedsRef = useRef<number>(1);
 
-  const handleConfirmSwitch = async (customParams?: { bedCategoryCode: string; requestedBeds: number }) => {
-    if (!switchTargetHospital) return;
+  const handleConfirmSwitch = async (customParams?: { targetHospitalId?: string; bedCategoryCode: string; requestedBeds: number }) => {
+    const target = customParams?.targetHospitalId
+      ? hospitals.find((h) => h.id === customParams.targetHospitalId) || switchTargetHospital
+      : switchTargetHospital;
+    if (!target) return;
     try {
       setSwitching(true);
       setSwitchError(null);
       const res = await switchHospital({
-        targetHospitalId: switchTargetHospital.id,
+        targetHospitalId: target.id,
         bedCategoryCode: customParams?.bedCategoryCode || (activeDispatch ? activeDispatch.bedCategoryCode : selectedCategory),
         requestedBeds: customParams?.requestedBeds || (activeDispatch
           ? activeDispatch.requestedBeds
@@ -381,7 +384,14 @@ export default function DispatcherDashboardPage() {
         activeDispatch={activeDispatch}
         lastUpdated={activeLastUpdated}
         onModifyClick={() => setIsModifyOpen(true)}
-        onSwitchClick={() => router.push("/find-beds?switch=true")}
+        onSwitchClick={() => {
+          const alternate =
+            hospitals.find((h) => h.id !== activeDispatch?.hospitalId) ||
+            hospitals[0] ||
+            null;
+          setSwitchTargetHospital(alternate);
+          setSwitchError(null);
+        }}
       />
 
       <main className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-8">
@@ -1138,6 +1148,7 @@ export default function DispatcherDashboardPage() {
         }}
         currentDispatch={activeDispatch}
         targetHospital={switchTargetHospital}
+        availableHospitals={hospitals.filter((h) => h.id !== activeDispatch?.hospitalId)}
         onConfirmSwitch={handleConfirmSwitch}
         isSubmitting={switching}
         error={switchError}

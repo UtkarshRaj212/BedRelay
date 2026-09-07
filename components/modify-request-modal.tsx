@@ -32,24 +32,30 @@ export function ModifyRequestModal({
   hospitalBeds: propHospitalBeds,
   onSuccess,
 }: ModifyRequestModalProps) {
-  if (!isOpen || !dispatch) return null;
-
-  // Form input states stored as strings to permit normal editing/clearing (Requirement 2)
-  const [etaMinutes, setEtaMinutes] = useState<string>(String(dispatch.etaMinutes || 15));
-  const [patientCondition, setPatientCondition] = useState<string>(dispatch.patientCondition || "");
-  const [requestedBeds, setRequestedBeds] = useState<string>(String(dispatch.requestedBeds || 1));
-  const [bedCategoryCode, setBedCategoryCode] = useState<string>(dispatch.bedCategoryCode || "ICU");
-  const [patientRef, setPatientRef] = useState<string>(dispatch.patientRef || dispatch.patientReference || "");
-  const [ambulanceUnit, setAmbulanceUnit] = useState<string>(dispatch.ambulanceUnit || dispatch.ambulanceId || "");
+  // Form input states stored as strings to permit normal editing/clearing
+  const [etaMinutes, setEtaMinutes] = useState<string>("15");
+  const [patientCondition, setPatientCondition] = useState<string>("");
+  const [requestedBeds, setRequestedBeds] = useState<string>("1");
+  const [bedCategoryCode, setBedCategoryCode] = useState<string>("ICU");
+  const [patientRef, setPatientRef] = useState<string>("");
+  const [ambulanceUnit, setAmbulanceUnit] = useState<string>("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const approvedCount = dispatch.approvedBeds || 0;
-  const isAccepted = dispatch.status.toUpperCase() === "ACCEPTED";
-  const isCategoryChanged = bedCategoryCode.toUpperCase() !== (dispatch.bedCategoryCode || "").toUpperCase();
-
   const [fetchedBeds, setFetchedBeds] = useState<any[]>([]);
+
+  // Synchronize form fields whenever dispatch or isOpen changes
+  useEffect(() => {
+    if (dispatch && isOpen) {
+      setEtaMinutes(String(dispatch.etaMinutes || 15));
+      setPatientCondition(dispatch.patientCondition || "");
+      setRequestedBeds(String(dispatch.requestedBeds || 1));
+      setBedCategoryCode(dispatch.bedCategoryCode || "ICU");
+      setPatientRef(dispatch.patientRef || dispatch.patientReference || "");
+      setAmbulanceUnit(dispatch.ambulanceUnit || dispatch.ambulanceId || "");
+      setError(null);
+    }
+  }, [dispatch, isOpen]);
 
   useEffect(() => {
     if (!isOpen || !dispatch) return;
@@ -70,6 +76,12 @@ export function ModifyRequestModal({
         console.error("Failed to fetch live hospital beds in modify modal:", err);
       });
   }, [isOpen, dispatch, propHospitalBeds]);
+
+  if (!isOpen || !dispatch) return null;
+
+  const approvedCount = dispatch.approvedBeds || 0;
+  const isAccepted = dispatch.status.toUpperCase() === "ACCEPTED";
+  const isCategoryChanged = bedCategoryCode.toUpperCase() !== (dispatch.bedCategoryCode || "").toUpperCase();
 
   // Dynamic hospital bed availability from Neon
   const hospitalBeds = propHospitalBeds || (dispatch as any).hospitalBeds || fetchedBeds;

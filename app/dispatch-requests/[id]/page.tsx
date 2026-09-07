@@ -7,7 +7,6 @@ import { formatDateTime } from "@/lib/format-date";
 import { formatDistanceKm, buildGoogleMapsDirectionsUrl } from "@/lib/geo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useActiveDispatch } from "@/hooks/use-active-dispatch";
-import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
 import { DynamicOSMMapView } from "@/components/map/dynamic-map";
 import { RequestTimeline } from "@/components/request-timeline";
 import { ModifyRequestModal } from "@/components/modify-request-modal";
@@ -222,7 +221,7 @@ export default function DispatchRequestTrackingPage({
         </div>
       </header>
 
-      <main className="w-full max-w-5xl xl:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-6 sm:py-8">
+      <main className="w-full max-w-7xl 2xl:max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-6 sm:py-8">
         {/* Top Header Row with BACK Button */}
         <div className="flex items-center justify-between mb-4">
           <div className="text-xs font-mono text-slate-500 dark:text-[#888888] uppercase tracking-wider">
