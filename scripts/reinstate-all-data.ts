@@ -249,6 +249,24 @@ async function reinstateAllData() {
     // Apollo Mumbai
     { id: "usr_apollo_mum_sharma", name: "Dr. Sanjeev Jadhav, HOD CVTS & Critical Care", email: "sanjeev.j@apollomumbai.com", role: "HOSPITAL_ADMIN", hospitalId: "hosp_apollo_mumbai" },
     { id: "usr_apollo_mum_riya", name: "Riya Fernandes, Triage Officer", email: "riya.f@apollomumbai.com", role: "HOSPITAL_STAFF", hospitalId: "hosp_apollo_mumbai" },
+
+    // Chettinad Chennai
+    { id: "usr_chettinad_ramesh", name: "Dr. Ramesh Chandran, Medical Director & Chief of Surgery", email: "ramesh.chandran@chettinadhealthcity.com", role: "HOSPITAL_ADMIN", hospitalId: "hosp_chettinad_chennai" },
+    { id: "usr_chettinad_anitha", name: "Dr. Anitha Rajagopal, HOD Emergency Medicine", email: "anitha.r@chettinadhealthcity.com", role: "HOSPITAL_ADMIN", hospitalId: "hosp_chettinad_chennai" },
+    { id: "usr_chettinad_karthik", name: "Karthik Subramanian, BSN (Emergency Dispatch Nurse)", email: "karthik.s@chettinadhealthcity.com", role: "HOSPITAL_STAFF", hospitalId: "hosp_chettinad_chennai" },
+    { id: "usr_chettinad_deepa", name: "Deepa Murugan, Lead Triage Officer", email: "deepa.m@chettinadhealthcity.com", role: "HOSPITAL_STAFF", hospitalId: "hosp_chettinad_chennai" },
+
+    // Kauvery Chennai
+    { id: "usr_kauvery_aravindan", name: "Dr. Aravindan Selvaraj, Executive Director & Chief Surgeon", email: "dr.aravindan@kauveryhospital.com", role: "HOSPITAL_ADMIN", hospitalId: "hosp_kauvery_chennai" },
+    { id: "usr_kauvery_senthil", name: "Dr. Senthil Kumar, Lead Critical Care Specialist", email: "senthil.k@kauveryhospital.com", role: "HOSPITAL_ADMIN", hospitalId: "hosp_kauvery_chennai" },
+    { id: "usr_kauvery_malathi", name: "Malathi Natarajan, ICU Nursing In-Charge", email: "malathi.n@kauveryhospital.com", role: "HOSPITAL_STAFF", hospitalId: "hosp_kauvery_chennai" },
+    { id: "usr_kauvery_vignesh", name: "Vigneshwaran K., Emergency Triage Coordinator", email: "vignesh.k@kauveryhospital.com", role: "HOSPITAL_STAFF", hospitalId: "hosp_kauvery_chennai" },
+
+    // Gleneagles Chennai
+    { id: "usr_gleneagles_alok", name: "Dr. Alok Khullar, Chief Executive Officer", email: "alok.khullar@gleneagles.in", role: "HOSPITAL_ADMIN", hospitalId: "hosp_gleneagles_chennai" },
+    { id: "usr_gleneagles_dinesh", name: "Dr. Dinesh Nayak, Director Critical Care & Neurology", email: "dinesh.nayak@gleneagles.in", role: "HOSPITAL_ADMIN", hospitalId: "hosp_gleneagles_chennai" },
+    { id: "usr_gleneagles_shanthi", name: "Shanthi Krishnan, Senior Nursing Officer", email: "shanthi.k@gleneagles.in", role: "HOSPITAL_STAFF", hospitalId: "hosp_gleneagles_chennai" },
+    { id: "usr_gleneagles_praveen", name: "Praveen Kumar, Emergency Response Specialist", email: "praveen.k@gleneagles.in", role: "HOSPITAL_STAFF", hospitalId: "hosp_gleneagles_chennai" },
   ];
 
   // Insert Users
@@ -358,6 +376,42 @@ async function reinstateAllData() {
       email: null,
       role: "HOSPITAL_STAFF",
       invitedByUserId: "usr_max_kapoor",
+      status: "PENDING",
+      expiresAt: new Date(now.getTime() + 30 * 86400000),
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: "inv_chettinad_01",
+      hospitalId: "hosp_chettinad_chennai",
+      code: "BR-CHETT8",
+      email: null,
+      role: "HOSPITAL_STAFF",
+      invitedByUserId: "usr_chettinad_ramesh",
+      status: "PENDING",
+      expiresAt: new Date(now.getTime() + 30 * 86400000),
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: "inv_kauvery_01",
+      hospitalId: "hosp_kauvery_chennai",
+      code: "BR-KAUV4",
+      email: null,
+      role: "HOSPITAL_STAFF",
+      invitedByUserId: "usr_kauvery_aravindan",
+      status: "PENDING",
+      expiresAt: new Date(now.getTime() + 30 * 86400000),
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: "inv_gleneagles_01",
+      hospitalId: "hosp_gleneagles_chennai",
+      code: "BR-GLEN2",
+      email: null,
+      role: "HOSPITAL_STAFF",
+      invitedByUserId: "usr_gleneagles_alok",
       status: "PENDING",
       expiresAt: new Date(now.getTime() + 30 * 86400000),
       createdAt: now,
