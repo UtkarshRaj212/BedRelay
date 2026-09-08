@@ -61,21 +61,23 @@ export default function Home() {
         <section id="overview" className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] py-16 sm:py-24">
           <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12">
             <div className="max-w-4xl lg:max-w-5xl mx-auto text-center flex flex-col items-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] font-mono text-xs font-semibold rounded-sm mb-6 max-w-full">
+              {/* <div className="inline-flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] font-mono text-xs font-semibold rounded-sm mb-6 max-w-full">
                 <span className="w-1.5 h-1.5 bg-blue-700 dark:bg-blue-500 rounded-full shrink-0"></span>
-                <span>AMBULANCE-TO-HOSPITAL PRE-ARRIVAL COORDINATION PLATFORM</span>
-              </div>
+                <span className="text-base">AMBULANCE-TO-HOSPITAL PRE-ARRIVAL COORDINATION PLATFORM</span>
+              </div> */}
 
-              <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-[#ededed] font-sans leading-tight">
-                Real-Time Bed Availability & <br />Pre-Arrival Coordination
+              <h1 className="text-4xl sm:text-6xl mb-10 font-bold tracking-tight text-slate-900 dark:text-[#ededed] font-sans leading-tight">
+                {/* Real-Time Bed Availability & <br />Pre-Arrival Coordination */}Ambulance to Hospital <br />Pre-Arrival Coordination
               </h1>
 
-              <p className="mt-6 text-base sm:text-lg text-slate-600 dark:text-[#a1a1a1] leading-relaxed font-normal max-w-2xl">
-                BedRelay is a real-time ambulance-to-hospital bed availability and pre-arrival coordination platform. Hospitals maintain current bed capacity across intensive care, ventilator support, neonatal, pediatric (PICU), and general wards. Ambulance dispatchers locate suitable facilities based on geographic proximity, bed category, and required volume, transmitting verified pre-arrival dispatch alerts.
-              </p>
+
+
+              {/* <p className="mt-6 text-base sm:text-lg mb-12 text-slate-600 dark:text-[#a1a1a1] leading-relaxed font-normal max-w-2xl">
+                Real-Time Bed Availability & Pre-Arrival Coordination
+              </p> */}
 
               {/* Action Hierarchy: Primary = FIND AVAILABLE BEDS, Secondary = HOSPITAL STAFF SIGN IN */}
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-9 w-full sm:w-auto">
                 <Link
                   href="/find-beds"
                   className="w-full sm:w-auto inline-flex items-center justify-center px-7 py-3.5 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-sm tracking-wide rounded-sm transition-colors shadow-sm cursor-pointer"
