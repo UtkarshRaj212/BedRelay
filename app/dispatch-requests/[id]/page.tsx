@@ -165,14 +165,34 @@ export default function DispatchRequestTrackingPage({
           <div className="text-xs font-mono text-red-700 dark:text-red-400 font-bold uppercase mb-2">ERROR</div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-[#ededed]">{errorMsg || "Request Not Found"}</h1>
           <p className="mt-2 text-sm text-slate-600 dark:text-[#888888]">
-            The requested dispatch request ID could not be located in the database.
+            {errorMsg?.includes("Forbidden")
+              ? "Access denied. Ensure you are authorized for this facility or viewing as the originating ambulance dispatcher."
+              : "The requested dispatch request ID could not be located in the database."}
           </p>
-          <Link
-            href="/dispatcher"
-            className="mt-6 inline-block w-full text-center px-4 py-2.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold text-sm rounded-sm transition-colors"
-          >
-            Return to Dispatcher Dashboard
-          </Link>
+          <div className="mt-6 flex flex-col gap-2.5">
+            <button
+              onClick={() => {
+                setErrorMsg(null);
+                setLoading(true);
+                fetchDetails();
+              }}
+              className="w-full text-center px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-sm transition-colors cursor-pointer"
+            >
+              Retry Connection
+            </button>
+            <Link
+              href="/dispatch-requests/new"
+              className="w-full text-center px-4 py-2.5 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-semibold text-sm rounded-sm transition-colors"
+            >
+              New Dispatch & Recent Requests
+            </Link>
+            <Link
+              href="/dispatcher"
+              className="w-full text-center px-4 py-2 border border-slate-300 dark:border-[#333333] hover:bg-slate-100 dark:hover:bg-[#1a1a1a] text-slate-700 dark:text-[#888888] font-medium text-xs rounded-sm transition-colors"
+            >
+              Return to Dispatcher Dashboard
+            </Link>
+          </div>
         </div>
       </div>
     );

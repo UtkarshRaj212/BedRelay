@@ -9,6 +9,7 @@ import { DynamicOSMLocationPicker } from "@/components/map/dynamic-map";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useActiveDispatch } from "@/hooks/use-active-dispatch";
 import { ActiveDispatchBanner } from "@/components/active-dispatch-banner";
+import { formatDateTime } from "@/lib/format-date";
 
 interface BedCategory {
   id: string;
@@ -54,6 +55,31 @@ function CreateDispatchContent() {
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [createdRequest, setCreatedRequest] = useState<any | null>(null);
+  // Recent Requests State for Ambulance Driver
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
+  const [loadingRecent, setLoadingRecent] = useState<boolean>(true);
+  const [recentFilter, setRecentFilter] = useState<string>("ALL");
+  const [activeTab, setActiveTab] = useState<"create" | "recent">("create");
+
+  const fetchRecentRequests = async () => {
+    try {
+      const res = await fetch("/api/dispatch-requests?all=true");
+      if (res.ok) {
+        const data = await res.json();
+        setRecentRequests(data.dispatches || []);
+      }
+    } catch (err) {
+      console.error("Failed to load recent requests:", err);
+    } finally {
+      setLoadingRecent(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecentRequests();
+    const interval = setInterval(fetchRecentRequests, 2500);
+    return () => clearInterval(interval);
+  }, []);
 
   // Active Dispatch Hook
   const {
@@ -357,16 +383,53 @@ function CreateDispatchContent() {
         lastUpdated={activeLastUpdated}
       />
 
-      <main className="w-full max-w-4xl xl:max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-6 sm:py-8">
-        <div className="bg-white dark:bg-[#0a0a0a] p-4 sm:p-8 border border-slate-200 dark:border-[#222222] rounded-sm shadow-xs">
-          <div className="border-l-2 border-blue-700 dark:border-blue-500 pl-3 mb-6">
-            <span className="text-xs font-mono text-blue-700 dark:text-blue-400 uppercase tracking-widest block">PRE-ARRIVAL ALERT TRANSMISSION</span>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#ededed] mt-0.5">Create New Dispatch Request</h1>
+      <main className="w-full max-w-[1720px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-3 lg:py-5">
+        <div className="bg-white dark:bg-[#0a0a0a] p-4 sm:p-6 lg:p-7 border border-slate-200 dark:border-[#222222] rounded-sm shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-[#1f1f1f] pb-3 mb-4">
+            <div className="border-l-2 border-blue-700 dark:border-blue-500 pl-3">
+              <span className="text-[11px] font-mono text-blue-700 dark:text-blue-400 uppercase tracking-widest block">PRE-ARRIVAL ALERT TRANSMISSION</span>
+              <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-[#ededed] mt-0.5">
+                {activeTab === "create" ? "Create New Dispatch Request" : "Recent Dispatch Requests"}
+              </h1>
+            </div>
+
+            {/* Tab Switcher: Form vs Recent Requests */}
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-[#141414] p-1 rounded-sm border border-slate-200 dark:border-[#262626] font-mono text-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("create")}
+                className={`px-3 py-1.5 rounded-xs transition-all cursor-pointer font-semibold ${
+                  activeTab === "create"
+                    ? "bg-white dark:bg-[#222222] text-slate-900 dark:text-white shadow-xs"
+                    : "text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                CREATE DISPATCH
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("recent")}
+                className={`px-3 py-1.5 rounded-xs transition-all cursor-pointer flex items-center gap-1.5 font-semibold ${
+                  activeTab === "recent"
+                    ? "bg-white dark:bg-[#222222] text-slate-900 dark:text-white shadow-xs"
+                    : "text-slate-600 dark:text-[#888] hover:text-slate-900 dark:hover:text-white"
+                }`}
+              >
+                <span>RECENT REQUESTS</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                  recentRequests.some((r) => r.status === "CANCELLED")
+                    ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                    : "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                }`}>
+                  {recentRequests.length}
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Active Dispatch Conflict Notice */}
           {activeDispatch && (
-            <div className="p-4 mb-6 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800/60 rounded-xs text-xs font-mono">
+            <div className="p-3.5 mb-4 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800/60 rounded-xs text-xs font-mono">
               <div className="font-bold text-amber-800 dark:text-amber-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                 <span>ACTIVE DISPATCH IN PROGRESS: {activeDispatch.id}</span>
               </div>
@@ -377,289 +440,505 @@ function CreateDispatchContent() {
           )}
 
           {validationError && (
-            <div className="p-4 mb-6 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs font-mono rounded-sm">
+            <div className="p-3.5 mb-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs font-mono rounded-sm">
               Notice: {validationError}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* 01. Select Target Hospital & Show Real Availability */}
-            <div>
-              <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
-                01. Select Destination Hospital
-              </label>
-              {loadingHospitals ? (
-                <div className="p-3 text-xs font-mono text-slate-500 dark:text-[#737373] bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a]">
-                  Loading hospitals...
-                </div>
-              ) : (
-                <select
-                  value={selectedHospitalId}
-                  onChange={(e) => setSelectedHospitalId(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm font-semibold focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
-                  required
-                >
-                  {hospitals.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      {h.name} ({h.city}) — {h.totalAvailable} total beds avail
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
+          {/* TAB 1: CREATE DISPATCH FORM */}
+          {activeTab === "create" && (
+            <>
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+                {/* Left Column: Hospital Selection, Vehicle, Patient, Beds, ETA */}
+                <div className="lg:col-span-6 flex flex-col space-y-3.5">
+                  {/* 01. Select Destination Hospital & Live Capacity */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold">
+                        01. Select Destination Hospital
+                      </label>
+                      {selectedHospital && (
+                        <span className="text-[11px] font-mono text-emerald-700 dark:text-emerald-400 font-bold">
+                          {selectedHospital.totalAvailable} total beds avail
+                        </span>
+                      )}
+                    </div>
+                    {loadingHospitals ? (
+                      <div className="p-2.5 text-xs font-mono text-slate-500 dark:text-[#737373] bg-slate-50 dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a]">
+                        Loading hospitals...
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedHospitalId}
+                        onChange={(e) => setSelectedHospitalId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-xs sm:text-sm font-semibold focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
+                        required
+                      >
+                        {hospitals.map((h) => (
+                          <option key={h.id} value={h.id}>
+                            {h.name} ({h.city}) — {h.totalAvailable} beds avail
+                          </option>
+                        ))}
+                      </select>
+                    )}
 
-            {/* Selected Hospital Availability Summary Box */}
-            {selectedHospital && (
-              <div className="p-3 sm:p-4 bg-slate-50 dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
-                <div className="text-xs font-mono text-slate-500 dark:text-[#737373] uppercase font-semibold mb-2">
-                  Availability at {selectedHospital.name}:
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                  {selectedHospital.beds.map((b) => (
-                    <div
-                      key={b.id}
-                      className={`p-2.5 border rounded-sm ${
-                        b.categoryCode.toUpperCase() === bedCategory.toUpperCase()
-                          ? "bg-blue-50 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800/60"
-                          : "bg-white dark:bg-[#141414] border-slate-200 dark:border-[#222222]"
-                      }`}
+                    {/* Selected Hospital Availability Summary Box */}
+                    {selectedHospital && (
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {selectedHospital.beds.map((b) => (
+                          <div
+                            key={b.id}
+                            className={`p-2 border rounded-sm transition-all ${
+                              b.categoryCode.toUpperCase() === bedCategory.toUpperCase()
+                                ? "bg-blue-50 dark:bg-blue-950/40 border-blue-400 dark:border-blue-700"
+                                : "bg-white dark:bg-[#141414] border-slate-200 dark:border-[#222222]"
+                            }`}
+                          >
+                            <div className="text-[9px] font-mono text-slate-500 dark:text-[#737373] uppercase truncate">{b.name}</div>
+                            <div className="text-xs sm:text-sm font-bold font-mono text-slate-900 dark:text-[#ededed] mt-0.5">
+                              <span className="text-emerald-700 dark:text-emerald-400">{b.availableBeds}</span> / {b.totalBeds}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 02. Ambulance Vehicle ID & 03. Patient Reference */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
+                        02. Ambulance / Vehicle ID
+                      </label>
+                      <input
+                        type="text"
+                        value={ambulanceUnit}
+                        onChange={(e) => setAmbulanceUnit(e.target.value)}
+                        className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-xs sm:text-sm focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
+                        placeholder="e.g. 108 EMS Unit-402"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
+                        03. Patient Reference ID
+                      </label>
+                      <input
+                        type="text"
+                        value={patientRef}
+                        onChange={(e) => setPatientRef(e.target.value)}
+                        className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-xs sm:text-sm focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
+                        placeholder="e.g. PAT-9204"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* 04. Bed Category & 05. Number of Beds */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
+                        04. Required Bed Category
+                      </label>
+                      <select
+                        value={bedCategory}
+                        onChange={(e) => setBedCategory(e.target.value)}
+                        className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-xs sm:text-sm font-semibold focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
+                      >
+                        <option value="ICU">Intensive Care Unit (ICU)</option>
+                        <option value="GENERAL">General Ward</option>
+                        <option value="VENTILATOR">Ventilator & Critical Care</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold">
+                          05. Number of Beds
+                        </label>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-[#737373]">
+                          Available: <span className="font-bold text-emerald-700 dark:text-emerald-400">{availableBeds}</span>
+                        </span>
+                      </div>
+                      <input
+                        type="number"
+                        min="1"
+                        max={availableBeds || 1}
+                        value={requestedBeds}
+                        onFocus={(e) => {
+                          const val = Number(e.target.value);
+                          if (!isNaN(val) && val >= 1) prevRequestedBedsRef.current = val;
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "") {
+                            setRequestedBeds("");
+                            return;
+                          }
+                          const parsed = parseInt(val, 10);
+                          if (!isNaN(parsed)) {
+                            setRequestedBeds(val);
+                            if (parsed >= 1) prevRequestedBedsRef.current = parsed;
+                          }
+                        }}
+                        onBlur={() => {
+                          if (requestedBeds === "" || isNaN(Number(requestedBeds)) || Number(requestedBeds) < 1) {
+                            setRequestedBeds(prevRequestedBedsRef.current || 1);
+                          } else {
+                            const parsed = Number(requestedBeds);
+                            setRequestedBeds(parsed);
+                            prevRequestedBedsRef.current = parsed;
+                          }
+                        }}
+                        className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-xs sm:text-sm focus:outline-none rounded-sm"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* 07. ETA & 08. Patient Clinical Condition */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
+                        07. Travel ETA (Mins)
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={etaMinutes}
+                        onChange={(e) => setEtaMinutes(Number(e.target.value))}
+                        className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-xs sm:text-sm focus:outline-none rounded-sm"
+                        required
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
+                        08. Patient Clinical Condition
+                      </label>
+                      <input
+                        type="text"
+                        value={patientCondition}
+                        onChange={(e) => setPatientCondition(e.target.value)}
+                        className="w-full px-3 py-1.5 sm:py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] text-xs sm:text-sm focus:outline-none rounded-sm"
+                        placeholder="e.g. Acute Trauma / Cardiac distress"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="pt-2 flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2.5">
+                    <Link
+                      href="/find-beds"
+                      className="w-full sm:w-auto px-4 py-2.5 text-xs font-semibold uppercase text-slate-600 dark:text-[#a1a1a1] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#111111] rounded-sm text-center"
                     >
-                      <div className="text-[10px] font-mono text-slate-500 dark:text-[#737373] uppercase truncate">{b.name}</div>
-                      <div className="text-sm sm:text-base font-bold font-mono text-slate-900 dark:text-[#ededed] mt-0.5">
-                        <span className="text-emerald-700 dark:text-emerald-400">{b.availableBeds}</span> / {b.totalBeds}
+                      Cancel
+                    </Link>
+                    <button
+                      type="submit"
+                      disabled={submitting || (selectedBedCategory && availableBeds < Number(requestedBeds))}
+                      className="w-full sm:w-auto px-6 py-2.5 sm:py-3 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-mono font-semibold text-xs sm:text-sm uppercase tracking-wider rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
+                    >
+                      {submitting
+                        ? "Transmitting Alert..."
+                        : activeDispatch
+                        ? "Switch Hospital & Transmit Alert →"
+                        : "Transmit Dispatch Alert →"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Column: Interactive Map & Live GPS Telemetry */}
+                <div className="lg:col-span-6 flex flex-col space-y-3">
+                  <div className="border border-slate-200 dark:border-[#222222] rounded-sm p-3.5 sm:p-4 bg-slate-50 dark:bg-[#0f0f0f] flex flex-col">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                      <label className="text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold">
+                        06. Ambulance GPS Coordinates (India)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleDetectGPS}
+                        disabled={detectingGps}
+                        className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-mono text-[11px] rounded-sm transition-colors cursor-pointer disabled:opacity-50 self-start sm:self-auto"
+                      >
+                        {detectingGps ? "Acquiring GPS..." : "Detect Device GPS"}
+                      </button>
+                    </div>
+
+                    {gpsError && (
+                      <div className="mb-2 text-xs font-mono text-amber-700 dark:text-amber-400">
+                        Notice: {gpsError}
+                      </div>
+                    )}
+
+                    {/* Tactical Leaflet Map - Guaranteed visibility without clipping */}
+                    <div className="mb-2.5 w-full">
+                      <DynamicOSMLocationPicker
+                        latitude={lat}
+                        longitude={lng}
+                        onChange={(newLat, newLng) => {
+                          setLat(newLat);
+                          setLng(newLng);
+                        }}
+                      />
+                    </div>
+
+                    {/* Lat / Lng inputs */}
+                    <div className="grid grid-cols-2 gap-3 mb-2.5">
+                      <div>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-[#737373] block mb-1">Latitude</span>
+                        <input
+                          type="number"
+                          step="any"
+                          value={lat}
+                          onChange={(e) => setLat(Number(e.target.value))}
+                          className="w-full px-3 py-1.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-xs focus:outline-none rounded-sm"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-[#737373] block mb-1">Longitude</span>
+                        <input
+                          type="number"
+                          step="any"
+                          value={lng}
+                          onChange={(e) => setLng(Number(e.target.value))}
+                          className="w-full px-3 py-1.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-xs focus:outline-none rounded-sm"
+                          required
+                        />
                       </div>
                     </div>
-                  ))}
+
+                    {/* Telemetry info */}
+                    <div className="p-2 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm flex items-center justify-between text-[11px] font-mono text-slate-600 dark:text-[#888]">
+                      <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                        <span>Ambulance Telemetry Synced</span>
+                      </span>
+                      <span className="text-slate-500 dark:text-[#666]">
+                        Target: {selectedHospital ? selectedHospital.name : "None selected"}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              </form>
 
-            {/* 02. Ambulance Vehicle ID & Patient Reference */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
-                  02. Ambulance / Vehicle ID
-                </label>
-                <input
-                  type="text"
-                  value={ambulanceUnit}
-                  onChange={(e) => setAmbulanceUnit(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
-                  placeholder="e.g. 108 EMS Unit-402"
-                  required
-                />
-              </div>
+              {/* Bottom Quick-Glance Recent Dispatches Strip */}
+              {recentRequests.length > 0 && (
+                <div className="mt-5 pt-4 border-t border-slate-200 dark:border-[#222222]">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold uppercase text-slate-800 dark:text-slate-200">
+                        Recent Ambulance Requests Log
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-500 dark:text-[#888]">
+                        ({recentRequests.length} total recorded)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("recent")}
+                      className="text-xs font-mono text-blue-700 dark:text-blue-400 hover:underline font-semibold cursor-pointer"
+                    >
+                      View All Recent Requests →
+                    </button>
+                  </div>
 
-              <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
-                  03. Patient Reference ID
-                </label>
-                <input
-                  type="text"
-                  value={patientRef}
-                  onChange={(e) => setPatientRef(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
-                  placeholder="e.g. PAT-9204"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* 03. Required Bed Category & Count */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
-                  04. Required Bed Category
-                </label>
-                <select
-                  value={bedCategory}
-                  onChange={(e) => setBedCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm font-semibold focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
-                >
-                  <option value="ICU">Intensive Care Unit (ICU)</option>
-                  <option value="GENERAL">General Ward</option>
-                  <option value="VENTILATOR">Ventilator & Critical Care</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
-                  05. Number of Beds Required
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max={availableBeds || 1}
-                  value={requestedBeds}
-                  onFocus={(e) => {
-                    const val = Number(e.target.value);
-                    if (!isNaN(val) && val >= 1) prevRequestedBedsRef.current = val;
-                  }}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "") {
-                      setRequestedBeds("");
-                      return;
-                    }
-                    const parsed = parseInt(val, 10);
-                    if (!isNaN(parsed)) {
-                      setRequestedBeds(val);
-                      if (parsed >= 1) prevRequestedBedsRef.current = parsed;
-                    }
-                  }}
-                  onBlur={() => {
-                    if (requestedBeds === "" || isNaN(Number(requestedBeds)) || Number(requestedBeds) < 1) {
-                      setRequestedBeds(prevRequestedBedsRef.current || 1);
-                    } else {
-                      const parsed = Number(requestedBeds);
-                      setRequestedBeds(parsed);
-                      prevRequestedBedsRef.current = parsed;
-                    }
-                  }}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none focus:border-slate-900 dark:focus:border-[#444] rounded-sm"
-                  required
-                />
-                <span className="text-[11px] font-mono text-slate-500 dark:text-[#737373] block mt-1">
-                  Currently available in {bedCategory}: <span className="font-bold text-emerald-700 dark:text-emerald-400">{availableBeds}</span>
-                </span>
-              </div>
-            </div>
-
-            {/* 04. Current Location Coordinates */}
-            <div>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                <label className="text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold">
-                  06. Ambulance GPS Coordinates (India)
-                </label>
-                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={handleDetectGPS}
-                    disabled={detectingGps}
-                    className="px-2.5 py-1 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-mono text-xs rounded-sm transition-colors cursor-pointer disabled:opacity-50"
-                  >
-                    {detectingGps ? "Acquiring GPS..." : "Detect Ambulance GPS"}
-                  </button>
-                  <span className="text-[11px] font-mono text-slate-500 dark:text-[#737373]">Presets:</span>
-                  <button
-                    type="button"
-                    onClick={() => handleCityPresetSelect("Mumbai")}
-                    className="text-[11px] font-mono text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
-                  >
-                    Mumbai
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleCityPresetSelect("New Delhi")}
-                    className="text-[11px] font-mono text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
-                  >
-                    Delhi
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleCityPresetSelect("Bengaluru")}
-                    className="text-[11px] font-mono text-blue-700 dark:text-blue-400 hover:underline cursor-pointer"
-                  >
-                    Bengaluru
-                  </button>
-                </div>
-              </div>
-
-              {gpsError && (
-                <div className="mb-2 text-xs font-mono text-amber-700 dark:text-amber-400">
-                  Notice: {gpsError}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {recentRequests.slice(0, 3).map((req) => (
+                      <div
+                        key={req.id}
+                        className="p-3 bg-slate-50 dark:bg-[#111111] border border-slate-200 dark:border-[#262626] rounded-sm flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="font-mono text-[10px] text-slate-500 truncate">{req.id}</span>
+                            <span className={`px-1.5 py-0.5 rounded-xs font-mono text-[9px] font-bold uppercase ${
+                              req.status === "CANCELLED"
+                                ? "bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-900/50"
+                                : req.status === "PENDING"
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-900/50"
+                                : req.status === "ACCEPTED"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-900/50"
+                                : req.status === "REJECTED"
+                                ? "bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300 border border-red-300 dark:border-red-900/50"
+                                : "bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-900/50"
+                            }`}>
+                              {req.status}
+                            </span>
+                          </div>
+                          <div className="font-semibold text-xs text-slate-900 dark:text-white truncate">
+                            {req.hospitalName}
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-[#888] font-mono mt-0.5">
+                            {req.requestedBeds} {req.bedCategoryCode} bed(s) · {req.ambulanceUnit}
+                          </div>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-[#222] flex items-center justify-between text-[10px] font-mono">
+                          <span className="text-slate-400">{formatDateTime(req.createdAt)}</span>
+                          <Link
+                            href={`/dispatch-requests/${req.id}`}
+                            className="text-blue-600 dark:text-blue-400 hover:underline font-semibold"
+                          >
+                            Details →
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
+            </>
+          )}
 
-              <div className="mb-3">
-                <DynamicOSMLocationPicker
-                  latitude={lat}
-                  longitude={lng}
-                  onChange={(newLat, newLng) => {
-                    setLat(newLat);
-                    setLng(newLng);
-                  }}
-                  className="h-[220px] sm:h-[260px] w-full border border-slate-200 dark:border-[#222222] rounded-sm overflow-hidden"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                  <span className="text-[10px] font-mono text-slate-500 dark:text-[#737373] block">Latitude</span>
-                  <input
-                    type="number"
-                    step="any"
-                    value={lat}
-                    onChange={(e) => setLat(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
-                    required
-                  />
+          {/* TAB 2: RECENT REQUESTS DETAILED BOARD */}
+          {activeTab === "recent" && (
+            <div className="space-y-4">
+              {/* Filter Pills */}
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-[#111111] p-3 border border-slate-200 dark:border-[#222222] rounded-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-mono uppercase text-slate-500 font-semibold mr-1">Status Filter:</span>
+                  {["ALL", "CANCELLED", "PENDING", "ACCEPTED", "COMPLETED", "REJECTED"].map((st) => {
+                    const count = st === "ALL" ? recentRequests.length : recentRequests.filter((r) => r.status === st).length;
+                    return (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => setRecentFilter(st)}
+                        className={`px-2.5 py-1 rounded-sm text-xs font-mono font-semibold transition-colors cursor-pointer ${
+                          recentFilter === st
+                            ? "bg-blue-700 text-white dark:bg-blue-600"
+                            : "bg-white dark:bg-[#181818] text-slate-600 dark:text-[#888] border border-slate-200 dark:border-[#2a2a2a] hover:border-slate-400"
+                        }`}
+                      >
+                        {st} ({count})
+                      </button>
+                    );
+                  })}
                 </div>
-                <div>
-                  <span className="text-[10px] font-mono text-slate-500 dark:text-[#737373] block">Longitude</span>
-                  <input
-                    type="number"
-                    step="any"
-                    value={lng}
-                    onChange={(e) => setLng(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
-                    required
-                  />
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("create")}
+                    className="px-3 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-mono font-semibold rounded-sm transition-colors cursor-pointer"
+                  >
+                    + New Dispatch Form
+                  </button>
+                  <Link
+                    href="/dispatcher/history"
+                    className="px-3 py-1.5 bg-white dark:bg-[#181818] border border-slate-300 dark:border-[#333] text-slate-700 dark:text-[#ccc] hover:text-white text-xs font-mono font-semibold rounded-sm transition-colors"
+                  >
+                    Full Console History ↗
+                  </Link>
                 </div>
               </div>
-            </div>
 
-            {/* 05. ETA & Clinical Condition Notes */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
-                  07. Travel ETA (Mins)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={etaMinutes}
-                  onChange={(e) => setEtaMinutes(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] font-mono text-sm focus:outline-none rounded-sm"
-                  required
-                />
-              </div>
+              {/* Requests List */}
+              {loadingRecent ? (
+                <div className="p-8 text-center text-xs font-mono text-slate-500">
+                  Loading recent ambulance dispatch requests...
+                </div>
+              ) : recentRequests.length === 0 ? (
+                <div className="p-8 text-center border border-dashed border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs font-mono text-slate-500">
+                  No dispatch requests recorded yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+                  {recentRequests
+                    .filter((r) => recentFilter === "ALL" || r.status === recentFilter)
+                    .map((req) => (
+                      <div
+                        key={req.id}
+                        className="p-4 bg-white dark:bg-[#111111] border border-slate-200 dark:border-[#262626] rounded-sm shadow-xs flex flex-col justify-between space-y-3"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300 truncate">
+                              {req.id}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-xs font-mono text-[10px] font-bold uppercase ${
+                              req.status === "CANCELLED"
+                                ? "bg-rose-100 text-rose-800 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300 dark:border-rose-900/60"
+                                : req.status === "PENDING"
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-900/60 animate-pulse"
+                                : req.status === "ACCEPTED"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-900/60"
+                                : req.status === "REJECTED"
+                                ? "bg-red-100 text-red-800 dark:bg-red-950/80 dark:text-red-300 border border-red-300 dark:border-red-900/60"
+                                : "bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-900/60"
+                            }`}>
+                              {req.status}
+                            </span>
+                          </div>
 
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-mono text-slate-700 dark:text-[#a1a1a1] uppercase font-semibold mb-1">
-                  08. Patient Clinical Condition
-                </label>
-                <input
-                  type="text"
-                  value={patientCondition}
-                  onChange={(e) => setPatientCondition(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] text-slate-900 dark:text-[#ededed] text-sm focus:outline-none rounded-sm"
-                  placeholder="e.g. Acute Trauma / Cardiac distress"
-                  required
-                />
-              </div>
-            </div>
+                          <h3 className="font-bold text-sm text-slate-900 dark:text-white">
+                            {req.hospitalName}
+                          </h3>
+                          <div className="text-xs text-slate-500 dark:text-[#888] font-mono mt-0.5">
+                            {req.hospitalCity}, {req.hospitalState}
+                          </div>
 
-            <div className="pt-4 border-t border-slate-200 dark:border-[#222222] flex flex-col-reverse sm:flex-row sm:items-center justify-end gap-2.5 sm:gap-3">
-              <Link
-                href="/find-beds"
-                className="w-full sm:w-auto px-4 py-2.5 text-xs font-semibold uppercase text-slate-600 dark:text-[#a1a1a1] hover:text-slate-900 dark:hover:text-white border border-slate-300 dark:border-[#2a2a2a] bg-white dark:bg-[#111111] rounded-sm text-center"
-              >
-                Cancel
-              </Link>
-              <button
-                type="submit"
-                disabled={submitting || (selectedBedCategory && availableBeds < Number(requestedBeds))}
-                className="w-full sm:w-auto px-6 py-3 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider rounded-sm transition-colors disabled:opacity-50 cursor-pointer text-center"
-              >
-                {submitting
-                  ? "Transmitting Alert..."
-                  : activeDispatch
-                  ? "Switch Hospital & Transmit Alert"
-                  : "Transmit Dispatch Alert"}
-              </button>
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-mono bg-slate-50 dark:bg-[#161616] p-2.5 rounded-xs border border-slate-200 dark:border-[#222]">
+                            <div>
+                              <span className="text-[10px] text-slate-400 block">AMBULANCE</span>
+                              <span className="font-semibold text-slate-800 dark:text-[#ddd]">{req.ambulanceUnit}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 block">BED REQUEST</span>
+                              <span className="font-semibold text-blue-700 dark:text-blue-400">{req.requestedBeds} × {req.bedCategoryCode}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 block">PATIENT REF</span>
+                              <span className="text-slate-800 dark:text-[#ddd]">{req.patientReference || req.patientRef}</span>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 block">EST. TRAVEL ETA</span>
+                              <span className="text-slate-800 dark:text-[#ddd]">{req.etaMinutes} mins</span>
+                            </div>
+                          </div>
+
+                          {req.patientCondition && (
+                            <div className="mt-2 text-xs text-slate-600 dark:text-[#999] italic truncate">
+                              Condition: &quot;{req.patientCondition}&quot;
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2.5 border-t border-slate-200 dark:border-[#222] flex items-center justify-between text-xs font-mono">
+                          <span className="text-[11px] text-slate-400">
+                            {formatDateTime(req.createdAt)}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedHospitalId(req.hospitalId);
+                                setBedCategory(req.bedCategoryCode);
+                                setAmbulanceUnit(req.ambulanceUnit);
+                                if (req.patientCondition) setPatientCondition(req.patientCondition);
+                                setActiveTab("create");
+                              }}
+                              className="text-xs text-slate-600 dark:text-[#888] hover:text-blue-600 dark:hover:text-blue-400 underline cursor-pointer"
+                            >
+                              Re-use
+                            </button>
+                            <Link
+                              href={`/dispatch-requests/${req.id}`}
+                              className="text-xs text-blue-700 dark:text-blue-400 font-bold hover:underline"
+                            >
+                              Details →
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
-          </form>
+          )}
         </div>
       </main>
     </div>

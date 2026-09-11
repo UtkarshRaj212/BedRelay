@@ -49,7 +49,7 @@ export default function DispatcherHistoryPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [showAllSessions, setShowAllSessions] = useState<boolean>(false);
+  const [showAllSessions, setShowAllSessions] = useState<boolean>(true);
 
   useEffect(() => {
     const currentSession = getDispatcherSessionId();
@@ -114,6 +114,7 @@ export default function DispatcherHistoryPage() {
   const pendingCount = dispatches.filter((d) => d.status === "PENDING").length;
   const acceptedCount = dispatches.filter((d) => d.status === "ACCEPTED").length;
   const completedCount = dispatches.filter((d) => d.status === "COMPLETED").length;
+  const cancelledCount = dispatches.filter((d) => d.status === "CANCELLED").length;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
@@ -207,7 +208,7 @@ export default function DispatcherHistoryPage() {
         </div>
 
         {/* Metric Quick Glance Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
           <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
             <span className="text-[11px] font-mono text-blue-700 dark:text-blue-400 uppercase font-bold">Active Requests</span>
             <div className="text-2xl font-bold font-mono text-slate-900 dark:text-[#ededed] mt-1">
@@ -225,6 +226,12 @@ export default function DispatcherHistoryPage() {
             <span className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 uppercase font-bold">Accepted</span>
             <div className="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
               {acceptedCount}
+            </div>
+          </div>
+          <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">
+            <span className="text-[11px] font-mono text-rose-600 dark:text-rose-400 uppercase font-bold">Cancelled</span>
+            <div className="text-2xl font-bold font-mono text-rose-600 dark:text-rose-400 mt-1">
+              {cancelledCount}
             </div>
           </div>
           <div className="p-4 bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-[#222222] rounded-sm">

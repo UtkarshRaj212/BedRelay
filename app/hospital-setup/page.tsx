@@ -274,7 +274,7 @@ function HospitalSetupContent() {
 
       {/* Main Header */}
       <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222] sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16 py-2.5 sm:py-0 flex items-center justify-between">
+        <div className="w-full max-w-[1720px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 min-h-14 sm:min-h-16 py-2 sm:py-0 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm shrink-0">
               BR
@@ -292,250 +292,242 @@ function HospitalSetupContent() {
       </header>
 
       {/* Body Container */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-sans">
-            Hospital Facility Setup
-          </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-[#a1a1a1] leading-relaxed">
-            Welcome, <span className="font-semibold text-slate-900 dark:text-white">{session.user.name || session.user.email}</span>. Select an onboarding route below to connect your facility to the BedRelay emergency network.
-          </p>
-        </div>
+      <main className="w-full max-w-[1720px] 2xl:max-w-[1880px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 py-3 lg:py-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-sans">
+              Hospital Facility Setup
+            </h1>
+            <p className="mt-0.5 text-xs sm:text-sm text-slate-600 dark:text-[#a1a1a1] leading-relaxed">
+              Welcome, <span className="font-semibold text-slate-900 dark:text-white">{session.user.name || session.user.email}</span>. Select an onboarding route below to connect your facility to the BedRelay emergency network.
+            </p>
+          </div>
 
-        {/* Tab Switcher */}
-        <div className="grid grid-cols-2 max-w-md border border-slate-200 dark:border-[#222222] rounded-sm p-1 bg-slate-100 dark:bg-[#111111] mb-6 sm:mb-8 font-mono text-[11px] sm:text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => setActiveTab("create")}
-            className={`py-2 sm:py-2.5 text-center rounded-sm transition-all cursor-pointer ${
-              activeTab === "create"
-                ? "bg-white dark:bg-[#222222] text-slate-900 dark:text-white shadow-xs font-bold"
-                : "text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            CREATE NEW
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("join")}
-            className={`py-2 sm:py-2.5 text-center rounded-sm transition-all cursor-pointer ${
-              activeTab === "join"
-                ? "bg-white dark:bg-[#222222] text-slate-900 dark:text-white shadow-xs font-bold"
-                : "text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            JOIN WITH CODE
-          </button>
+          {/* Tab Switcher */}
+          <div className="grid grid-cols-2 w-full md:w-64 border border-slate-200 dark:border-[#222222] rounded-sm p-1 bg-slate-100 dark:bg-[#111111] shrink-0 font-mono text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setActiveTab("create")}
+              className={`py-1.5 text-center rounded-sm transition-all cursor-pointer ${
+                activeTab === "create"
+                  ? "bg-white dark:bg-[#222222] text-slate-900 dark:text-white shadow-xs font-bold"
+                  : "text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              CREATE NEW
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("join")}
+              className={`py-1.5 text-center rounded-sm transition-all cursor-pointer ${
+                activeTab === "join"
+                  ? "bg-white dark:bg-[#222222] text-slate-900 dark:text-white shadow-xs font-bold"
+                  : "text-slate-600 dark:text-[#888888] hover:text-slate-900 dark:hover:text-white"
+              }`}
+            >
+              JOIN WITH CODE
+            </button>
+          </div>
         </div>
 
         {/* Tab 1: Create New Hospital */}
         {activeTab === "create" && (
-          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-6 sm:p-8">
-            <div className="border-b border-slate-200 dark:border-[#1f1f1f] pb-4 mb-6">
-              <div className="flex items-center gap-2 font-mono text-xs text-blue-700 dark:text-blue-400 font-semibold mb-1">
-                <span className="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>
-                HOSPITAL_ADMIN AFFILIATION
-              </div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                Register New Hospital Emergency Facility
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-[#888888] mt-1">
-                As creator, you will automatically be assigned as <span className="font-semibold text-slate-800 dark:text-slate-200">Hospital Administrator</span>. You will have full access to manage bed capacities, view and respond to inbound EMS ambulance dispatch requests, and invite medical staff.
-              </p>
-            </div>
-
+          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-4 sm:p-6 lg:p-7 shadow-xs">
             {createError && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-sm text-xs font-mono text-red-700 dark:text-red-400">
+              <div className="mb-4 p-3.5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-sm text-xs font-mono text-red-700 dark:text-red-400">
                 ERROR: {createError}
               </div>
             )}
 
-            <form onSubmit={handleCreateHospital} className="space-y-6">
-              <div>
-                <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1.5">
-                  Hospital Facility Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., Fortis Memorial Research Institute"
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none"
-                />
-              </div>
+            <form onSubmit={handleCreateHospital} className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+              {/* Left Column: Hospital Info & Bed Capacity */}
+              <div className="lg:col-span-6 flex flex-col space-y-3.5">
+                <div className="border-b border-slate-200 dark:border-[#1f1f1f] pb-3">
+                  <div className="flex items-center gap-2 font-mono text-[11px] text-blue-700 dark:text-blue-400 font-semibold mb-0.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>
+                    HOSPITAL_ADMIN AFFILIATION
+                  </div>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    Register New Hospital Emergency Facility
+                  </h2>
+                  <p className="text-xs text-slate-600 dark:text-[#888888] mt-0.5">
+                    As creator, you will automatically be assigned as <span className="font-semibold text-slate-800 dark:text-slate-200">Hospital Administrator</span> with full telemetry control.
+                  </p>
+                </div>
 
-              <div>
-                <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1.5">
-                  Street Address & Campus Area
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g., Sector 44, Opposite HUDA City Centre Metro"
-                  value={createForm.address}
-                  onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                  className="w-full px-3.5 py-2.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1.5">
-                    City *
+                  <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1">
+                    Hospital Facility Name *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="New Delhi"
-                    value={createForm.city}
-                    onChange={(e) => setCreateForm({ ...createForm, city: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none"
+                    placeholder="e.g., Fortis Memorial Research Institute"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1.5">
-                    State / UT
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Delhi"
-                    value={createForm.state}
-                    onChange={(e) => setCreateForm({ ...createForm, state: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1.5">
-                    Emergency Telemetry Phone
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="+91 11 2600 0000"
-                    value={createForm.phone}
-                    onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none font-mono text-xs"
-                  />
-                </div>
-              </div>
 
-              {/* Coordinates & Quick City Preset Selection */}
-              <div className="border border-slate-200 dark:border-[#222222] rounded-sm p-4 bg-slate-50 dark:bg-[#0f0f0f]">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                <div>
+                  <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1">
+                    Street Address & Campus Area
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., Sector 44, Opposite HUDA City Centre Metro"
+                    value={createForm.address}
+                    onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <span className="text-xs font-mono font-semibold uppercase text-slate-800 dark:text-[#ededed] block">
-                      Indian Geographic Telemetry Coordinates
+                    <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1">
+                      City *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="New Delhi"
+                      value={createForm.city}
+                      onChange={(e) => setCreateForm({ ...createForm, city: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1">
+                      State / UT
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Delhi"
+                      value={createForm.state}
+                      onChange={(e) => setCreateForm({ ...createForm, state: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1">
+                      Emergency Phone
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="+91 11 2600 0000"
+                      value={createForm.phone}
+                      onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                      className="w-full px-3 py-2 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm text-sm text-slate-900 dark:text-white outline-none font-mono text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Bed Inventory Telemetry Initialization */}
+                <div className="border border-slate-200 dark:border-[#222222] rounded-sm p-3 bg-slate-50 dark:bg-[#0f0f0f]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-mono font-semibold uppercase text-slate-800 dark:text-[#ededed]">
+                      Initial Bed Capacity Telemetry
                     </span>
-                    <span className="text-[11px] text-slate-500 dark:text-[#777]">
-                      Required for ambulance proximity ranking and ETA route calculations.
+                    <span className="text-[10px] font-mono text-slate-500 dark:text-[#777]">
+                      Indian EMS Standards
                     </span>
                   </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs font-mono">
+                    <div className="p-2 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-sm">
+                      <div className="text-[10px] text-slate-500 dark:text-[#888] truncate">Intensive Care (ICU)</div>
+                      <div className="font-bold text-slate-900 dark:text-white mt-0.5">10 Total · <span className="text-emerald-700 dark:text-emerald-400">4 Avail</span></div>
+                    </div>
+                    <div className="p-2 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-sm">
+                      <div className="text-[10px] text-slate-500 dark:text-[#888] truncate">General Ward</div>
+                      <div className="font-bold text-slate-900 dark:text-white mt-0.5">50 Total · <span className="text-emerald-700 dark:text-emerald-400">18 Avail</span></div>
+                    </div>
+                    <div className="p-2 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-sm">
+                      <div className="text-[10px] text-slate-500 dark:text-[#888] truncate">Ventilator Care</div>
+                      <div className="font-bold text-slate-900 dark:text-white mt-0.5">6 Total · <span className="text-emerald-700 dark:text-emerald-400">2 Avail</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-1">
                   <button
-                    type="button"
-                    onClick={handleUseGeolocation}
-                    className="px-2.5 py-1 text-xs font-mono bg-white dark:bg-[#1a1a1a] border border-slate-300 dark:border-[#333] hover:border-blue-500 rounded-sm text-slate-700 dark:text-slate-300 transition-colors"
+                    type="submit"
+                    disabled={creating}
+                    className="w-full py-2.5 sm:py-3 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm rounded-sm transition-colors cursor-pointer disabled:opacity-50 font-mono tracking-wider uppercase"
                   >
-                    Use Current Device GPS
+                    {creating ? "REGISTERING FACILITY..." : "REGISTER HOSPITAL & INITIALIZE TELEMETRY →"}
                   </button>
                 </div>
-
-                <div className="mb-3">
-                  <span className="text-[10px] font-mono uppercase text-slate-500 dark:text-[#666] block mb-1.5">
-                    Quick Preset City Coordinates:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {INDIAN_CITIES.map((c) => (
-                      <button
-                        key={c.city}
-                        type="button"
-                        onClick={() => handleCityPreset(c)}
-                        className={`px-2 py-1 text-[11px] font-mono rounded-sm border transition-colors ${
-                          createForm.city === c.city
-                            ? "bg-blue-50 dark:bg-blue-950/40 border-blue-400 text-blue-800 dark:text-blue-300 font-bold"
-                            : "bg-white dark:bg-[#141414] border-slate-200 dark:border-[#282828] text-slate-600 dark:text-[#888888] hover:border-slate-400"
-                        }`}
-                      >
-                        {c.city}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <DynamicOSMLocationPicker
-                    latitude={parseFloat(createForm.latitude) || 28.5921}
-                    longitude={parseFloat(createForm.longitude) || 77.046}
-                    cityName={createForm.city}
-                    onChange={(lat, lng) =>
-                      setCreateForm({
-                        ...createForm,
-                        latitude: lat.toString(),
-                        longitude: lng.toString(),
-                      })
-                    }
-                    className="w-full h-48 sm:h-56"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <div>
-                    <label className="block text-[11px] font-mono uppercase text-slate-600 dark:text-[#888] mb-1">
-                      Latitude
-                    </label>
-                    <input
-                      type="text"
-                      value={createForm.latitude}
-                      onChange={(e) => setCreateForm({ ...createForm, latitude: e.target.value })}
-                      className="w-full px-3 py-1.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs font-mono text-slate-900 dark:text-white outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-mono uppercase text-slate-600 dark:text-[#888] mb-1">
-                      Longitude
-                    </label>
-                    <input
-                      type="text"
-                      value={createForm.longitude}
-                      onChange={(e) => setCreateForm({ ...createForm, longitude: e.target.value })}
-                      className="w-full px-3 py-1.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs font-mono text-slate-900 dark:text-white outline-none"
-                    />
-                  </div>
-                </div>
               </div>
 
-              {/* Bed Inventory Telemetry Initialization */}
-              <div className="border border-slate-200 dark:border-[#222222] rounded-sm p-4 bg-slate-50 dark:bg-[#0f0f0f]">
-                <div className="mb-3">
-                  <span className="text-xs font-mono font-semibold uppercase text-slate-800 dark:text-[#ededed] block">
-                    Initial Bed Capacity Telemetry
-                  </span>
-                  <span className="text-[11px] text-slate-500 dark:text-[#777]">
-                    Telemetry channels initialized for Indian EMS dispatch standards.
-                  </span>
-                </div>
-                <div className="space-y-2 text-xs font-mono">
-                  <div className="flex items-center justify-between p-2.5 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-sm">
-                    <span className="font-semibold text-slate-800 dark:text-[#ededed]">Intensive Care Unit (ICU)</span>
-                    <span className="text-slate-500 dark:text-[#888]">10 Total · 4 Available</span>
+              {/* Right Column: Geographic Telemetry Coordinates & Live Map */}
+              <div className="lg:col-span-6 flex flex-col space-y-3">
+                <div className="border border-slate-200 dark:border-[#222222] rounded-sm p-3.5 sm:p-4 bg-slate-50 dark:bg-[#0f0f0f]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2.5">
+                    <div>
+                      <span className="text-xs font-mono font-semibold uppercase text-slate-800 dark:text-[#ededed] block">
+                        Indian Geographic Telemetry Coordinates
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-[#777]">
+                        Required for ambulance proximity ranking & ETA routing
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleUseGeolocation}
+                      className="px-2.5 py-1 text-xs font-mono bg-white dark:bg-[#1a1a1a] border border-slate-300 dark:border-[#333] hover:border-blue-500 rounded-sm text-slate-700 dark:text-slate-300 transition-colors shrink-0 cursor-pointer self-start sm:self-auto"
+                    >
+                      Use Current Device GPS
+                    </button>
                   </div>
-                  <div className="flex items-center justify-between p-2.5 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-sm">
-                    <span className="font-semibold text-slate-800 dark:text-[#ededed]">General Medical Ward</span>
-                    <span className="text-slate-500 dark:text-[#888]">50 Total · 18 Available</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2.5 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-sm">
-                    <span className="font-semibold text-slate-800 dark:text-[#ededed]">Ventilator & Respiratory Care</span>
-                    <span className="text-slate-500 dark:text-[#888]">6 Total · 2 Available</span>
-                  </div>
-                </div>
-              </div>
 
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="w-full sm:w-auto px-8 py-3 bg-blue-700 hover:bg-blue-800 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold text-sm rounded-sm transition-colors cursor-pointer disabled:opacity-50 font-mono tracking-wide"
-                >
-                  {creating ? "REGISTERING FACILITY..." : "REGISTER HOSPITAL & INITIALIZE TELEMETRY →"}
-                </button>
+                  <div className="mb-2">
+                    <DynamicOSMLocationPicker
+                      latitude={parseFloat(createForm.latitude) || 28.5921}
+                      longitude={parseFloat(createForm.longitude) || 77.046}
+                      cityName={createForm.city}
+                      onChange={(lat, lng) =>
+                        setCreateForm({
+                          ...createForm,
+                          latitude: lat.toString(),
+                          longitude: lng.toString(),
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[10px] font-mono uppercase text-slate-600 dark:text-[#888] mb-1">
+                        Latitude
+                      </label>
+                      <input
+                        type="text"
+                        value={createForm.latitude}
+                        onChange={(e) => setCreateForm({ ...createForm, latitude: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs font-mono text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-mono uppercase text-slate-600 dark:text-[#888] mb-1">
+                        Longitude
+                      </label>
+                      <input
+                        type="text"
+                        value={createForm.longitude}
+                        onChange={(e) => setCreateForm({ ...createForm, longitude: e.target.value })}
+                        className="w-full px-3 py-1.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] rounded-sm text-xs font-mono text-slate-900 dark:text-white outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-2.5 p-2 bg-white dark:bg-[#141414] border border-slate-200 dark:border-[#222222] rounded-sm flex items-center justify-between text-[11px] font-mono text-slate-600 dark:text-[#888]">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                      <span>Coordinates Synced: {createForm.latitude}, {createForm.longitude}</span>
+                    </span>
+                    <span className="text-slate-500 dark:text-[#666]">{createForm.city}, {createForm.state}</span>
+                  </div>
+                </div>
               </div>
             </form>
           </div>
@@ -543,142 +535,163 @@ function HospitalSetupContent() {
 
         {/* Tab 2: Join Existing Hospital */}
         {activeTab === "join" && (
-          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-5 sm:p-8 shadow-sm">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1">
-              Affiliate with an Existing Medical Facility
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-[#a1a1a1] mb-6 leading-relaxed">
-              Enter the 6-10 character staff invitation code provided by your hospital administrator to link your credentials.
-            </p>
-
+          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-4 sm:p-6 lg:p-7 shadow-xs">
             {joinError && (
-              <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs font-mono rounded-sm">
+              <div className="mb-4 p-3.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-700 dark:text-red-400 text-xs font-mono rounded-sm">
                 {joinError}
               </div>
             )}
 
-            <form onSubmit={handleJoinHospital} className="space-y-5">
-              <div>
-                <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1.5">
-                  Staff Invitation Code
-                </label>
-                <div className="flex flex-col sm:flex-row gap-2 max-w-md">
-                  <input
-                    type="text"
-                    required
-                    placeholder="BR-XXXXXX"
-                    value={inviteCode}
-                    onChange={(e) => {
-                      const val = e.target.value.toUpperCase();
-                      setInviteCode(val);
-                      verifyInviteCode(val);
-                    }}
-                    className="w-full px-4 py-2.5 sm:py-3 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm font-mono text-base font-bold tracking-widest text-slate-900 dark:text-white outline-none uppercase"
-                  />
+            <form onSubmit={handleJoinHospital} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* Left Column: Code Input & Verification */}
+              <div className="lg:col-span-6 space-y-4">
+                <div>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1">
+                    Affiliate with an Existing Medical Facility
+                  </h2>
+                  <p className="text-xs text-slate-600 dark:text-[#a1a1a1] leading-relaxed">
+                    Enter the 6-10 character staff invitation code provided by your hospital administrator to link your credentials.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-mono font-semibold uppercase text-slate-700 dark:text-[#a1a1a1] mb-1.5">
+                    Staff Invitation Code
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      required
+                      placeholder="BR-XXXXXX"
+                      value={inviteCode}
+                      onChange={(e) => {
+                        const val = e.target.value.toUpperCase();
+                        setInviteCode(val);
+                        verifyInviteCode(val);
+                      }}
+                      className="w-full px-4 py-2.5 bg-white dark:bg-[#111111] border border-slate-300 dark:border-[#2a2a2a] focus:border-blue-600 dark:focus:border-blue-500 rounded-sm font-mono text-base font-bold tracking-widest text-slate-900 dark:text-white outline-none uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => verifyInviteCode(inviteCode)}
+                      disabled={previewLoading || !inviteCode}
+                      className="w-full sm:w-auto px-4 py-2 border border-slate-300 dark:border-[#333] hover:border-slate-400 dark:hover:border-[#555] bg-slate-50 dark:bg-[#181818] text-xs font-mono rounded-sm transition-colors cursor-pointer text-center shrink-0"
+                    >
+                      {previewLoading ? "Verifying..." : "Verify Code"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Demo Hint Banner */}
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-sm text-xs font-mono text-blue-800 dark:text-blue-300">
+                  <div className="font-bold mb-1">Testing demo codes:</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInviteCode("BR-APOLLO7");
+                        verifyInviteCode("BR-APOLLO7");
+                      }}
+                      className="px-2 py-0.5 bg-white dark:bg-[#111] border border-blue-200 dark:border-blue-800 rounded-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer"
+                    >
+                      BR-APOLLO7
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInviteCode("BR-AIIMS42");
+                        verifyInviteCode("BR-AIIMS42");
+                      }}
+                      className="px-2 py-0.5 bg-white dark:bg-[#111] border border-blue-200 dark:border-blue-800 rounded-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer"
+                    >
+                      BR-AIIMS42
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInviteCode("BR-KEM888");
+                        verifyInviteCode("BR-KEM888");
+                      }}
+                      className="px-2 py-0.5 bg-white dark:bg-[#111] border border-blue-200 dark:border-blue-800 rounded-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer"
+                    >
+                      BR-KEM888
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInviteCode("BR-APOLLO9");
+                        verifyInviteCode("BR-APOLLO9");
+                      }}
+                      className="px-2 py-0.5 bg-white dark:bg-[#111] border border-blue-200 dark:border-blue-800 rounded-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer"
+                    >
+                      BR-APOLLO9 (Admin)
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2">
                   <button
-                    type="button"
-                    onClick={() => verifyInviteCode(inviteCode)}
-                    disabled={previewLoading || !inviteCode}
-                    className="w-full sm:w-auto px-4 py-2.5 sm:py-2 border border-slate-300 dark:border-[#333] hover:border-slate-400 dark:hover:border-[#555] bg-slate-50 dark:bg-[#181818] text-xs font-mono rounded-sm transition-colors cursor-pointer text-center shrink-0"
+                    type="submit"
+                    disabled={joining || !inviteCode}
+                    className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-semibold text-sm rounded-sm transition-colors cursor-pointer disabled:opacity-50 font-mono tracking-wide"
                   >
-                    {previewLoading ? "Verifying..." : "Verify Code"}
+                    {joining ? "JOINING FACILITY..." : "ACCEPT INVITATION & ENTER CONSOLE →"}
                   </button>
                 </div>
               </div>
 
-              {/* Demo Hint Banner */}
-              <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-sm text-xs font-mono text-blue-800 dark:text-blue-300">
-                <span className="font-bold">Testing demo codes: </span>
-                <span>Click to auto-fill: </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInviteCode("BR-APOLLO7");
-                    verifyInviteCode("BR-APOLLO7");
-                  }}
-                  className="underline font-bold hover:text-blue-600 dark:hover:text-blue-200 mr-2"
-                >
-                  BR-APOLLO7
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInviteCode("BR-AIIMS42");
-                    verifyInviteCode("BR-AIIMS42");
-                  }}
-                  className="underline font-bold hover:text-blue-600 dark:hover:text-blue-200 mr-2"
-                >
-                  BR-AIIMS42
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInviteCode("BR-KEM888");
-                    verifyInviteCode("BR-KEM888");
-                  }}
-                  className="underline font-bold hover:text-blue-600 dark:hover:text-blue-200 mr-2"
-                >
-                  BR-KEM888
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInviteCode("BR-APOLLO9");
-                    verifyInviteCode("BR-APOLLO9");
-                  }}
-                  className="underline font-bold hover:text-blue-600 dark:hover:text-blue-200"
-                >
-                  BR-APOLLO9 (Admin)
-                </button>
-              </div>
-
-              {/* Facility Preview Box */}
-              {previewData && previewData.valid && (
-                <div className="p-5 bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900/50 rounded-sm">
-                  <div className="text-emerald-800 dark:text-emerald-400 font-mono text-xs font-bold mb-3">
-                    INVITATION VERIFIED
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
-                    <div>
-                      <span className="text-slate-500 dark:text-[#888] block text-[11px]">Facility Name:</span>
-                      <span className="font-bold text-slate-900 dark:text-white text-sm">
-                        {previewData.hospital.name}
-                      </span>
+              {/* Right Column: Facility Preview Box or Placeholder */}
+              <div className="lg:col-span-6">
+                {previewData && previewData.valid ? (
+                  <div className="p-5 bg-emerald-50/70 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900/50 rounded-sm">
+                    <div className="text-emerald-800 dark:text-emerald-400 font-mono text-xs font-bold mb-3 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span>
+                      INVITATION VERIFIED
                     </div>
-                    <div>
-                      <span className="text-slate-500 dark:text-[#888] block text-[11px]">Location:</span>
-                      <span className="text-slate-800 dark:text-[#ccc]">
-                        {previewData.hospital.city}, {previewData.hospital.state}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 dark:text-[#888] block text-[11px]">Assigned Role:</span>
-                      <span className={`inline-block px-2 py-0.5 rounded-xs font-bold text-[11px] mt-0.5 ${
-                        previewData.invitation.role === "HOSPITAL_ADMIN"
-                          ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/80 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50"
-                          : "bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50"
-                      }`}>
-                        {previewData.invitation.role}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 dark:text-[#888] block text-[11px]">Expires At:</span>
-                      <span className="text-slate-800 dark:text-[#ccc]">
-                        {formatDate(previewData.invitation.expiresAt)}
-                      </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                      <div>
+                        <span className="text-slate-500 dark:text-[#888] block text-[11px]">Facility Name:</span>
+                        <span className="font-bold text-slate-900 dark:text-white text-sm">
+                          {previewData.hospital.name}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-[#888] block text-[11px]">Location:</span>
+                        <span className="text-slate-800 dark:text-[#ccc]">
+                          {previewData.hospital.city}, {previewData.hospital.state}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-[#888] block text-[11px]">Assigned Role:</span>
+                        <span className={`inline-block px-2 py-0.5 rounded-xs font-bold text-[11px] mt-0.5 ${
+                          previewData.invitation.role === "HOSPITAL_ADMIN"
+                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-950/80 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50"
+                            : "bg-sky-100 text-sky-800 dark:bg-sky-950/80 dark:text-sky-300 border border-sky-200 dark:border-sky-900/50"
+                        }`}>
+                          {previewData.invitation.role}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 dark:text-[#888] block text-[11px]">Expires At:</span>
+                        <span className="text-slate-800 dark:text-[#ccc]">
+                          {formatDate(previewData.invitation.expiresAt)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={joining || !inviteCode}
-                  className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700 text-white font-semibold text-sm rounded-sm transition-colors cursor-pointer disabled:opacity-50 font-mono tracking-wide"
-                >
-                  {joining ? "JOINING FACILITY..." : "ACCEPT INVITATION & ENTER CONSOLE →"}
-                </button>
+                ) : (
+                  <div className="p-8 border border-dashed border-slate-300 dark:border-[#2a2a2a] rounded-sm text-center flex flex-col items-center justify-center min-h-[220px]">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-[#161616] flex items-center justify-center text-slate-400 mb-2 font-mono text-xs font-bold">
+                      BR
+                    </div>
+                    <div className="font-mono text-xs font-bold uppercase text-slate-700 dark:text-slate-300 mb-1">
+                      Facility Verification Preview
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-[#777] max-w-xs">
+                      Enter a valid hospital invitation code to preview facility capacity, medical departments, and designated staff role.
+                    </p>
+                  </div>
+                )}
               </div>
             </form>
           </div>

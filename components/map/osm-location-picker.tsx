@@ -38,6 +38,22 @@ function MapCenterController({
   const map = useMap();
   const prevCenterRef = useRef<[number, number]>(center);
 
+  // Invalidate map size on mount and window resize so tiles render properly
+  useEffect(() => {
+    if (!map) return;
+    map.invalidateSize();
+    const t1 = setTimeout(() => map.invalidateSize(), 150);
+    const t2 = setTimeout(() => map.invalidateSize(), 400);
+
+    const handleResize = () => map.invalidateSize();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [map]);
+
   useEffect(() => {
     // If the position change was just initiated by the user dragging the pin, do not re-center the map
     if (isDraggingRef.current) {
@@ -52,6 +68,7 @@ function MapCenterController({
     ) {
       map.setView(center, map.getZoom(), { animate: false });
       prevCenterRef.current = center;
+      map.invalidateSize();
     }
   }, [center, map, isDraggingRef]);
 
@@ -62,7 +79,7 @@ export default function OSMLocationPicker({
   latitude,
   longitude,
   onChange,
-  className = "w-full h-80",
+  className = "w-full h-[280px]",
   cityName,
 }: OSMLocationPickerProps) {
   const valid = isValidCoordinates(latitude, longitude);
@@ -89,29 +106,33 @@ export default function OSMLocationPicker({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       {/* Controls / Info Bar */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] rounded-sm font-semibold">
+          <span className="px-2 py-0.5 bg-slate-100 dark:bg-[#181818] border border-slate-300 dark:border-[#2a2a2a] text-slate-700 dark:text-[#a1a1a1] rounded-sm font-semibold text-[11px]">
             CLICK OR DRAG PIN TO PINPOINT FACILITY
           </span>
         </div>
-        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+        <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-[11px]">
           <span>Lat: <strong className="text-slate-900 dark:text-white">{latitude ? latitude.toFixed(4) : "—"}</strong></span>
           <span>•</span>
           <span>Lng: <strong className="text-slate-900 dark:text-white">{longitude ? longitude.toFixed(4) : "—"}</strong></span>
         </div>
       </div>
 
-      {/* Map Container */}
-      <div className={`relative border border-slate-300 dark:border-[#262626] rounded-sm overflow-hidden ${className}`}>
+      {/* Map Container with guaranteed pixel height */}
+      <div
+        className={`relative border border-slate-300 dark:border-[#262626] rounded-sm overflow-hidden ${className}`}
+        style={{ minHeight: "260px", height: "280px" }}
+      >
         <MapContainer
           center={currentPos}
           zoom={13}
           scrollWheelZoom={false}
           attributionControl={false}
           className="w-full h-full"
+          style={{ width: "100%", height: "100%", minHeight: "260px" }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -137,6 +158,7 @@ export default function OSMLocationPicker({
           />
         </MapContainer>
       </div>
+
 
       {/* Metro Jump Shortcuts */}
       <div className="flex items-center gap-1.5 overflow-x-auto py-1">

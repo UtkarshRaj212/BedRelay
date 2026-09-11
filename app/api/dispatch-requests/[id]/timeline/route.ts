@@ -29,9 +29,29 @@ export async function GET(
     }
 
     // Role-based security check:
-    // 1. If user is authenticated, check if SUPER_ADMIN or member of this hospital
-    // 2. If dispatcher, check dispatcherSessionId
+    // 1. SuperAdmin -> Always permitted
+    // 2. Member of destination hospital -> Permitted
+    // 3. Dispatcher / Ambulance driver owner of this request -> Permitted
+    // 4. Authenticated user who is NOT staff of a competing hospital -> Permitted (acting as ambulance driver/dispatcher)
+    // 5. If authenticated user IS staff of a DIFFERENT hospital (and not dispatcher owner) -> Forbidden
+    // 6. If unauthenticated, but an explicit contradictory sessionId parameter is provided -> Forbidden
+    const { searchParams } = new URL(req.url);
+    const cookieSessionId = req.cookies.get("bedrelay_dispatcher_session_id")?.value;
+    const paramSessionId = searchParams.get("sessionId");
+    const currentSessionId = paramSessionId || cookieSessionId;
+
+    const isOwnerDispatcher = Boolean(
+      dispatch.dispatcherSessionId &&
+      currentSessionId &&
+      (dispatch.dispatcherSessionId === currentSessionId ||
+       dispatch.dispatcherSessionId === cookieSessionId ||
+       dispatch.dispatcherSessionId === paramSessionId)
+    );
+
     const session = await auth.api.getSession({ headers: req.headers });
+    let isSuperAdmin = false;
+    let isHospitalMember = false;
+
     if (session?.user) {
       const [dbUser] = await db
         .select()
@@ -39,7 +59,9 @@ export async function GET(
         .where(eq(user.id, session.user.id))
         .limit(1);
 
-      if (dbUser?.role !== "SUPER_ADMIN") {
+      isSuperAdmin = dbUser?.role === "SUPER_ADMIN";
+
+      if (!isSuperAdmin) {
         const [membership] = await db
           .select()
           .from(hospitalMemberships)
@@ -52,21 +74,30 @@ export async function GET(
           )
           .limit(1);
 
-        if (!membership) {
+        isHospitalMember = Boolean(membership);
+      }
+    }
+
+    if (!isSuperAdmin && !isHospitalMember && !isOwnerDispatcher) {
+      if (session?.user) {
+        const [otherMembership] = await db
+          .select()
+          .from(hospitalMemberships)
+          .where(
+            and(
+              eq(hospitalMemberships.userId, session.user.id),
+              eq(hospitalMemberships.status, "ACTIVE")
+            )
+          )
+          .limit(1);
+
+        if (otherMembership) {
           return NextResponse.json(
             { error: "Forbidden: You are not authorized to view activity for another hospital." },
             { status: 403 }
           );
         }
-      }
-    } else {
-      // Dispatcher without login session
-      const { searchParams } = new URL(req.url);
-      const sessionId =
-        searchParams.get("sessionId") ||
-        req.cookies.get("bedrelay_dispatcher_session_id")?.value;
-
-      if (dispatch.dispatcherSessionId && sessionId && dispatch.dispatcherSessionId !== sessionId) {
+      } else if (paramSessionId && dispatch.dispatcherSessionId && paramSessionId !== dispatch.dispatcherSessionId) {
         return NextResponse.json(
           { error: "Forbidden: Access denied to this dispatch activity timeline." },
           { status: 403 }

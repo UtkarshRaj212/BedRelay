@@ -37,9 +37,29 @@ export async function GET(
     }
 
     // Role-based security check:
-    // 1. If user is authenticated, check if SUPER_ADMIN or member of this hospital
-    // 2. If unauthenticated (dispatcher), verify dispatcherSessionId matches
+    // 1. SuperAdmin -> Always permitted
+    // 2. Member of destination hospital -> Permitted
+    // 3. Dispatcher / Ambulance driver owner of this request -> Permitted
+    // 4. Authenticated user who is NOT staff of a competing hospital -> Permitted (acting as ambulance driver/dispatcher)
+    // 5. If authenticated user IS staff of a DIFFERENT hospital (and not dispatcher owner) -> Forbidden
+    // 6. If unauthenticated, but an explicit contradictory sessionId parameter is provided -> Forbidden
+    const { searchParams } = new URL(req.url);
+    const cookieSessionId = req.cookies.get("bedrelay_dispatcher_session_id")?.value;
+    const paramSessionId = searchParams.get("sessionId");
+    const currentSessionId = paramSessionId || cookieSessionId;
+
+    const isOwnerDispatcher = Boolean(
+      dispatch.dispatcherSessionId &&
+      currentSessionId &&
+      (dispatch.dispatcherSessionId === currentSessionId ||
+       dispatch.dispatcherSessionId === cookieSessionId ||
+       dispatch.dispatcherSessionId === paramSessionId)
+    );
+
     const session = await auth.api.getSession({ headers: req.headers });
+    let isSuperAdmin = false;
+    let isHospitalMember = false;
+
     if (session?.user) {
       const [dbUser] = await db
         .select()
@@ -47,7 +67,9 @@ export async function GET(
         .where(eq(user.id, session.user.id))
         .limit(1);
 
-      if (dbUser?.role !== "SUPER_ADMIN") {
+      isSuperAdmin = dbUser?.role === "SUPER_ADMIN";
+
+      if (!isSuperAdmin) {
         const [membership] = await db
           .select()
           .from(hospitalMemberships)
@@ -60,21 +82,32 @@ export async function GET(
           )
           .limit(1);
 
-        if (!membership) {
+        isHospitalMember = Boolean(membership);
+      }
+    }
+
+    if (!isSuperAdmin && !isHospitalMember && !isOwnerDispatcher) {
+      if (session?.user) {
+        // Only block if the authenticated user has an active membership for another hospital
+        // (preventing competing hospital staff from snooping on other facilities)
+        const [otherMembership] = await db
+          .select()
+          .from(hospitalMemberships)
+          .where(
+            and(
+              eq(hospitalMemberships.userId, session.user.id),
+              eq(hospitalMemberships.status, "ACTIVE")
+            )
+          )
+          .limit(1);
+
+        if (otherMembership) {
           return NextResponse.json(
             { error: "Forbidden: You are not authorized to view dispatches for another hospital." },
             { status: 403 }
           );
         }
-      }
-    } else {
-      // Dispatcher without login session
-      const { searchParams } = new URL(req.url);
-      const sessionId =
-        searchParams.get("sessionId") ||
-        req.cookies.get("bedrelay_dispatcher_session_id")?.value;
-
-      if (dispatch.dispatcherSessionId && sessionId && dispatch.dispatcherSessionId !== sessionId) {
+      } else if (paramSessionId && dispatch.dispatcherSessionId && paramSessionId !== dispatch.dispatcherSessionId) {
         return NextResponse.json(
           { error: "Forbidden: Access denied to this dispatch request." },
           { status: 403 }
@@ -173,29 +206,34 @@ export async function PATCH(
     }
 
     // Role-based authorization:
-    // Case A: Dispatcher cancelling their own request strictly via server cookie
+    // Case A: Dispatcher / Ambulance driver owner cancelling their own request
+    const { searchParams } = new URL(req.url);
+    const paramSessionId = searchParams.get("sessionId") || (body as any)?.sessionId;
     const cookieSessionId = req.cookies.get("bedrelay_dispatcher_session_id")?.value;
-    const isDispatcherOwner =
-      Boolean(cookieSessionId &&
+    const currentSessionId = paramSessionId || cookieSessionId;
+
+    const isDispatcherOwner = Boolean(
       existingDispatch.dispatcherSessionId &&
-      cookieSessionId === existingDispatch.dispatcherSessionId);
+      currentSessionId &&
+      (existingDispatch.dispatcherSessionId === currentSessionId ||
+       existingDispatch.dispatcherSessionId === cookieSessionId ||
+       existingDispatch.dispatcherSessionId === paramSessionId)
+    );
 
     const session = await auth.api.getSession({ headers: req.headers });
     let isSuperAdmin = false;
     let actorType: "SUPER_ADMIN" | "DISPATCHER" | "HOSPITAL" = "HOSPITAL";
     let actorName = "Hospital Staff";
 
-    if (!session || !session.user) {
-      if (nextStatus === "CANCELLED" && isDispatcherOwner) {
-        // Permitted: Dispatcher cancelling their own pending dispatch
-        actorType = "DISPATCHER";
-        actorName = "Ambulance Dispatcher";
-      } else {
-        return NextResponse.json(
-          { error: "Unauthorized: Active staff or SuperAdmin session required to modify dispatch state." },
-          { status: 401 }
-        );
-      }
+    if (nextStatus === "CANCELLED" && isDispatcherOwner) {
+      // Permitted: Dispatcher cancelling their own pending dispatch
+      actorType = "DISPATCHER";
+      actorName = session?.user?.name || "Ambulance Dispatcher";
+    } else if (!session || !session.user) {
+      return NextResponse.json(
+        { error: "Unauthorized: Active staff or SuperAdmin session required to modify dispatch state." },
+        { status: 401 }
+      );
     } else {
       // Case B: Authenticated User (SUPER_ADMIN or Hospital Staff/Admin of target hospital)
       const [dbUser] = await db
