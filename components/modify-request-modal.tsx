@@ -21,17 +21,11 @@ const BASE_CATEGORIES = [
   { code: "ICU", label: "Intensive Care Unit (ICU)" },
   { code: "GENERAL", label: "General Medical Ward" },
   { code: "VENTILATOR", label: "Ventilator & Critical Care" },
-  { code: "NICU", label: "Neonatal ICU (NICU)" },
-  { code: "PEDIATRIC_ICU", label: "Pediatric ICU (PICU)" },
 ];
 
 function matchCategory(codeA?: string, codeB?: string): boolean {
   if (!codeA || !codeB) return false;
-  const a = codeA.trim().toUpperCase();
-  const b = codeB.trim().toUpperCase();
-  if (a === b) return true;
-  if ((a === "NICU" && b === "NEONATAL_ICU") || (a === "NEONATAL_ICU" && b === "NICU")) return true;
-  return false;
+  return codeA.trim().toUpperCase() === codeB.trim().toUpperCase();
 }
 
 export function ModifyRequestModal({
@@ -118,7 +112,8 @@ export function ModifyRequestModal({
 
     if (Array.isArray(hospitalBeds)) {
       for (const b of hospitalBeds) {
-        if (!list.some((c) => matchCategory(c.code, b.categoryCode))) {
+        const isExcluded = ["NICU", "PICU", "PEDIATRIC_ICU", "NEONATAL_ICU", "PEDIATRIC", "NEONATAL"].includes(b.categoryCode?.toUpperCase());
+        if (!isExcluded && !list.some((c) => matchCategory(c.code, b.categoryCode))) {
           list.push({
             code: b.categoryCode,
             label: b.name || b.categoryCode,

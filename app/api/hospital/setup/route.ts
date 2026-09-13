@@ -136,18 +136,6 @@ export async function POST(req: NextRequest) {
         createdAt: now,
         updatedAt: now,
       },
-      {
-        id: `cat_ped_${Date.now()}_4`,
-        hospitalId: createdHospital.id,
-        categoryCode: "PEDIATRIC",
-        name: "Pediatric Intensive Care (PICU)",
-        totalBeds: 15,
-        availableBeds: 4,
-        occupiedBeds: 11,
-        lastUpdated: now,
-        createdAt: now,
-        updatedAt: now,
-      },
     ];
 
     await db.insert(bedCategories).values(defaultCategories);

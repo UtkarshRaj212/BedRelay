@@ -32,8 +32,6 @@ const SUPPORTED_CATEGORIES = [
   { code: "ICU", label: "ICU (Intensive Care)" },
   { code: "GENERAL", label: "General Medical Ward" },
   { code: "VENTILATOR", label: "Ventilator & Critical Care" },
-  { code: "NICU", label: "Neonatal Intensive Care (NICU)" },
-  { code: "PEDIATRIC_ICU", label: "Pediatric ICU (PICU)" },
 ];
 
 export function SwitchHospitalModal({
@@ -160,10 +158,7 @@ export function SwitchHospitalModal({
     // Map base categories
     for (const cat of SUPPORTED_CATEGORIES) {
       const found = effectiveHospital.beds?.find(
-        (b) =>
-          b.categoryCode.toUpperCase() === cat.code.toUpperCase() ||
-          (cat.code === "NICU" && b.categoryCode.toUpperCase() === "NEONATAL_ICU") ||
-          (cat.code === "NEONATAL_ICU" && b.categoryCode.toUpperCase() === "NICU")
+        (b) => b.categoryCode.toUpperCase() === cat.code.toUpperCase()
       );
       list.push({
         code: cat.code,
@@ -175,12 +170,11 @@ export function SwitchHospitalModal({
     // Add hospital-specific bed categories not present in base list
     if (effectiveHospital.beds) {
       for (const b of effectiveHospital.beds) {
+        const isExcluded = ["NICU", "PICU", "PEDIATRIC_ICU", "NEONATAL_ICU", "PEDIATRIC", "NEONATAL"].includes(b.categoryCode.toUpperCase());
         const isAlreadyListed = list.some(
-          (c) =>
-            c.code.toUpperCase() === b.categoryCode.toUpperCase() ||
-            (c.code === "NICU" && b.categoryCode.toUpperCase() === "NEONATAL_ICU")
+          (c) => c.code.toUpperCase() === b.categoryCode.toUpperCase()
         );
-        if (!isAlreadyListed) {
+        if (!isAlreadyListed && !isExcluded) {
           list.push({
             code: b.categoryCode,
             label: b.name || b.categoryCode,
@@ -197,10 +191,7 @@ export function SwitchHospitalModal({
   const targetCategoryBed = useMemo(() => {
     if (!effectiveHospital?.beds) return null;
     return effectiveHospital.beds.find(
-      (b) =>
-        b.categoryCode.toUpperCase() === bedCategoryCode.toUpperCase() ||
-        (bedCategoryCode.toUpperCase() === "NICU" && b.categoryCode.toUpperCase() === "NEONATAL_ICU") ||
-        (bedCategoryCode.toUpperCase() === "NEONATAL_ICU" && b.categoryCode.toUpperCase() === "NICU")
+      (b) => b.categoryCode.toUpperCase() === bedCategoryCode.toUpperCase()
     );
   }, [effectiveHospital, bedCategoryCode]);
 

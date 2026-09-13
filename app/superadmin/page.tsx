@@ -2355,7 +2355,7 @@ export default function SuperAdminPage() {
               </div>
 
               <div>
-                <label className="block text-slate-700 dark:text-[#ccc] mb-1">Category Code (e.g. ICU, VENTILATOR, NICU)</label>
+                <label className="block text-slate-700 dark:text-[#ccc] mb-1">Category Code (e.g. ICU, VENTILATOR, GENERAL)</label>
                 <input
                   type="text"
                   required

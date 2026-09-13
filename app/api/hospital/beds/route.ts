@@ -14,10 +14,15 @@ export async function GET(req: NextRequest) {
     if (!hospital) return NextResponse.json({ error: "Hospital onboarding required" }, { status: 403 });
 
     // Fetch beds scoped ONLY to the authenticated hospital
-    const beds = await db
+    const beds = (await db
       .select()
       .from(bedCategories)
-      .where(eq(bedCategories.hospitalId, hospital.id));
+      .where(eq(bedCategories.hospitalId, hospital.id))).filter(
+        (b) =>
+          !["NICU", "PICU", "PEDIATRIC_ICU", "NEONATAL_ICU", "PEDIATRIC", "NEONATAL"].includes(
+            b.categoryCode.toUpperCase()
+          )
+      );
 
     return NextResponse.json(
       { hospital, beds },

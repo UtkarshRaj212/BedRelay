@@ -52,7 +52,14 @@ export default function BedManagementPage() {
       if (res.ok) {
         const data = await res.json();
         setHospital(data.hospital);
-        setBeds(data.beds || []);
+        setBeds(
+          (data.beds || []).filter(
+            (b: BedCategory) =>
+              !["NICU", "PICU", "PEDIATRIC_ICU", "NEONATAL_ICU", "PEDIATRIC", "NEONATAL"].includes(
+                b.categoryCode?.toUpperCase()
+              )
+          )
+        );
       }
     } catch (err) {
       console.error("Failed to load hospital beds:", err);

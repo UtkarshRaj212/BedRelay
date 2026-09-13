@@ -190,18 +190,6 @@ export default function Home() {
                   scope: "Advanced mechanical ventilation and high-flow oxygen beds",
                   metric: "Total / Available / Occupied",
                 },
-                // {
-                //   code: "NICU-04",
-                //   name: "Neonatal Intensive Care (NICU)",
-                //   scope: "Neonatal critical care, premature infant stabilization",
-                //   metric: "Total / Available / Occupied",
-                // },
-                // {
-                //   code: "PICU-05",
-                //   name: "Pediatric Intensive Care (PICU)",
-                //   scope: "Critically ill infants, children, and adolescents specialized care",
-                //   metric: "Total / Available / Occupied",
-                // },
               ].map((cat) => (
                 <div
                   key={cat.code}
@@ -256,18 +244,6 @@ export default function Home() {
                     <td className="py-4 px-4 text-slate-600 dark:text-[#888888]">Advanced mechanical ventilation and high-flow oxygen beds</td>
                     <td className="py-4 px-4 text-slate-600 dark:text-[#888888] font-mono text-xs">Total / Available / Occupied</td>
                   </tr>
-                  {/* <tr>
-                    <td className="py-4 px-4 font-mono font-semibold text-slate-900 dark:text-[#ededed]">NICU-04</td>
-                    <td className="py-4 px-4 font-semibold text-slate-900 dark:text-[#ededed]">Neonatal Intensive Care (NICU)</td>
-                    <td className="py-4 px-4 text-slate-600 dark:text-[#888888]">Neonatal critical care, premature infant stabilization</td>
-                    <td className="py-4 px-4 text-slate-600 dark:text-[#888888] font-mono text-xs">Total / Available / Occupied</td>
-                  </tr>
-                  <tr>
-                    <td className="py-4 px-4 font-mono font-semibold text-slate-900 dark:text-[#ededed]">PICU-05</td>
-                    <td className="py-4 px-4 font-semibold text-slate-900 dark:text-[#ededed]">Pediatric Intensive Care (PICU)</td>
-                    <td className="py-4 px-4 text-slate-600 dark:text-[#888888]">Critically ill infants, children, and adolescents specialized care</td>
-                    <td className="py-4 px-4 text-slate-600 dark:text-[#888888] font-mono text-xs">Total / Available / Occupied</td>
-                  </tr> */}
                 </tbody>
               </table>
             </div>
@@ -301,7 +277,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-[#ededed]">Find Suitable Hospital</h3>
                 <p className="mt-2 text-sm text-slate-600 dark:text-[#888888] leading-relaxed">
-                  Ambulance staff filter nearby hospitals by required bed category (ICU, Ventilator, General, NICU, PICU) and capacity.
+                  Ambulance staff filter nearby hospitals by required bed category (ICU, Ventilator, General) and capacity.
                 </p>
               </div>
 

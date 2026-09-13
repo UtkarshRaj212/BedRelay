@@ -86,7 +86,13 @@ export async function GET(req: NextRequest) {
 
     // Build result for each hospital, computing distance and suitability
     const enriched = allHospitals.map((hosp) => {
-      const hospBeds = allBeds.filter((b) => b.hospitalId === hosp.id);
+      const hospBeds = allBeds.filter(
+        (b) =>
+          b.hospitalId === hosp.id &&
+          !["NICU", "PICU", "PEDIATRIC_ICU", "NEONATAL_ICU", "PEDIATRIC", "NEONATAL"].includes(
+            b.categoryCode.toUpperCase()
+          )
+      );
 
       // Compute distance from origin using Haversine
       let distanceKm: number | null = null;

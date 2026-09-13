@@ -30,20 +30,22 @@ export async function GET(req: NextRequest) {
       .innerJoin(hospitals, eq(bedCategories.hospitalId, hospitals.id))
       .orderBy(desc(bedCategories.lastUpdated));
 
-    const beds = hospitalId
+    const beds = (hospitalId
       ? (await query).filter((b) => b.hospitalId === hospitalId)
-      : await query;
+      : await query).filter(
+        (b) =>
+          !["NICU", "PICU", "PEDIATRIC_ICU", "NEONATAL_ICU", "PEDIATRIC", "NEONATAL"].includes(
+            b.categoryCode.toUpperCase()
+          )
+      );
 
     return NextResponse.json({
       success: true,
       beds,
     });
   } catch (error: any) {
-    console.error("SuperAdmin beds GET failed:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error", message: error.message },
-      { status: 500 }
-    );
+    console.error("SuperAdmin GET beds error:", error);
+    return NextResponse.json({ error: error.message || "Failed to load beds" }, { status: 500 });
   }
 }
 
@@ -58,6 +60,14 @@ export async function POST(req: NextRequest) {
     if (!hospitalId || !categoryCode || !name) {
       return NextResponse.json(
         { error: "hospitalId, categoryCode, and name are required" },
+        { status: 400 }
+      );
+    }
+
+    const upperCode = categoryCode.trim().toUpperCase();
+    if (["NICU", "PICU", "PEDIATRIC_ICU", "NEONATAL_ICU", "PEDIATRIC", "NEONATAL"].includes(upperCode)) {
+      return NextResponse.json(
+        { error: "NICU and PICU bed categories are not supported" },
         { status: 400 }
       );
     }

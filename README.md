@@ -42,7 +42,7 @@ BedRelay aims to reduce this problem by providing a centralized way to:
 * Sign in using Google authentication.
 * Create or join a hospital.
 * Manage hospital bed availability.
-* Support multiple bed categories such as ICU, General, NICU and Critical Care.
+* Support multiple bed categories such as ICU, General, Ventilator and Critical Care.
 * View incoming ambulance requests.
 * Accept or reject requests.
 * Review significant request modifications.

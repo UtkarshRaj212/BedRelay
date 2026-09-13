@@ -273,7 +273,6 @@ export default function DispatcherHistoryPage() {
                 <option value="ICU">ICU</option>
                 <option value="GENERAL">GENERAL</option>
                 <option value="VENTILATOR">VENTILATOR</option>
-                <option value="NICU">NICU</option>
                 <option value="EMERGENCY">EMERGENCY</option>
               </select>
             </div>
