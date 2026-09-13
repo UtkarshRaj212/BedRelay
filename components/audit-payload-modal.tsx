@@ -68,7 +68,15 @@ function tryParseJson(val: any): any | null {
   const trimmed = val.trim();
   if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) return null;
   try {
-    return JSON.parse(trimmed);
+    const parsed = JSON.parse(trimmed);
+    if (typeof parsed === "string" && (parsed.startsWith("{") || parsed.startsWith("["))) {
+      try {
+        return JSON.parse(parsed);
+      } catch {
+        return parsed;
+      }
+    }
+    return parsed;
   } catch {
     return null;
   }
@@ -85,6 +93,17 @@ function formatLabel(key: string): string {
     bedcategory: "BED CATEGORY",
     bedcategorycode: "BED CATEGORY",
     bed_category_code: "BED CATEGORY",
+    categorycode: "BED CATEGORY",
+    category_code: "BED CATEGORY",
+    totalbeds: "TOTAL BEDS",
+    total_beds: "TOTAL BEDS",
+    total: "TOTAL BEDS",
+    availablebeds: "AVAILABLE BEDS",
+    available_beds: "AVAILABLE BEDS",
+    available: "AVAILABLE BEDS",
+    occupiedbeds: "OCCUPIED BEDS",
+    occupied_beds: "OCCUPIED BEDS",
+    occupied: "OCCUPIED BEDS",
     eta: "ETA",
     etaminutes: "ETA",
     eta_minutes: "ETA",
@@ -92,14 +111,35 @@ function formatLabel(key: string): string {
     patientcondition: "CONDITION",
     patient_condition: "CONDITION",
     ambulance: "AMBULANCE ID",
-    ambulanceunit: "AMBULANCE ID",
-    ambulance_unit: "AMBULANCE ID",
+    ambulanceid: "AMBULANCE ID",
+    ambulance_id: "AMBULANCE ID",
+    ambulanceunit: "AMBULANCE UNIT",
+    ambulance_unit: "AMBULANCE UNIT",
     patientref: "PATIENT REFERENCE",
     patientreference: "PATIENT REFERENCE",
     patient_ref: "PATIENT REFERENCE",
     status: "STATUS",
+    previousstatus: "PREVIOUS STATUS",
+    newstatus: "NEW STATUS",
     reviewrequired: "REVIEW REQUIRED",
     reviewreason: "REVIEW REASON",
+    rejectionreason: "REJECTION REASON",
+    hospitalid: "HOSPITAL ID",
+    hospital_id: "HOSPITAL ID",
+    hospitalname: "HOSPITAL NAME",
+    hospital_name: "HOSPITAL NAME",
+    targetuserid: "TARGET USER ID",
+    target_user_id: "TARGET USER ID",
+    targetemail: "TARGET EMAIL",
+    target_email: "TARGET EMAIL",
+    assignedrole: "ASSIGNED ROLE",
+    assigned_role: "ASSIGNED ROLE",
+    revokedrole: "REVOKED ROLE",
+    revoked_role: "REVOKED ROLE",
+    role: "ROLE",
+    code: "INVITATION CODE",
+    invitecode: "INVITATION CODE",
+    invite_code: "INVITATION CODE",
   };
 
   const lower = key.toLowerCase();
@@ -121,13 +161,251 @@ function formatValue(key: string, val: any): string {
     return String(val);
   }
   if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (!trimmed) return "—";
     const lower = key.toLowerCase();
-    if (lower.includes("eta") && !val.includes("min") && !val.includes("m") && !isNaN(Number(val))) {
-      return `${val} min`;
+    if (lower.includes("eta") && !trimmed.includes("min") && !trimmed.includes("m") && !isNaN(Number(trimmed))) {
+      return `${trimmed} min`;
     }
-    return val;
+    return trimmed;
   }
   return JSON.stringify(val);
+}
+
+export function extractAuditDiffRows(auditItem: AuditPayloadItem): {
+  activeDiffRows: DiffRow[];
+  effectiveNote: string | null;
+  narrative: string | null;
+  fullRawPayload: any;
+} {
+  const requestId = auditItem.dispatchId || auditItem.requestId || auditItem.resourceId || "N/A";
+
+  // Parse Old & New values
+  const oldJson = tryParseJson(auditItem.oldValue);
+  const newJson = tryParseJson(auditItem.newValue);
+  const detailsJson = tryParseJson(auditItem.details);
+
+  const effectiveNote =
+    auditItem.note ||
+    (detailsJson && typeof detailsJson === "object" && typeof detailsJson.note === "string"
+      ? detailsJson.note
+      : null);
+
+  const narrative =
+    (!detailsJson && auditItem.details) ||
+    (detailsJson && typeof detailsJson === "object" && typeof detailsJson.details === "string"
+      ? detailsJson.details
+      : null) ||
+    (detailsJson && typeof detailsJson === "object" && typeof detailsJson.message === "string"
+      ? detailsJson.message
+      : null) ||
+    (detailsJson && typeof detailsJson === "object" && typeof detailsJson.description === "string"
+      ? detailsJson.description
+      : null);
+
+  const diffRows: DiffRow[] = [];
+
+  // 1. Both oldValue and newValue are structured JSON objects
+  if (
+    oldJson &&
+    typeof oldJson === "object" &&
+    !Array.isArray(oldJson) &&
+    newJson &&
+    typeof newJson === "object" &&
+    !Array.isArray(newJson)
+  ) {
+    const allKeys = Array.from(new Set([...Object.keys(oldJson), ...Object.keys(newJson)]));
+    for (const key of allKeys) {
+      const oldVal = oldJson[key];
+      const newVal = newJson[key];
+      const isNested = Boolean((oldVal && typeof oldVal === "object") || (newVal && typeof newVal === "object"));
+      diffRows.push({
+        label: formatLabel(key),
+        previous: isNested ? null : (oldVal !== undefined ? formatValue(key, oldVal) : "—"),
+        next: isNested ? null : (newVal !== undefined ? formatValue(key, newVal) : "—"),
+        isNestedJson: isNested,
+        previousJson: isNested ? oldVal : null,
+        nextJson: isNested ? newVal : null,
+      });
+    }
+  } else {
+    // 2. Direct oldValue or newValue provided as primitives/strings
+    const hasDirectOld =
+      auditItem.oldValue !== null &&
+      auditItem.oldValue !== undefined &&
+      String(auditItem.oldValue).trim() !== "";
+    const hasDirectNew =
+      auditItem.newValue !== null &&
+      auditItem.newValue !== undefined &&
+      String(auditItem.newValue).trim() !== "";
+
+    if (hasDirectOld || hasDirectNew) {
+      let label = "CHANGE DETAILS";
+      const action = (auditItem.action || "").toUpperCase();
+
+      if (action.includes("BEDS")) label = "REQUESTED BEDS";
+      else if (action.includes("CATEGORY")) label = "BED CATEGORY";
+      else if (action.includes("ETA")) label = "ETA";
+      else if (action.includes("CONDITION")) label = "CONDITION";
+      else if (action.includes("AMBULANCE")) label = "AMBULANCE ID";
+      else if (action.includes("PATIENT_REF")) label = "PATIENT REFERENCE";
+      else if (
+        action.includes("STATUS") ||
+        action.includes("ACCEPTED") ||
+        action.includes("CANCELLED") ||
+        action.includes("REJECTED") ||
+        action.includes("COMPLETED") ||
+        action.includes("PENDING")
+      ) {
+        label = "STATUS";
+      }
+
+      diffRows.push({
+        label,
+        previous: hasDirectOld ? formatValue(label, auditItem.oldValue) : "—",
+        next: hasDirectNew ? formatValue(label, auditItem.newValue) : "—",
+      });
+    }
+
+    // 3. Extract and parse detailsJson if available
+    if (detailsJson && typeof detailsJson === "object" && !Array.isArray(detailsJson)) {
+      const consumedKeys = new Set<string>();
+
+      if (detailsJson.note && typeof detailsJson.note === "string") consumedKeys.add("note");
+      if (detailsJson.details && typeof detailsJson.details === "string") consumedKeys.add("details");
+      if (detailsJson.message && typeof detailsJson.message === "string") consumedKeys.add("message");
+      if (detailsJson.description && typeof detailsJson.description === "string") consumedKeys.add("description");
+
+      // Sub-case 3A: Explicit nested comparison objects like { previous: {...}, updated: {...} }
+      const prevObj = detailsJson.previous ?? detailsJson.before ?? detailsJson.old ?? detailsJson.prev;
+      const nextObj = detailsJson.updated ?? detailsJson.new ?? detailsJson.next ?? detailsJson.after ?? detailsJson.current;
+
+      if (prevObj !== undefined || nextObj !== undefined) {
+        for (const k of ["previous", "before", "old", "prev", "updated", "new", "next", "after", "current"]) {
+          if (k in detailsJson) consumedKeys.add(k);
+        }
+
+        if (
+          (prevObj && typeof prevObj === "object" && !Array.isArray(prevObj)) ||
+          (nextObj && typeof nextObj === "object" && !Array.isArray(nextObj))
+        ) {
+          const p = (prevObj && typeof prevObj === "object" ? prevObj : {}) as Record<string, any>;
+          const n = (nextObj && typeof nextObj === "object" ? nextObj : {}) as Record<string, any>;
+          const allKeys = Array.from(new Set([...Object.keys(p), ...Object.keys(n)]));
+
+          for (const k of allKeys) {
+            const oldVal = p[k];
+            const newVal = n[k];
+            const isNested = Boolean((oldVal && typeof oldVal === "object") || (newVal && typeof newVal === "object"));
+            diffRows.push({
+              label: formatLabel(k),
+              previous: isNested ? null : (oldVal !== undefined ? formatValue(k, oldVal) : "—"),
+              next: isNested ? null : (newVal !== undefined ? formatValue(k, newVal) : "—"),
+              isNestedJson: isNested,
+              previousJson: isNested ? oldVal : null,
+              nextJson: isNested ? newVal : null,
+            });
+          }
+        } else {
+          diffRows.push({
+            label: "PAYLOAD UPDATE",
+            previous: prevObj !== undefined ? (typeof prevObj === "string" ? prevObj : JSON.stringify(prevObj, null, 2)) : "—",
+            next: nextObj !== undefined ? (typeof nextObj === "string" ? nextObj : JSON.stringify(nextObj, null, 2)) : "—",
+          });
+        }
+      }
+
+      // Sub-case 3B: Paired transition fields (e.g., previousStatus & newStatus)
+      const pairPatterns = [
+        {
+          label: "STATUS",
+          prevKeys: ["previousStatus", "prevStatus", "oldStatus", "fromStatus"],
+          nextKeys: ["newStatus", "nextStatus", "toStatus"],
+        },
+        {
+          label: "ROLE",
+          prevKeys: ["previousRole", "prevRole", "oldRole", "revokedRole"],
+          nextKeys: ["newRole", "nextRole", "assignedRole"],
+        },
+        {
+          label: "STATE",
+          prevKeys: ["previousState", "prevState", "oldState"],
+          nextKeys: ["newState", "nextState"],
+        },
+        {
+          label: "BED CAPACITY",
+          prevKeys: ["previousCapacity", "oldCapacity"],
+          nextKeys: ["newCapacity", "updatedCapacity"],
+        },
+        {
+          label: "VALUE",
+          prevKeys: ["previousValue", "prevValue", "oldValue"],
+          nextKeys: ["newValue", "nextValue"],
+        },
+      ];
+
+      for (const pattern of pairPatterns) {
+        const foundPrevKey = pattern.prevKeys.find((k) => k in detailsJson);
+        const foundNextKey = pattern.nextKeys.find((k) => k in detailsJson);
+
+        if (foundPrevKey || foundNextKey) {
+          const prevVal = foundPrevKey ? detailsJson[foundPrevKey] : undefined;
+          const nextVal = foundNextKey ? detailsJson[foundNextKey] : undefined;
+
+          if (foundPrevKey) consumedKeys.add(foundPrevKey);
+          if (foundNextKey) consumedKeys.add(foundNextKey);
+
+          diffRows.unshift({
+            label: pattern.label,
+            previous: prevVal !== undefined ? formatValue(pattern.label, prevVal) : "—",
+            next: nextVal !== undefined ? formatValue(pattern.label, nextVal) : "—",
+          });
+        }
+      }
+
+      // Sub-case 3C: Any remaining contextual fields in detailsJson
+      for (const [k, v] of Object.entries(detailsJson)) {
+        if (consumedKeys.has(k)) continue;
+
+        const isNested = Boolean(v && typeof v === "object");
+        diffRows.push({
+          label: formatLabel(k),
+          previous: null,
+          next: isNested ? null : formatValue(k, v),
+          isNestedJson: isNested,
+          previousJson: null,
+          nextJson: isNested ? v : null,
+        });
+      }
+    }
+  }
+
+  // Filter out any completely empty dummy diff rows (where previous is empty/dash and next is empty/dash)
+  const activeDiffRows = diffRows.filter((r) => {
+    if (r.isNestedJson) return true;
+    const hasP = r.previous !== null && r.previous !== "—" && r.previous.trim() !== "";
+    const hasN = r.next !== null && r.next !== "—" && r.next.trim() !== "";
+    return hasP || hasN;
+  });
+
+  // Full raw payload object for complete transparency and deep inspection
+  const fullRawPayload = {
+    id: auditItem.id,
+    action: auditItem.action,
+    actorType: auditItem.actorType,
+    actorName: auditItem.actorName || auditItem.userName || null,
+    actorEmail: auditItem.userEmail || null,
+    timestamp: auditItem.timestamp,
+    requestId: requestId,
+    resourceType: auditItem.resourceType || null,
+    resourceId: auditItem.resourceId || null,
+    oldValue: oldJson || auditItem.oldValue || undefined,
+    newValue: newJson || auditItem.newValue || undefined,
+    details: detailsJson || auditItem.details,
+    note: effectiveNote || null,
+  };
+
+  return { activeDiffRows, effectiveNote, narrative, fullRawPayload };
 }
 
 export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadModalProps) {
@@ -156,100 +434,7 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
   const actorLabel = normalizeActor(auditItem);
   const requestId = auditItem.dispatchId || auditItem.requestId || auditItem.resourceId || "N/A";
 
-  // Parse Old & New values
-  const oldJson = tryParseJson(auditItem.oldValue);
-  const newJson = tryParseJson(auditItem.newValue);
-  const detailsJson = tryParseJson(auditItem.details);
-
-  const diffRows: DiffRow[] = [];
-
-  if (oldJson && typeof oldJson === "object" && newJson && typeof newJson === "object") {
-    // Both are structured JSON objects
-    const allKeys = Array.from(new Set([...Object.keys(oldJson), ...Object.keys(newJson)]));
-    for (const key of allKeys) {
-      const oldVal = oldJson[key];
-      const newVal = newJson[key];
-
-      const isNested = Boolean((oldVal && typeof oldVal === "object") || (newVal && typeof newVal === "object"));
-      diffRows.push({
-        label: formatLabel(key),
-        previous: isNested ? null : formatValue(key, oldVal),
-        next: isNested ? null : formatValue(key, newVal),
-        isNestedJson: isNested,
-        previousJson: isNested ? oldVal : null,
-        nextJson: isNested ? newVal : null,
-      });
-    }
-  } else if (auditItem.oldValue !== null || auditItem.newValue !== null) {
-    // Plain string diffs or simple values
-    let label = "CHANGE DETAILS";
-    const action = auditItem.action.toUpperCase();
-
-    if (action.includes("BEDS")) label = "REQUESTED BEDS";
-    else if (action.includes("CATEGORY")) label = "BED CATEGORY";
-    else if (action.includes("ETA")) label = "ETA";
-    else if (action.includes("CONDITION")) label = "CONDITION";
-    else if (action.includes("AMBULANCE")) label = "AMBULANCE ID";
-    else if (action.includes("PATIENT_REF")) label = "PATIENT REFERENCE";
-    else if (action.includes("STATUS")) label = "STATUS";
-
-    diffRows.push({
-      label,
-      previous: auditItem.oldValue ? formatValue(label, auditItem.oldValue) : "—",
-      next: auditItem.newValue ? formatValue(label, auditItem.newValue) : "—",
-    });
-  } else if (detailsJson && typeof detailsJson === "object") {
-    // Details itself might contain before/after or payload fields
-    if (detailsJson.previous || detailsJson.new || detailsJson.before || detailsJson.after) {
-      const prev = detailsJson.previous || detailsJson.before;
-      const nxt = detailsJson.new || detailsJson.after;
-      if (typeof prev === "object" && typeof nxt === "object") {
-        const allKeys = Array.from(new Set([...Object.keys(prev), ...Object.keys(nxt)]));
-        for (const k of allKeys) {
-          diffRows.push({
-            label: formatLabel(k),
-            previous: formatValue(k, prev[k]),
-            next: formatValue(k, nxt[k]),
-          });
-        }
-      } else {
-        diffRows.push({
-          label: "PAYLOAD UPDATE",
-          previous: typeof prev === "string" ? prev : JSON.stringify(prev, null, 2),
-          next: typeof nxt === "string" ? nxt : JSON.stringify(nxt, null, 2),
-        });
-      }
-    } else {
-      // General key-value dictionary in details
-      for (const [k, v] of Object.entries(detailsJson)) {
-        const isNested = Boolean(v && typeof v === "object");
-        diffRows.push({
-          label: formatLabel(k),
-          previous: "—",
-          next: isNested ? null : formatValue(k, v),
-          isNestedJson: isNested,
-          nextJson: isNested ? v : null,
-        });
-      }
-    }
-  }
-
-  // Full raw payload object for complete transparency and deep inspection
-  const fullRawPayload = {
-    id: auditItem.id,
-    action: auditItem.action,
-    actorType: auditItem.actorType,
-    actorName: auditItem.actorName || auditItem.userName || null,
-    actorEmail: auditItem.userEmail || null,
-    timestamp: auditItem.timestamp,
-    requestId: requestId,
-    resourceType: auditItem.resourceType || null,
-    resourceId: auditItem.resourceId || null,
-    oldValue: oldJson || auditItem.oldValue,
-    newValue: newJson || auditItem.newValue,
-    details: detailsJson || auditItem.details,
-    note: auditItem.note || null,
-  };
+  const { activeDiffRows, effectiveNote, narrative, fullRawPayload } = extractAuditDiffRows(auditItem);
 
   const modalContent = (
     <div
@@ -340,13 +525,13 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
                 CHANGE DATA / PAYLOAD
               </span>
               <span className="text-[10px] font-mono text-slate-400 dark:text-[#666]">
-                {diffRows.length} field{diffRows.length === 1 ? "" : "s"} recorded
+                {activeDiffRows.length} field{activeDiffRows.length === 1 ? "" : "s"} recorded
               </span>
             </div>
 
-            {diffRows.length > 0 ? (
+            {activeDiffRows.length > 0 ? (
               <div className="space-y-3 font-mono">
-                {diffRows.map((row, idx) => (
+                {activeDiffRows.map((row, idx) => (
                   <div
                     key={idx}
                     className="p-3 bg-white dark:bg-[#111] border border-slate-200 dark:border-[#222] rounded-xs space-y-1.5"
@@ -356,7 +541,7 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
                     </div>
 
                     {row.isNestedJson ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      <div className={row.previousJson !== null && row.previousJson !== undefined ? "grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]" : "space-y-1 text-[11px]"}>
                         {row.previousJson !== null && row.previousJson !== undefined && (
                           <div>
                             <span className="text-slate-400 dark:text-[#666] text-[10px] uppercase block mb-1">
@@ -369,10 +554,10 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
                         )}
                         {row.nextJson !== null && row.nextJson !== undefined && (
                           <div>
-                            <span className="text-emerald-600 dark:text-emerald-400 text-[10px] uppercase font-bold block mb-1">
-                              New:
+                            <span className={`text-[10px] uppercase font-bold block mb-1 ${row.previousJson !== null && row.previousJson !== undefined ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-[#666]"}`}>
+                              {row.previousJson !== null && row.previousJson !== undefined ? "New:" : "Payload Value:"}
                             </span>
-                            <pre className="p-2 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 rounded text-[10px] text-emerald-900 dark:text-emerald-300 overflow-x-auto max-h-40 overflow-y-auto font-bold whitespace-pre-wrap break-all">
+                            <pre className={`p-2 rounded text-[10px] overflow-x-auto max-h-40 overflow-y-auto whitespace-pre-wrap break-all ${row.previousJson !== null && row.previousJson !== undefined ? "bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 text-emerald-900 dark:text-emerald-300 font-bold" : "bg-slate-50 dark:bg-[#181818] border border-slate-200 dark:border-[#292929] text-slate-800 dark:text-[#ccc]"}`}>
                               {JSON.stringify(row.nextJson, null, 2)}
                             </pre>
                           </div>
@@ -380,24 +565,35 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
                       </div>
                     ) : (
                       <div className="space-y-1 text-xs">
-                        {row.previous && (
+                        {row.previous !== null && row.previous !== undefined ? (
+                          <>
+                            <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
+                              <span className="text-slate-400 dark:text-[#666] font-mono text-[10px] uppercase w-16 shrink-0">
+                                Previous:
+                              </span>
+                              <span className="text-slate-600 dark:text-[#999] break-all sm:break-words">
+                                {row.previous}
+                              </span>
+                            </div>
+                            <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
+                              <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[10px] uppercase font-bold w-16 shrink-0">
+                                New:
+                              </span>
+                              <span className="font-bold text-slate-900 dark:text-white break-all sm:break-words">
+                                {row.next || "—"}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
                           <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
                             <span className="text-slate-400 dark:text-[#666] font-mono text-[10px] uppercase w-16 shrink-0">
-                              Previous:
+                              Value:
                             </span>
-                            <span className="text-slate-600 dark:text-[#999] break-all sm:break-words">
-                              {row.previous}
+                            <span className="font-bold text-slate-900 dark:text-white break-all sm:break-words">
+                              {row.next || "—"}
                             </span>
                           </div>
                         )}
-                        <div className="flex items-baseline gap-2 flex-wrap sm:flex-nowrap">
-                          <span className="text-emerald-600 dark:text-emerald-400 font-mono text-[10px] uppercase font-bold w-16 shrink-0">
-                            New:
-                          </span>
-                          <span className="font-bold text-slate-900 dark:text-white break-all sm:break-words">
-                            {row.next || "—"}
-                          </span>
-                        </div>
                       </div>
                     )}
                   </div>
@@ -411,25 +607,25 @@ export function AuditPayloadModal({ isOpen, onClose, auditItem }: AuditPayloadMo
           </div>
 
           {/* Details / Narrative if available */}
-          {auditItem.details && !detailsJson && (
+          {narrative && (
             <div className="space-y-1">
               <span className="font-mono text-[10px] uppercase text-slate-500 dark:text-[#777] font-bold block">
                 Details Summary
               </span>
               <p className="p-2.5 bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#222] rounded-xs text-slate-700 dark:text-[#bbb] break-all sm:break-words">
-                {auditItem.details}
+                {narrative}
               </p>
             </div>
           )}
 
           {/* Note if available */}
-          {auditItem.note && (
+          {effectiveNote && (
             <div className="space-y-1">
               <span className="font-mono text-[10px] uppercase text-emerald-600 dark:text-emerald-400 font-bold block">
                 NOTE
               </span>
               <div className="p-2.5 bg-emerald-50/60 dark:bg-emerald-950/20 border-l-2 border-emerald-600 dark:border-emerald-400 text-emerald-900 dark:text-emerald-200 rounded-r-xs font-mono break-all sm:break-words">
-                {auditItem.note}
+                {effectiveNote}
               </div>
             </div>
           )}
