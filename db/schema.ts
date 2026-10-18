@@ -9,9 +9,23 @@ export const user = pgTable("user", {
   emailVerified: t.boolean("email_verified").notNull(),
   image: t.text("image"),
   role: t.varchar("role", { length: 50 }).notNull().default("USER"), // 'USER' | 'SUPER_ADMIN'
+  twoFactorEnabled: t.boolean("two_factor_enabled").default(false),
   createdAt: t.timestamp("created_at", { precision: 6, withTimezone: true }).notNull(),
   updatedAt: t.timestamp("updated_at", { precision: 6, withTimezone: true }).notNull(),
 });
+
+export const twoFactor = pgTable("two_factor", {
+  id: t.text("id").primaryKey(),
+  secret: t.text("secret").notNull(),
+  backupCodes: t.text("backup_codes").notNull(),
+  userId: t.text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  verified: t.boolean("verified").notNull().default(true),
+  failedVerificationCount: t.integer("failed_verification_count").notNull().default(0),
+  lockedUntil: t.timestamp("locked_until", { precision: 6, withTimezone: true }),
+}, (table) => [
+  t.index("two_factor_userId_idx").on(table.userId),
+  t.index("two_factor_secret_idx").on(table.secret),
+]);
 
 
 export const session = pgTable("session", {

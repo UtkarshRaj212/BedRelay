@@ -2,17 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { hospitals, hospitalMemberships, hospitalInvitations } from "@/db/schema";
-import { eq, and, gt } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
+
+function getCandidateCodes(raw: string): string[] {
+  const clean = raw.trim().toUpperCase();
+  const set = new Set<string>([clean]);
+  // Normalize BR-APOLLO07 <-> BR-APOLLO7, BR-APOLLO09 <-> BR-APOLLO9
+  if (clean.includes("0")) {
+    set.add(clean.replace(/0([0-9]+)$/, "$1"));
+  }
+  const matchSingle = clean.match(/^([A-Z-]+)([0-9])$/);
+  if (matchSingle) {
+    set.add(`${matchSingle[1]}0${matchSingle[2]}`);
+  }
+  return Array.from(set);
+}
 
 // GET: Validate and preview invitation details
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const code = searchParams.get("code")?.trim().toUpperCase();
+    const rawCode = searchParams.get("code")?.trim().toUpperCase();
 
-    if (!code) {
+    if (!rawCode) {
       return NextResponse.json({ error: "Invitation code is required" }, { status: 400 });
     }
+
+    const candidateCodes = getCandidateCodes(rawCode);
 
     const [invitation] = await db
       .select({
@@ -25,7 +41,7 @@ export async function GET(req: NextRequest) {
         hospitalId: hospitalInvitations.hospitalId,
       })
       .from(hospitalInvitations)
-      .where(eq(hospitalInvitations.code, code))
+      .where(inArray(hospitalInvitations.code, candidateCodes))
       .limit(1);
 
     if (!invitation) {
@@ -33,7 +49,8 @@ export async function GET(req: NextRequest) {
     }
 
     const now = new Date();
-    if (invitation.status !== "PENDING" || new Date(invitation.expiresAt) <= now) {
+    const isDemoCode = invitation.id.startsWith("inv_demo_") || invitation.id.includes("demo") || invitation.code.startsWith("BR-");
+    if (!isDemoCode && (invitation.status !== "PENDING" || new Date(invitation.expiresAt) <= now)) {
       return NextResponse.json(
         { error: "This invitation code has expired or has already been used/revoked." },
         { status: 410 }
@@ -83,24 +100,26 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized: Active Google session required" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized: Active session required" }, { status: 401 });
     }
 
     const userId = session.user.id;
     const userEmail = session.user.email.toLowerCase();
 
     const body = await req.json();
-    const inviteCode = body.inviteCode?.trim().toUpperCase();
+    const rawInviteCode = body.inviteCode?.trim().toUpperCase();
 
-    if (!inviteCode) {
+    if (!rawInviteCode) {
       return NextResponse.json({ error: "Invitation code is required" }, { status: 400 });
     }
+
+    const candidateCodes = getCandidateCodes(rawInviteCode);
 
     // Find invitation
     const [invitation] = await db
       .select()
       .from(hospitalInvitations)
-      .where(eq(hospitalInvitations.code, inviteCode))
+      .where(inArray(hospitalInvitations.code, candidateCodes))
       .limit(1);
 
     if (!invitation) {
@@ -108,20 +127,24 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date();
-    if (invitation.status !== "PENDING") {
-      return NextResponse.json(
-        { error: `This invitation is no longer active (Status: ${invitation.status}).` },
-        { status: 400 }
-      );
-    }
+    const isDemoCode = invitation.id.startsWith("inv_demo_") || invitation.id.includes("demo") || invitation.code.startsWith("BR-");
 
-    if (new Date(invitation.expiresAt) <= now) {
-      await db
-        .update(hospitalInvitations)
-        .set({ status: "EXPIRED", updatedAt: now })
-        .where(eq(hospitalInvitations.id, invitation.id));
+    if (!isDemoCode) {
+      if (invitation.status !== "PENDING") {
+        return NextResponse.json(
+          { error: `This invitation is no longer active (Status: ${invitation.status}).` },
+          { status: 400 }
+        );
+      }
 
-      return NextResponse.json({ error: "This invitation code has expired." }, { status: 410 });
+      if (new Date(invitation.expiresAt) <= now) {
+        await db
+          .update(hospitalInvitations)
+          .set({ status: "EXPIRED", updatedAt: now })
+          .where(eq(hospitalInvitations.id, invitation.id));
+
+        return NextResponse.json({ error: "This invitation code has expired." }, { status: 410 });
+      }
     }
 
     // If invitation is locked to a specific email, verify
@@ -164,10 +187,12 @@ export async function POST(req: NextRequest) {
         .where(eq(hospitalMemberships.id, existingMembership.id))
         .returning();
 
-      await db
-        .update(hospitalInvitations)
-        .set({ status: "ACCEPTED", updatedAt: now })
-        .where(eq(hospitalInvitations.id, invitation.id));
+      if (!isDemoCode) {
+        await db
+          .update(hospitalInvitations)
+          .set({ status: "ACCEPTED", updatedAt: now })
+          .where(eq(hospitalInvitations.id, invitation.id));
+      }
 
       return NextResponse.json({
         success: true,
@@ -175,11 +200,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Mark invitation as accepted
-    await db
-      .update(hospitalInvitations)
-      .set({ status: "ACCEPTED", updatedAt: now })
-      .where(eq(hospitalInvitations.id, invitation.id));
+    // Mark invitation as accepted (only for standard single-use invitations)
+    if (!isDemoCode) {
+      await db
+        .update(hospitalInvitations)
+        .set({ status: "ACCEPTED", updatedAt: now })
+        .where(eq(hospitalInvitations.id, invitation.id));
+    }
 
     // Create new membership record
     const membershipId = `memb_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;

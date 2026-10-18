@@ -31,6 +31,29 @@ export async function getAuthenticatedHospital(req: NextRequest): Promise<Authen
 
   const userId = session.user.id;
 
+  // Strict 2FA verification: 2FA is compulsory for all accounts and sessions
+  const [dbUser] = await db
+    .select()
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
+
+  if (!dbUser || !dbUser.twoFactorEnabled) {
+    return {
+      errorResponse: NextResponse.json(
+        {
+          error: "Two-Factor Authentication is compulsory for all accounts and sessions. Please enable 2FA to continue.",
+          code: "2FA_REQUIRED",
+        },
+        { status: 403 }
+      ),
+      hospital: null,
+      membership: null,
+      session,
+      needsOnboarding: false,
+    };
+  }
+
   // 1. Look up existing active hospital membership
   const [activeMembership] = await db
     .select()
@@ -158,6 +181,21 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<Authentica
       errorResponse: NextResponse.json({ error: "Unauthorized: User record not found" }, { status: 401 }),
       session: null,
       user: null,
+    };
+  }
+
+  // Strict 2FA verification: 2FA is compulsory for all accounts and sessions
+  if (!dbUser.twoFactorEnabled) {
+    return {
+      errorResponse: NextResponse.json(
+        {
+          error: "Two-Factor Authentication is compulsory for all accounts and sessions. Please enable 2FA to continue.",
+          code: "2FA_REQUIRED",
+        },
+        { status: 403 }
+      ),
+      session,
+      user: dbUser,
     };
   }
 

@@ -7,6 +7,8 @@ import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate } from "@/lib/format-date";
 import { DynamicOSMLocationPicker } from "@/components/map/dynamic-map";
+import { AuthCard } from "@/components/auth-card";
+import { ArrowRight } from "lucide-react";
 
 const INDIAN_CITIES = [
   { city: "New Delhi", state: "Delhi", lat: 28.5921, lng: 77.0460 },
@@ -208,46 +210,72 @@ function HospitalSetupContent() {
   if (!session) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans">
-        <div className="max-w-md mx-auto pt-24 px-4">
-          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-[#222222] rounded-sm p-8 shadow-sm">
-            <div className="flex items-center gap-2.5 mb-6">
+        <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
                 BR
               </div>
-              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] tracking-tight font-mono">
+              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight">
                 BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
               </span>
-            </div>
-            <h1 className="text-xl font-bold mb-2">Hospital Facility Setup</h1>
-            <p className="text-sm text-slate-600 dark:text-[#a1a1a1] mb-6">
-              Please sign in with your Google medical staff account to register a new hospital or accept a staff invitation.
-            </p>
-            <button
-              onClick={() => authClient.signIn.social({ provider: "google", callbackURL: "/hospital-setup" })}
-              className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-[#ededed] dark:hover:bg-white text-white dark:text-black font-semibold text-sm rounded-sm transition-colors cursor-pointer"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              Sign In with Google Staff Account
-            </button>
+            </Link>
+            <ThemeToggle />
           </div>
+        </header>
+
+        <div className="max-w-xl mx-auto py-12 px-4">
+          <AuthCard
+            callbackURL="/hospital-setup"
+            portalTitle="Hospital Facility Setup"
+            portalDescription="Sign in or register your medical staff account to configure a new hospital facility. Two-Factor Authentication is compulsory."
+            badgeLabel="FACILITY ONBOARDING // 2FA MANDATORY"
+          />
         </div>
+      </div>
+    );
+  }
+
+  // Compulsory 2FA check
+  if (!(session.user as any)?.twoFactorEnabled) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
+        <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
+                BR
+              </div>
+              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight">
+                BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
+              </span>
+            </Link>
+            <ThemeToggle />
+          </div>
+        </header>
+
+        <main className="max-w-lg mx-auto my-16 px-4">
+          <div className="bg-white dark:bg-[#0a0a0a] p-8 border border-amber-300 dark:border-amber-800 rounded-sm shadow-sm">
+            <div className="inline-block px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 font-mono text-xs font-semibold mb-4 rounded-sm">
+              SECURITY CLEARANCE REQUIRED // 2FA MANDATORY
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-[#ededed]">
+              Two-Factor Authentication Compulsory
+            </h1>
+            <p className="mt-3 text-sm text-slate-600 dark:text-[#888888] leading-relaxed">
+              Hospital administration requires active Two-Factor Authentication. Please configure your authenticator app before registering facility details.
+            </p>
+            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-[#222222]">
+              <Link
+                href="/auth/setup-2fa?callbackURL=/hospital-setup"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-xs"
+              >
+                <span>Complete Hospital Admin 2FA Setup</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -589,12 +617,12 @@ function HospitalSetupContent() {
                     <button
                       type="button"
                       onClick={() => {
-                        setInviteCode("BR-APOLLO7");
-                        verifyInviteCode("BR-APOLLO7");
+                        setInviteCode("BR-APOLLO07");
+                        verifyInviteCode("BR-APOLLO07");
                       }}
                       className="px-2 py-0.5 bg-white dark:bg-[#111] border border-blue-200 dark:border-blue-800 rounded-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer"
                     >
-                      BR-APOLLO7
+                      BR-APOLLO07
                     </button>
                     <button
                       type="button"
@@ -619,12 +647,12 @@ function HospitalSetupContent() {
                     <button
                       type="button"
                       onClick={() => {
-                        setInviteCode("BR-APOLLO9");
-                        verifyInviteCode("BR-APOLLO9");
+                        setInviteCode("BR-APOLLO09");
+                        verifyInviteCode("BR-APOLLO09");
                       }}
                       className="px-2 py-0.5 bg-white dark:bg-[#111] border border-blue-200 dark:border-blue-800 rounded-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 cursor-pointer"
                     >
-                      BR-APOLLO9 (Admin)
+                      BR-APOLLO09 (Admin)
                     </button>
                   </div>
                 </div>

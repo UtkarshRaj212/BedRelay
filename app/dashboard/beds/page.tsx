@@ -5,6 +5,7 @@ import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { formatDate } from "@/lib/format-date";
+import { ArrowRight } from "lucide-react";
 
 interface BedCategory {
   id: string;
@@ -214,6 +215,50 @@ export default function BedManagementPage() {
                 className="w-full flex items-center justify-center px-4 py-3 bg-slate-900 hover:bg-slate-800 dark:bg-[#ededed] dark:hover:bg-white text-white dark:text-black font-semibold text-sm rounded-sm transition-colors"
               >
                 Go to Staff Portal
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Compulsory 2FA check
+  if (!(session.user as any)?.twoFactorEnabled) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-[#000000] text-slate-900 dark:text-[#ededed] font-sans antialiased transition-colors duration-150">
+        <header className="bg-white dark:bg-[#0a0a0a] border-b border-slate-200 dark:border-[#222222]">
+          <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-8 2xl:px-12 h-16 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-slate-900 dark:bg-[#ededed] text-white dark:text-black font-bold flex items-center justify-center text-sm font-mono rounded-sm">
+                BR
+              </div>
+              <span className="font-bold text-lg text-slate-900 dark:text-[#ededed] font-mono tracking-tight">
+                BED<span className="text-blue-700 dark:text-blue-400">RELAY</span>
+              </span>
+            </Link>
+            <ThemeToggle />
+          </div>
+        </header>
+
+        <main className="max-w-lg mx-auto my-16 px-4">
+          <div className="bg-white dark:bg-[#0a0a0a] p-8 border border-amber-300 dark:border-amber-800 rounded-sm shadow-sm">
+            <div className="inline-block px-2.5 py-1 bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 text-amber-700 dark:text-amber-400 font-mono text-xs font-semibold mb-4 rounded-sm">
+              SECURITY CLEARANCE REQUIRED // 2FA MANDATORY
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-[#ededed]">
+              Two-Factor Authentication Compulsory
+            </h1>
+            <p className="mt-3 text-sm text-slate-600 dark:text-[#888888] leading-relaxed">
+              Managing live bed telemetry requires active Two-Factor Authentication. Please configure your authenticator app to proceed.
+            </p>
+            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-[#222222]">
+              <Link
+                href="/auth/setup-2fa?callbackURL=/dashboard/beds"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-700 hover:bg-blue-800 text-white font-semibold text-sm uppercase tracking-wider rounded-sm transition-colors shadow-xs"
+              >
+                <span>Complete 2FA Setup</span>
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
