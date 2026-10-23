@@ -1,0 +1,12 @@
+services:
+  bed-relay:
+    container_name: bed-relay
+    image: bed-relay
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
