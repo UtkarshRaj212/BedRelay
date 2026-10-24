@@ -7,6 +7,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    environment:
+      - INSTANCE_NAME=bed-relay-instance-1
     env_file:
       - .env
     restart: unless-stopped
@@ -18,6 +20,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3001:3000"
+    environment:
+      - INSTANCE_NAME=bed-relay-instance-2
     env_file:
       - .env
     restart: unless-stopped
@@ -29,6 +33,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3002:3000"
+    environment:
+      - INSTANCE_NAME=bed-relay-instance-3
     env_file:
       - .env
     restart: unless-stopped
