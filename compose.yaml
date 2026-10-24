@@ -1,6 +1,6 @@
 services:
-  bed-relay:
-    container_name: bed-relay
+  bed-relay-1:
+    container_name: bed-relay-1
     image: bed-relay
     build:
       context: .
@@ -9,4 +9,37 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    restart: unless-stopped
+  bed-relay-2:
+    container_name: bed-relay-2
+    image: bed-relay
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
+  bed-relay-3:
+    container_name: bed-relay-3
+    image: bed-relay
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3000"
+    env_file:
+      - .env
+    restart: unless-stopped
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - bed-relay-1
+      - bed-relay-2
+      - bed-relay-3
     restart: unless-stopped
